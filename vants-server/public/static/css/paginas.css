@@ -117,7 +117,9 @@
 .delta-neutro { color: var(--gris-2); font-family: var(--mono); font-size: 12px; }
 .puntos { font-family: var(--mono); font-weight: 800; font-size: 15px; }
 .rangos-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; margin-top: 20px; }
-.rango-card { text-align: center; padding: 18px 8px; }
+.rangos-grid--insignias { grid-template-columns: repeat(9, 1fr); }
+.rango-card { text-align: center; padding: 18px 8px; position: relative; transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.rango-card:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--rc, #fff) 55%, var(--borde)); box-shadow: 0 10px 26px -14px color-mix(in srgb, var(--rc, #fff) 65%, transparent); }
 .rango-card .hex {
   width: 46px; height: 46px; margin: 0 auto 10px;
   display: flex; align-items: center; justify-content: center;
@@ -125,8 +127,18 @@
   clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%);
   font-family: var(--mono); font-weight: 800; font-size: 13px;
 }
+.rango-card__insignia {
+  width: 72px; height: 72px; max-width: 100%; object-fit: contain;
+  margin: 0 auto 8px; display: block;
+  filter: drop-shadow(0 5px 12px rgba(0,0,0,.65)) drop-shadow(0 0 12px color-mix(in srgb, var(--rc, #fff) 30%, transparent));
+  transition: filter .16s ease, transform .16s ease;
+}
+.rango-card:hover .rango-card__insignia { transform: scale(1.07); filter: drop-shadow(0 7px 14px rgba(0,0,0,.7)) drop-shadow(0 0 16px color-mix(in srgb, var(--rc, #fff) 55%, transparent)); }
+.rango-card--fin { border-color: rgba(63,140,255,.5); background: linear-gradient(180deg, rgba(63,140,255,.07), var(--panel) 40%); }
 .rango-card b { font-size: 11px; letter-spacing: .1em; font-family: var(--mono); }
 .rango-card small { display: block; color: var(--gris-2); font-size: 10px; margin-top: 4px; }
+@media (max-width: 960px) { .rangos-grid.rangos-grid--insignias { grid-template-columns: repeat(5, 1fr); } }
+@media (max-width: 560px) { .rangos-grid.rangos-grid--insignias { grid-template-columns: repeat(3, 1fr); } }
 
 /* ═══ TORNEOS + BRACKET ═══════════════════════════════════════ */
 .torneo-hero { border: 1px solid var(--borde); border-radius: 8px; overflow: hidden; background:
@@ -403,14 +415,13 @@
 
 /* rango */
 .rango-caja { display: flex; align-items: center; gap: 18px; border: 1px solid var(--borde); border-radius: 6px; padding: 18px; background: #0a0b0f; }
-.rango-caja__hex {
-  width: 64px; height: 64px; flex-shrink: 0;
+.rango-caja__insignia {
+  width: 78px; height: 78px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(160deg, #17181d, #0a0b0e);
-  border: 2px solid var(--borde-2);
-  clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%);
-  color: #c9d2e4; font-size: 20px; font-weight: 900;
+  background: radial-gradient(circle at 50% 42%, rgba(255,255,255,.06), transparent 62%);
+  border: 1px solid var(--borde-2); border-radius: 8px;
 }
+.rango-caja__insignia img { width: 62px; height: 62px; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,.55)); }
 .rango-caja__info { flex: 1; min-width: 0; }
 .rango-caja__info b { font-size: 21px; font-weight: 900; font-style: italic; letter-spacing: .05em; }
 .rango-caja__info small { display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .16em; color: var(--gris); margin: 5px 0 10px; }
@@ -422,6 +433,28 @@
 .rango-caja__xp b { display: block; font-size: 22px; }
 .rango-caja__xp small { font-family: var(--mono); font-size: 9.5px; letter-spacing: .2em; color: var(--gris); }
 
+/* escalera de rangos (9 insignias) */
+.rango-escalera {
+  display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px;
+  margin-top: 12px;
+}
+.rango-escalera__paso {
+  text-align: center; padding: 10px 2px 8px;
+  border: 1px solid var(--borde); border-radius: 6px;
+  background: #0a0b0f; transition: border-color .15s ease, transform .15s ease;
+}
+.rango-escalera__paso:hover { border-color: var(--borde-2); transform: translateY(-2px); }
+.rango-escalera__paso img {
+  width: 40px; height: 40px; object-fit: contain;
+  filter: drop-shadow(0 3px 7px rgba(0,0,0,.6));
+}
+.rango-escalera__paso b { display: block; font-family: var(--mono); font-size: 8px; letter-spacing: .08em; color: var(--blanco); margin-top: 6px; }
+.rango-escalera__paso small { display: block; font-family: var(--mono); font-size: 8px; color: var(--gris); margin-top: 2px; }
+.rango-escalera__paso--fin { border-color: rgba(63,140,255,.55); box-shadow: 0 0 14px -6px rgba(63,140,255,.6); }
+@media (max-width: 700px) {
+  .rango-escalera { grid-template-columns: repeat(3, 1fr); }
+}
+
 /* faceit */
 .faceit-caja { border: 1px solid rgba(255,107,26,.45); border-radius: 6px; padding: 18px; background: rgba(255,107,26,.05); }
 .faceit-caja b { font-size: 19px; font-weight: 900; font-style: italic; color: var(--naranja); letter-spacing: .05em; }
@@ -429,6 +462,46 @@
 .faceit-caja__nivel { text-align: right; }
 .faceit-caja__nivel b { font-size: 26px; color: var(--naranja); }
 .faceit-caja__nivel small { font-family: var(--mono); font-size: 9px; letter-spacing: .2em; color: var(--gris); margin: 0; }
+.faceit-caja__fila { display: flex; align-items: center; gap: 14px; }
+.faceit-caja__datos { flex: 1; min-width: 0; }
+.faceit-caja__datos small { margin: 5px 0 0; }
+.faceit-caja__avatar {
+  width: 46px; height: 46px; flex-shrink: 0; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  background: #1a1206; color: var(--naranja); font-weight: 900; font-style: italic; font-size: 18px;
+  border: 1px solid rgba(255,107,26,.4); overflow: hidden;
+}
+.faceit-caja__avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* mis datos: etiquetas de campo */
+.campo-etiqueta {
+  display: block; font-family: var(--mono); font-size: 9.5px; letter-spacing: .18em;
+  color: var(--gris-2); margin: 12px 0 6px;
+}
+.campo-etiqueta:first-of-type { margin-top: 4px; }
+
+/* cuentas conectadas: formulario inline de conexión */
+.cuenta-form {
+  margin-left: auto; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; justify-content: flex-end;
+}
+.cuenta-form .campo-cuenta {
+  background: #101218; border: 1px solid var(--borde-2); border-radius: 4px;
+  color: var(--blanco); font-family: var(--mono); font-size: 12px;
+  padding: 8px 10px; width: 210px; max-width: 52vw;
+}
+.cuenta-form .campo-cuenta:focus { outline: none; border-color: var(--gris-2); }
+.cuenta-form .campo-nota { flex-basis: 100%; text-align: right; }
+.cuenta-form .campo-nota small { color: var(--gris); font-family: var(--mono); font-size: 9px; letter-spacing: .1em; }
+.cuenta-fila.cargando { opacity: .55; pointer-events: none; }
+.cuenta-enlace {
+  color: var(--gris-2); text-decoration: none; font-family: var(--mono); font-size: 10px;
+  border: 1px solid var(--borde-2); border-radius: 3px; padding: 4px 8px; letter-spacing: .1em;
+}
+.cuenta-enlace:hover { color: var(--blanco); border-color: var(--gris-2); }
+.cuenta-nivel {
+  font-family: var(--mono); font-size: 9px; font-weight: 800; letter-spacing: .1em;
+  color: var(--naranja); border: 1px solid rgba(255,107,26,.5); border-radius: 3px; padding: 3px 6px;
+}
 
 /* partidas */
 .partida-fila { display: flex; align-items: center; gap: 12px; padding: 11px 4px; border-bottom: 1px solid var(--borde); font-size: 13.5px; }

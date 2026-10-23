@@ -135,6 +135,32 @@
     });
   }
 
+  /* ENTRAR DIRECTO con una conexión concreta (p. ej. google-oauth2 o discord):
+     salta la pantalla de elección de Auth0 y va derecho al proveedor. La
+     conexión FACEIT de Auth0 está rota del lado del tenant (FACEIT solo da
+     credenciales OAuth a partners), por eso la web NO la usa: el perfil
+     conecta FACEIT verificando el NICK real contra su API pública. */
+  function entrarCon(conexion) {
+    var conValida = conexion === "google-oauth2" || conexion === "discord";
+    if (!conValida) { entrar(); return; }
+    guardarVolver();
+    if (!cliente) {
+      window.location.href = "https://" + DOMINIO + "/authorize?response_type=code" +
+        "&client_id=" + encodeURIComponent(CLIENTE) +
+        "&redirect_uri=" + encodeURIComponent(window.location.origin + "/") +
+        "&scope=" + encodeURIComponent("openid profile email") +
+        "&audience=" + encodeURIComponent(AUDIENCIA) +
+        "&connection=" + encodeURIComponent(conexion);
+      return;
+    }
+    cliente.loginWithRedirect({
+      authorizationParams: {
+        redirect_uri: window.location.origin + "/", audience: AUDIENCIA,
+        scope: "openid profile email", connection: conexion,
+      },
+    });
+  }
+
   function salir() {
     try {
       window.location.href = "https://" + DOMINIO + "/v2/logout?client_id=" + CLIENTE +
@@ -178,6 +204,7 @@
     usuario: function () { return usuario; },
     getToken: getToken,
     entrar: entrar,
+    entrarCon: entrarCon,
     salir: salir,
   };
 })(window);

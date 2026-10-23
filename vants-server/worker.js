@@ -86,6 +86,7 @@ const LIMIT_GPR = 20;        // peticiones por minuto por IP a /api/gpr
 const LIMIT_ACCOUNT = 10;    // peticiones por minuto por IP a /api/account/*
 const LIMIT_TORNEO = 15;     // peticiones por minuto por IP a /api/torneos/*
 const LIMIT_CLIPS = 6;
+const LIMIT_FACEIT = 20;     // peticiones por minuto por IP a /api/faceit/usuario
 const LIMIT_VERCEL = 20;     // peticiones por minuto por IP al webhook de Vercel       // peticiones por minuto por IP a /api/clips/* (subidas/bajas)
 const WINDOW_MS = 60_000;    // ventana de 1 minuto
 const MAX_BODY_NOTIFY = 8192; // máximo 8 KB por notificación
@@ -139,6 +140,9 @@ const rlEsports = new Map();
 const rlTeams = new Map();
 const rlGpr = new Map();
 const rlAccount = new Map();
+const rlFaceit = new Map();
+// Caché de nicks de FACEIT (nivel módulo: sobrevive entre peticiones aisladas)
+const faceitCacheMod = new Map();
 const rlTorneo = new Map();
 const rlLectura = new Map(); // API pública de la plataforma de torneos (lectura)
 const LIMIT_LECTURA = 60;    // peticiones por minuto por IP a los endpoints públicos nuevos
@@ -981,13 +985,13 @@ async function fetchWorker(request, env, ctx) {
     // --- 2) Pre-flight CORS solo para la API propia
     if (method === 'OPTIONS') {
       const origin = request.headers.get('origin') || '';
-      const isGetApi = url.pathname === '/api/valorant/esports' || url.pathname === '/api/teams' || url.pathname === '/api/teams-live' || url.pathname === '/api/gpr' || url.pathname === '/api/clips/featured' || url.pathname === '/api/torneos/bracket' || url.pathname === '/api/en-vivo' || url.pathname === '/api/games' || url.pathname === '/api/tournaments' || url.pathname === '/api/matches' || url.pathname === '/api/players' || url.pathname === '/api/articles' || url.pathname === '/api/search' || /^\/api\/tournaments\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/articles\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/teams\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/players\/[a-z0-9-]+$/.test(url.pathname);
-      const isPostApi = url.pathname === '/api/discord/notify' || url.pathname === '/api/account/email-verify' || url.pathname === '/api/account/password-reset' || url.pathname === '/api/clips/featured' || url.pathname === '/api/torneos/inscribir' || url.pathname === '/api/torneos/gestionar' || url.pathname === '/api/telemetria';
+      const isGetApi = url.pathname === '/api/valorant/esports' || url.pathname === '/api/teams' || url.pathname === '/api/teams-live' || url.pathname === '/api/gpr' || url.pathname === '/api/clips/featured' || url.pathname === '/api/torneos/bracket' || url.pathname === '/api/en-vivo' || url.pathname === '/api/faceit/usuario' || url.pathname === '/api/account/perfil' || url.pathname === '/api/games' || url.pathname === '/api/tournaments' || url.pathname === '/api/matches' || url.pathname === '/api/players' || url.pathname === '/api/articles' || url.pathname === '/api/search' || /^\/api\/tournaments\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/articles\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/teams\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/players\/[a-z0-9-]+$/.test(url.pathname);
+      const isPostApi = url.pathname === '/api/discord/notify' || url.pathname === '/api/account/email-verify' || url.pathname === '/api/account/password-reset' || url.pathname === '/api/account/perfil' || url.pathname === '/api/clips/featured' || url.pathname === '/api/torneos/inscribir' || url.pathname === '/api/torneos/gestionar' || url.pathname === '/api/telemetria';
       if ((isPostApi || isGetApi) && SITE_ORIGINS.has(origin)) {
         return harden(new Response(null, { status: 204 }), {
           'Access-Control-Allow-Origin': origin,
-          'Access-Control-Allow-Methods': url.pathname === '/api/clips/featured' ? 'GET, POST, DELETE, OPTIONS' : (isGetApi ? 'GET, OPTIONS' : 'POST, OPTIONS'),
-          'Access-Control-Allow-Headers': isPostApi ? 'Content-Type, ' + AUTH_HEADER + ', X-Vants-Signature, X-Vants-Timestamp' : 'Content-Type',
+          'Access-Control-Allow-Methods': url.pathname === '/api/clips/featured' ? 'GET, POST, DELETE, OPTIONS' : ((url.pathname === '/api/account/perfil') ? 'GET, POST, OPTIONS' : (isGetApi ? 'GET, OPTIONS' : 'POST, OPTIONS')),
+          'Access-Control-Allow-Headers': 'Content-Type, ' + AUTH_HEADER + ', X-Vants-Signature, X-Vants-Timestamp',
           'Access-Control-Max-Age': '86400',
         });
       }
@@ -1710,6 +1714,179 @@ async function fetchWorker(request, env, ctx) {
         return json({ ok: true, email: infoP.email || '', ticket: tjP.ticket }, 200, { 'Access-Control-Allow-Origin': origin || '*' });
       } catch (errP) {
         return json({ ok: false, error: 'auth0_inalcanzable' }, 502, { 'Access-Control-Allow-Origin': origin || '*' });
+      }
+    }
+
+    // --- 7b2d) FACEIT: verificación REAL de nick contra la API pública de
+    // FACEIT (api.faceit.com/users/v1/nicknames/{nick}, sin API key). La usa
+    // el perfil para CONECTAR la cuenta de FACEIT con datos verdaderos: nick,
+    // país, nivel (skill_level) y avatar. Caché de 60 s por nick.
+    const faceitCache = faceitCacheMod;
+    if (url.pathname === '/api/faceit/usuario') {
+      const originF = request.headers.get('origin') || '';
+      if (originF && !SITE_ORIGINS.has(originF)) {
+        return json({ ok: false, error: 'Origen no permitido' }, 403, { 'Access-Control-Allow-Origin': originF || '*' });
+      }
+      const aF = rateLimit(rlFaceit, ip, LIMIT_FACEIT);
+      if (!aF.ok) {
+        return json({ ok: false, error: 'Demasiadas peticiones' }, 429, { 'Retry-After': String(aF.retry), 'Access-Control-Allow-Origin': originF || '*' });
+      }
+      const nick = url.searchParams.get('nick') || '';
+      if (!/^[a-zA-Z0-9_.\-]{2,24}$/.test(nick)) {
+        return json({ ok: false, error: 'nick_invalido' }, 400, { 'Access-Control-Allow-Origin': originF || '*' });
+      }
+      const clave = nick.toLowerCase();
+      const ahora = Date.now();
+      if (faceitCache.has(clave) && ahora - faceitCache.get(clave).at < 60000) {
+        const c = faceitCache.get(clave);
+        return json(c.body, c.body.ok ? 200 : 404, { 'Access-Control-Allow-Origin': originF || '*', 'Cache-Control': 'public, max-age=60' });
+      }
+      let salida;
+      try {
+        const r = await fetch('https://api.faceit.com/users/v1/nicknames/' + encodeURIComponent(nick), {
+          headers: { 'User-Agent': 'vants-worker', Accept: 'application/json' },
+          signal: AbortSignal.timeout(9000),
+        });
+        if (r.status === 404) {
+          salida = { ok: false, error: 'no_encontrado' };
+        } else if (!r.ok) {
+          salida = { ok: false, error: 'faceit_no_responde' };
+        } else {
+          const j = await r.json().catch(() => null);
+          const p = j && j.payload;
+          if (!p || !p.nickname) {
+            salida = { ok: false, error: 'no_encontrado' };
+          } else {
+            const juegos = p.games || {};
+            const cs = juegos.cs2 || juegos.csgo || {};
+            salida = {
+              ok: true,
+              usuario: {
+                id: String(p.id || '').slice(0, 40),
+                nickname: String(p.nickname).slice(0, 24),
+                pais: String(p.country || '').toLowerCase().slice(0, 8),
+                avatar: String(p.avatar || '').slice(0, 300) || null,
+                nivel: Number.isFinite(cs.skill_level) ? cs.skill_level : null,
+                region: String(cs.region || '').slice(0, 8) || null,
+              },
+            };
+          }
+        }
+      } catch (eFA) {
+        salida = { ok: false, error: 'faceit_no_responde' };
+      }
+      if (faceitCache.size > 400) faceitCache.clear();
+      faceitCache.set(clave, { at: ahora, body: salida });
+      return json(salida, salida.ok ? 200 : (salida.error === 'no_encontrado' ? 404 : 502), { 'Access-Control-Allow-Origin': originF || '*', 'Cache-Control': 'public, max-age=60' });
+    }
+
+    // --- 7b2e) Cuenta: NOMBRE DE LA CUENTA + REDES CONECTADAS (Auth0 Mgmt).
+    // GET (con sesión): devuelve nickname y user_metadata.redes del usuario.
+    // POST (con sesión): cambia el nickname (el nombre público de la cuenta;
+    // si no se cambia nunca es el que Auth0 saca del correo) y guarda las
+    // redes conectadas (discord/twitch/youtube/riot/faceit) en user_metadata,
+    // así las conexiones siguen a la cuenta en cualquier dispositivo.
+    // Requiere M2M con update:users + read:users (los mismos tickets ya usan).
+    if (url.pathname === '/api/account/perfil') {
+      const originP2 = request.headers.get('origin') || '';
+      if (!SITE_ORIGINS.has(originP2)) {
+        return json({ ok: false, error: 'Origen no permitido' }, 403, { 'Access-Control-Allow-Origin': originP2 || '*' });
+      }
+      if (method !== 'GET' && method !== 'POST') {
+        return json({ ok: false, error: 'Método no permitido' }, 405, { Allow: 'GET, POST, OPTIONS', 'Access-Control-Allow-Origin': originP2 || '*' });
+      }
+      const aP2 = rateLimit(rlAccount, ip, LIMIT_ACCOUNT);
+      if (!aP2.ok) {
+        return json({ ok: false, error: 'Demasiadas peticiones' }, 429, { 'Retry-After': String(aP2.retry), 'Access-Control-Allow-Origin': originP2 || '*' });
+      }
+      const sesP2 = await verifySesionJwt(request);
+      if (!sesP2 || !sesP2.sub) {
+        return json({ ok: false, error: 'sin_sesion' }, 401, { 'Access-Control-Allow-Origin': originP2 || '*' });
+      }
+      const mId2 = (env && env.AUTH0_MGMT_CLIENT_ID) || '';
+      const mSec2 = (env && env.AUTH0_MGMT_CLIENT_SECRET) || '';
+      if (!mId2 || !mSec2) {
+        return json({ ok: false, error: 'mgmt_no_config' }, 503, { 'Access-Control-Allow-Origin': originP2 || '*' });
+      }
+      try {
+        const mt2 = await fetch('https://' + AUTH0_TENANT + '/oauth/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            grant_type: 'client_credentials',
+            client_id: mId2,
+            [SECRET_FIELD]: mSec2,
+            audience: 'https://' + AUTH0_TENANT + '/api/v2/',
+          }),
+        });
+        if (!mt2.ok) {
+          return json({ ok: false, error: 'mgmt_token' }, 502, { 'Access-Control-Allow-Origin': originP2 || '*' });
+        }
+        const mtj2 = await mt2.json();
+        const mgmtH2 = { 'Content-Type': 'application/json', [AUTH_HEADER]: 'Bearer ' + mtj2.access_token };
+
+        if (method === 'GET') {
+          const ru = await fetch('https://' + AUTH0_TENANT + '/api/v2/users/' + encodeURIComponent(sesP2.sub) + '?fields=nickname,user_metadata&include_fields=true', {
+            headers: mgmtH2, signal: AbortSignal.timeout(9000),
+          });
+          if (!ru.ok) {
+            return json({ ok: false, error: 'usuario_no_leido' }, 502, { 'Access-Control-Allow-Origin': originP2 || '*' });
+          }
+          const ju = await ru.json().catch(() => null);
+          const meta = (ju && ju.user_metadata) || {};
+          return json({ ok: true, nickname: (ju && ju.nickname) || null, redes: meta.redes || {} }, 200, { 'Access-Control-Allow-Origin': originP2 || '*' });
+        }
+
+        // POST: validar y aplicar cambios
+        const cuerpo = await request.json().catch(() => ({}));
+        const cambios = {};
+        let nota = '';
+        if (cuerpo.nickname !== undefined && cuerpo.nickname !== null && String(cuerpo.nickname) !== '') {
+          const nn = String(cuerpo.nickname).trim();
+          if (!/^[a-zA-Z0-9_.\-]{3,20}$/.test(nn)) {
+            return json({ ok: false, error: 'nick_invalido', detalle: '3 a 20 caracteres: letras, números, punto, guion o _' }, 400, { 'Access-Control-Allow-Origin': originP2 || '*' });
+          }
+          cambios.nickname = nn;
+        }
+        if (cuerpo.redes && typeof cuerpo.redes === 'object') {
+          const limpio = {};
+          for (const k of ['discord', 'twitch', 'youtube', 'riot', 'faceit']) {
+            const v = cuerpo.redes[k];
+            if (!v || typeof v !== 'object') continue;
+            limpio[k] = {
+              conectada: !!v.conectada,
+              usuario: String(v.usuario || '').slice(0, 40),
+              url: String(v.url || '').slice(0, 200),
+              nivel: Number.isFinite(v.nivel) ? Math.max(0, Math.min(99, Math.floor(v.nivel))) : null,
+              pais: String(v.pais || '').toLowerCase().slice(0, 8),
+              avatar: String(v.avatar || '').slice(0, 300) || null,
+            };
+          }
+          cambios.user_metadata = { redes: limpio };
+        }
+        if (!Object.keys(cambios).length) {
+          return json({ ok: false, error: 'nada_que_guardar' }, 400, { 'Access-Control-Allow-Origin': originP2 || '*' });
+        }
+        const up2 = await fetch('https://' + AUTH0_TENANT + '/api/v2/users/' + encodeURIComponent(sesP2.sub), {
+          method: 'PATCH',
+          headers: mgmtH2,
+          body: JSON.stringify(cambios),
+          signal: AbortSignal.timeout(12000),
+        });
+        if (!up2.ok) {
+          const ej2 = await up2.json().catch(() => ({}));
+          const det2 = String((ej2.message || ej2.errorDescription || ej2.error || ('HTTP ' + up2.status))).slice(0, 180);
+          return json({ ok: false, error: up2.status === 403 ? 'sin_permiso_mgmt' : 'no_se_pudo_guardar', detalle: det2 }, 502, { 'Access-Control-Allow-Origin': originP2 || '*' });
+        }
+        const ju2 = await up2.json().catch(() => ({}));
+        return json({
+          ok: true,
+          nickname: ju2.nickname || cambios.nickname || null,
+          redes: (ju2.user_metadata && ju2.user_metadata.redes) || cambios.user_metadata.redes || {},
+          nota,
+        }, 200, { 'Access-Control-Allow-Origin': originP2 || '*' });
+      } catch (errP2) {
+        return json({ ok: false, error: 'auth0_inalcanzable' }, 502, { 'Access-Control-Allow-Origin': originP2 || '*' });
       }
     }
 
