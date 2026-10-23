@@ -360,8 +360,14 @@ function addBadge(b){if(!me.badges.includes(b))me.badges.push(b);}
 /* ================= TICKER ================= */
 function renderTicker(){
   const tt=$('#tickerTrack');if(!tt)return;
-  const items=D().ticker.map(t=>'<span>'+t+'</span>').join('');
-  tt.innerHTML=items+items;
+  /* Marquee de escritorio: el track se duplica para el bucle continuo.
+     La 2ª copia va marcada (.tk-dup) para que, cuando el movimiento está
+     congelado (prefers-reduced-motion → ticker apilado), solo se vea cada
+     aviso UNA vez y no los 10 banners seguidos (fix duplicados). */
+  const d=D().ticker;
+  const items=d.map(t=>'<span>'+t+'</span>').join('');
+  const dups=d.map(t=>'<span class="tk-dup" aria-hidden="true">'+t+'</span>').join('');
+  tt.innerHTML=items+dups;
 }
 
 /* ================= PARTIDO EN VIVO =================

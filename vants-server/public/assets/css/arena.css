@@ -1178,5 +1178,8 @@ footer{border-top:1px solid var(--line);padding:56px 0 36px;background:var(--bg2
     transition-duration:.01ms!important;scroll-behavior:auto!important
   }
   .ticker-track{width:auto;flex-wrap:wrap;transform:none}
+  /* Sin movimiento no hay marquee: ocultar la 2ª copia del track para que
+     cada aviso se lea una sola vez (fix de los anuncios duplicados). */
+  .ticker-track .tk-dup{display:none}
   .ticker span{white-space:normal;padding:8px 18px}
 }
