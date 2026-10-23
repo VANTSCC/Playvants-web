@@ -62,6 +62,12 @@ const TABLES = new Set([
   'pt_matches',
   'pt_articulos',
   'pt_players',
+  // Vistas públicas de la migración 17 (sin PII: ni email ni auth0_sub).
+  // El Worker las lee por aquí porque la Data API exige JWT y estas rutas
+  // (/api/en-vivo, /api/torneos/bracket) son de lectura anónima.
+  'v_en_vivo',
+  'v_torneo_equipos',
+  'v_torneo_bracket',
 ]);
 
 // Embeds PostgREST permitidos: "alias:tabla(columnas)".
