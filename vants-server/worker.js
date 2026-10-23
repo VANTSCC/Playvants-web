@@ -1004,6 +1004,12 @@ async function fetchWorker(request, env, ctx) {
       return json({ ok: true, servicio: 'vants-worker', ts: new Date().toISOString() }, 200, { 'Cache-Control': 'no-store' });
     }
 
+    // Healthcheck de la web S4 (mismo contrato que playvants.vercel.app/healthz)
+    if (url.pathname === '/healthz') {
+      if (method !== 'GET') return json({ ok: false, error: 'Solo GET' }, 405, { Allow: 'GET' });
+      return json({ ok: true, version: 'S4', web: 'VANTS GAMES' }, 200, { 'Cache-Control': 'no-store' });
+    }
+
     if (url.pathname === '/api/telemetria') {
       if (method !== 'POST') return json({ ok: false, error: 'Solo POST' }, 405, { Allow: 'POST' });
       const requestLimit = rateLimit(rlTelemetriaRequests, ip, LIMIT_TELEMETRIA_REQUESTS);

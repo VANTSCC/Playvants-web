@@ -124,12 +124,12 @@ jobs:
       - name: Esperar al despliegue del Worker (hasta 6 min, sin bloquear)
         run: |
           for i in $(seq 1 36); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' -A "Mozilla/5.0 (compatible; VANTS-CI/1.0)" https://vants.vants.workers.dev/calendario.html || true)
-            echo "intento $i: /calendario.html → HTTP $code"
-            [ "$code" = "200" ] && echo "Despliegue con las páginas T53 visible" && exit 0
+            code=$(curl -s -o /dev/null -w '%{http_code}' -A "Mozilla/5.0 (compatible; VANTS-CI/1.0)" https://vants.vants.workers.dev/healthz || true)
+            echo "intento $i: /healthz → HTTP $code"
+            [ "$code" = "200" ] && echo "Despliegue con la web S4 visible" && exit 0
             sleep 10
           done
-          echo "AVISO: /calendario.html aún no responde 200 (deploy en cola). Se prueba el estado actual de producción."
+          echo "AVISO: /healthz aún no responde 200 (deploy en cola). Se prueba el estado actual de producción."
 
       - name: Suite E2E (desktop + móvil 390)
         env:
@@ -149,27 +149,28 @@ jobs:
             const page = await ctx.newPage();
             const B = "https://vants.vants.workers.dev";
             const shots = [
-              ["/calendario.html", "prod-calendario.png"],
-              ["/resultados.html", "prod-resultados.png"],
-              ["/equipo-ficha.html?slug=demo-equipo-fenix", "prod-ficha-equipo.png"],
-              ["/jugador.html?slug=demo-jugador-alex", "prod-ficha-jugador.png"],
-              ["/equipos.html", "prod-equipos.png"],
+              ["/", "prod-portada.png"],
+              ["/torneos", "prod-torneos.png"],
+              ["/ranking", "prod-ranking.png"],
+              ["/perfil", "prod-perfil.png"],
+              ["/sala", "prod-sala.png"],
+              ["/clips", "prod-clips.png"],
             ];
             for (const [ruta, archivo] of shots) {
               try {
                 await page.goto(B + ruta, { waitUntil: "networkidle", timeout: 30000 });
                 await page.waitForTimeout(2500);
                 await page.screenshot({ path: "artefactos/qa-t53/" + archivo, fullPage: true });
-                const n = await page.evaluate(() => document.querySelectorAll(".sf-mrow, .pf-card, .pf-ficha, .pf-error, .pf-empty").length);
+                const n = await page.evaluate(() => document.querySelectorAll("section, article, nav").length);
                 console.log(archivo + " · elementos=" + n);
               } catch (e) { console.log(archivo + " ERROR " + e.message.split("\n")[0]); }
             }
             const mp = await ctx.newPage();
             await mp.setViewportSize({ width: 390, height: 844 });
             try {
-              await mp.goto(B + "/equipo-ficha.html?slug=demo-equipo-fenix", { waitUntil: "networkidle", timeout: 30000 });
+              await mp.goto(B + "/perfil", { waitUntil: "networkidle", timeout: 30000 });
               await mp.waitForTimeout(2500);
-              await mp.screenshot({ path: "artefactos/qa-t53/prod-movil-ficha.png", fullPage: true });
+              await mp.screenshot({ path: "artefactos/qa-t53/prod-movil-perfil.png", fullPage: true });
             } catch (e) {}
             await b.close();
           })();'
@@ -178,6 +179,6 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: qa-t53-capturas-produccion
+          name: qa-s4-capturas-produccion
           path: artefactos/qa-t53/
           retention-days: 30

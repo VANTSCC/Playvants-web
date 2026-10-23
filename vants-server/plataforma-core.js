@@ -157,7 +157,7 @@ export function filaTorneo(t, locale) {
     : '—';
   const equipos = t.equipos != null && Number(t.equipos) > 0 ? '+' + Number(t.equipos) : '—';
   const fechas = fechaRango(t.starts_at, t.ends_at, locale) || 'POR ANUNCIAR';
-  const href = '/torneo?slug=' + encodeURIComponent(t.slug || '') + '#ficha';
+  const href = '/torneos';
   return '<a class="sf-row" href="' + href + '" data-est="' + esc(estado) + '">' +
     '<span class="sf-rlogo" aria-hidden="true"></span>' +
     '<span class="sf-rmain">' +
@@ -238,8 +238,8 @@ export function filaMatch(m, locale) {
     ? fechaRango(m.empieza_at, null, locale) + ' · ' + new Date(m.empieza_at).toLocaleTimeString(locale === 'en' ? 'en-GB' : 'es-ES', { hour: '2-digit', minute: '2-digit' })
     : 'POR ANUNCIAR';
   const href = m.tournament_slug && /^[a-z0-9-]{2,64}$/.test(String(m.tournament_slug))
-    ? '/torneo?slug=' + encodeURIComponent(m.tournament_slug) + '#ficha'
-    : '/calendario.html';
+    ? '/torneos'
+    : '/partidos';
   return '<a class="sf-row sf-mrow" href="' + href + '" data-est="' + esc(estado) + '">' +
     '<span class="sf-rlogo" aria-hidden="true"></span>' +
     '<span class="sf-rmain"><span class="sf-rname"><b>' + esc((m.equipos && m.equipos.a) || '—') + '</b>' + score + '<b>' + esc((m.equipos && m.equipos.b) || '—') + '</b>' + badge + '</span>' +

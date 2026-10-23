@@ -125,7 +125,7 @@ function seccion(n) { console.log('\n== ' + n + ' =='); }
   as(fila.includes('MAJOR') === false && fila.includes('PRÓXIMO'), 'badge PRÓXIMO (no MAJOR) para demo upcoming');
   const major = C.filaTorneo({ slug: 'm', nombre: 'T', estado: 'upcoming', major: true, game: { slug: 'cs2' } }, 'es');
   as(major.includes('MAJOR'), 'badge MAJOR cuando major=true');
-  as(C.filaTorneo({ slug: 'a b/c', nombre: 'N', estado: 'archive', game: { slug: 'valorant' } }, 'es').includes('/torneo?slug=a%20b%2Fc'), 'slug URL-encodeado en href');
+  as(C.filaTorneo({ slug: 'a b/c', nombre: 'N', estado: 'archive', game: { slug: 'valorant' } }, 'es').includes('href="/torneos"'), 'filaTorneo: href seguro a la lista S4 (el slug ya no se interpola)');
   as(C.filaTorneo({ slug: 'f', nombre: 'N', estado: 'upcoming', game: { slug: 'valorant' }, starts_at: '2026-11-08T18:00:00Z', ends_at: '2026-11-12T23:00:00Z' }, 'es').includes('8 NOV – 12 NOV'), 'fechas formateadas en fila');
 
   /* ---------- validarSlug + fichas (F7/F9 · T53) ---------- */
@@ -155,7 +155,7 @@ function seccion(n) { console.log('\n== ' + n + ' =='); }
   const fmUp = C.filaMatch({ game: { slug: 'valorant' }, equipos: { a: 'A', b: 'B' }, estado: 'upcoming', empieza_at: '2026-11-09T20:30:00Z' }, 'es');
   as(fmUp.includes('vs') && !fmUp.includes('FINALIZADO'), 'filaMatch upcoming: "vs" sin marcador');
   as(C.filaMatch({ game: { slug: 'valorant' }, equipos: { a: 'A', b: 'B' }, estado: 'live' }, 'es').includes('EN VIVO'), 'filaMatch live: badge EN VIVO');
-  as(C.filaMatch({ game: { slug: 'valorant' }, equipos: { a: 'A', b: 'B' }, estado: 'upcoming', tournament_slug: '../../x' }).includes('/calendario.html'), 'tournament_slug inválido → href seguro al calendario');
+  as(C.filaMatch({ game: { slug: 'valorant' }, equipos: { a: 'A', b: 'B' }, estado: 'upcoming', tournament_slug: '../../x' }).includes('/partidos'), 'tournament_slug inválido → href seguro a partidos (S4)');
 
   /* ---------- proveedor-datos.mjs (F8) ---------- */
   seccion('proveedor demo');

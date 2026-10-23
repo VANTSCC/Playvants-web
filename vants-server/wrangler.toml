@@ -14,6 +14,9 @@ enabled = true
 directory = "./public"
 binding = "ASSETS"
 run_worker_first = true
+# Rutas limpias inexistentes (p.ej. /lo-que-sea) sirven 404.html con status 404,
+# igual que hace la app de Vercel (playvants.vercel.app).
+not_found_handling = "404-page"
 
 # Puente de eventos de Discord hacia vantsbot (Neon Functions): el Worker
 # verifica la firma Ed25519 del Developer Portal (/api/discord/events) y
