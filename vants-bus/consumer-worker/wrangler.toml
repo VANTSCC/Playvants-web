@@ -1,0 +1,14 @@
+name = "vants-consumer-playvants"
+main = "src/index.js"
+compatibility_date = "2025-01-15"
+account_id = "8f2424e95fec4860e19257226f209fbc"
+
+[vars]
+VANTS_BUS_URL = "https://vants-bus.vants.workers.dev"
+FEED_RETENTION_DAYS = "7"
+
+[triggers]
+crons = ["* * * * *"]
+
+[observability]
+enabled = true
