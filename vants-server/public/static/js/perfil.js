@@ -1,6 +1,6 @@
 /* VANTS GAMES — estado del perfil + identidad (marco, tarjeta, sello) */
-/* El perfil vive en el navegador (localStorage). Nada de datos falsos
-   en el servidor: lo que ves guardado es tuyo. */
+/* La ficha vive en el navegador (localStorage) y la sesión en Auth0.
+   Sin datos falsos: si no hay sesión, la ficha muestra "sin sesión". */
 (function (window) {
   "use strict";
 
@@ -8,22 +8,24 @@
 
   function defecto() {
     return {
-      nick: "FEISPLA",
-      pais: "Venezuela",
-      region: "LATAM",
-      discord: "feistv",
-      equipo: { nombre: "VANTS", tag: "VTS", foto: null },
+      nick: "",
+      pais: "",
+      region: "",
+      discord: "",
+      foto: null,            /* avatar del jugador (dataURL cuadrado, editado en el logo) */
+      equipo: { nombre: "", tag: "", foto: null },
       banner: { tipo: "clasico", foto: null },
       cuentas: {
-        discord: { conectada: true, usuario: "feistv" },
+        discord: { conectada: false, usuario: "" },
         twitch: { conectada: false, usuario: "" },
         youtube: { conectada: false, usuario: "" },
         riot: { conectada: false, usuario: "" },
-        faceit: { conectada: true, usuario: "feiss" }
+        faceit: { conectada: false, usuario: "" }
       },
-      estado: "jugando",
+      estado: "en-linea",
       identidad: { marco: "clasico", tarjeta: "carbon", sello: "v" },
-      clips: ["c1", "c2", "c3"]
+      sesion: null,          /* { sub, nick, correo, verificado } — la pone vants-auth */
+      clips: []
     };
   }
 
@@ -103,61 +105,96 @@
     });
   }
 
-  /* ── Clips destacados del perfil ── */
-  function clipsSemilla() {
-    return (window.__CLIPS_SEMILLA__ || []).slice();
+  /* ── Avatar del jugador: iniciales o foto editada desde el escritorio ── */
+  function pintarAvatar(estado) {
+    var foto = document.getElementById("avatar-foto");
+    var iniciales = document.getElementById("avatar-iniciales");
+    if (!foto || !iniciales) return;
+    if (estado.foto) {
+      foto.src = estado.foto;
+      foto.removeAttribute("hidden");
+      iniciales.style.display = "none";
+    } else {
+      foto.removeAttribute("src");
+      foto.setAttribute("hidden", "");
+      iniciales.style.display = "";
+      iniciales.textContent = (estado.nick || "J").trim().charAt(0).toUpperCase() || "·";
+    }
   }
 
+  /* ── Clips destacados del perfil: los REALES publicados por tu cuenta ── */
   function renderClipsPerfil(estado) {
     var cont = document.getElementById("clips-perfil");
     if (!cont) return;
-    var galeria = clipsSemilla();
-    cont.innerHTML = "";
     var contador = document.getElementById("cuenta-clips");
-    var destacados = estado.clips.filter(function (id) {
-      return galeria.some(function (c) { return c.id === id; });
-    }).slice(0, 3);
-    destacados.forEach(function (id) {
-      var c = galeria.find(function (x) { return x.id === id; });
-      if (!c) return;
-      var art = document.createElement("article");
-      art.className = "mini-clip";
-      var img = document.createElement("div");
-      img.className = "mini-clip__img tema-" + c.tema;
-      var play = document.createElement("div");
-      play.className = "mini-clip__play";
-      var dur = document.createElement("span");
-      dur.className = "mini-clip__dur";
-      dur.textContent = c.duracion;
-      img.appendChild(play);
-      img.appendChild(dur);
-      var cuerpo = document.createElement("div");
-      cuerpo.className = "mini-clip__cuerpo";
-      var t = document.createElement("b");
-      t.textContent = c.titulo;
-      var meta = document.createElement("div");
-      meta.className = "mini-clip__meta";
-      var autor = document.createElement("b");
-      autor.textContent = c.autor;
-      var juego = document.createElement("span");
-      juego.className = "mini-clip__juego";
-      juego.textContent = c.juego;
-      var peso = document.createElement("span");
-      peso.textContent = c.peso;
-      meta.appendChild(autor);
-      meta.appendChild(juego);
-      meta.appendChild(peso);
-      var fecha = document.createElement("div");
-      fecha.className = "mini-clip__fecha";
-      fecha.textContent = c.fecha;
-      cuerpo.appendChild(t);
-      cuerpo.appendChild(meta);
-      cuerpo.appendChild(fecha);
-      art.appendChild(img);
-      art.appendChild(cuerpo);
-      cont.appendChild(art);
-    });
-    if (contador) contador.textContent = String(destacados.length);
+    var sub = estado.sesion && estado.sesion.sub;
+    cont.innerHTML = '<p class="perfil__nota-nuevo">Cargando tus clips…</p>';
+    fetch("/api/clips/featured", { headers: { Accept: "application/json" } })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        var clips = (j && j.ok && Array.isArray(j.clips)) ? j.clips : [];
+        var mias = sub ? clips.filter(function (c) { return c && c.sub === sub; }).slice(0, 3) : [];
+        cont.innerHTML = "";
+        if (!mias.length) {
+          cont.innerHTML = '<p class="perfil__nota-nuevo">' + (sub
+            ? "Todavía no publicaste clips: en CLIPS tenés «SUBIR CLIP DESDE EL ESCRITORIO»."
+            : "Entrá con tu cuenta: los clips que publiques aparecen acá.") + "</p>";
+        } else {
+          mias.forEach(function (c) {
+            var art = document.createElement("article");
+            art.className = "mini-clip mini-clip--real";
+            var mini = document.createElement("div");
+            mini.className = "mini-clip__img mini-clip__img--foto";
+            if (c.thumb) {
+              var img = document.createElement("img");
+              img.src = c.thumb; img.alt = ""; img.loading = "lazy";
+              mini.appendChild(img);
+            }
+            var play = document.createElement("div");
+            play.className = "mini-clip__play";
+            mini.appendChild(play);
+            if (c.dur) {
+              var dur = document.createElement("span");
+              dur.className = "mini-clip__dur";
+              dur.textContent = Math.floor(c.dur / 60) + ":" + ((c.dur % 60) < 10 ? "0" : "") + (c.dur % 60);
+              mini.appendChild(dur);
+            }
+            var cuerpo = document.createElement("div");
+            cuerpo.className = "mini-clip__cuerpo";
+            var t = document.createElement("b");
+            t.textContent = c.titulo || "Clip destacado";
+            var meta = document.createElement("div");
+            meta.className = "mini-clip__meta";
+            var juego = document.createElement("span");
+            juego.className = "mini-clip__juego";
+            juego.textContent = c.juego || "VALORANT";
+            meta.appendChild(juego);
+            if (c.tam) {
+              var peso = document.createElement("span");
+              peso.textContent = (c.tam / 1048576).toFixed(1) + " MB";
+              meta.appendChild(peso);
+            }
+            var fecha = document.createElement("div");
+            fecha.className = "mini-clip__fecha";
+            try { fecha.textContent = new Date(c.fecha).toLocaleDateString("es"); } catch (_e) {}
+            cuerpo.appendChild(t);
+            cuerpo.appendChild(meta);
+            cuerpo.appendChild(fecha);
+            art.appendChild(mini);
+            art.appendChild(cuerpo);
+            art.style.cursor = "pointer";
+            art.title = "Abrir el clip";
+            art.addEventListener("click", function () {
+              if (c.video) window.open(c.video, "_blank", "noopener");
+            });
+            cont.appendChild(art);
+          });
+        }
+        if (contador) contador.textContent = String(mias.length);
+      })
+      .catch(function () {
+        cont.innerHTML = '<p class="perfil__nota-nuevo">La vitrina no respondió: probá de nuevo en un rato.</p>';
+      });
   }
 
   /* ── Imagen a dataURL con redimensionado (para no llenar localStorage) ── */
@@ -179,13 +216,33 @@
     lector.readAsDataURL(archivo);
   }
 
+  /* Cuadrada centrada (avatar del jugador): recorta el centro y redimensiona */
+  function imagenCuadradaADataURL(archivo, max, cb) {
+    var lector = new FileReader();
+    lector.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var lado = Math.min(img.width, img.height);
+        var canvas = document.createElement("canvas");
+        canvas.width = max; canvas.height = max;
+        var ctx = canvas.getContext("2d");
+        ctx.drawImage(img, (img.width - lado) / 2, (img.height - lado) / 2, lado, lado, 0, 0, max, max);
+        cb(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.src = String(lector.result);
+    };
+    lector.readAsDataURL(archivo);
+  }
+
   window.VantsPerfil = {
     leer: leer,
     guardar: guardar,
     toast: toast,
     defecto: defecto,
     aplicarIdentidad: aplicarIdentidad,
+    pintarAvatar: pintarAvatar,
     renderClipsPerfil: renderClipsPerfil,
-    imagenADataURL: imagenADataURL
+    imagenADataURL: imagenADataURL,
+    imagenCuadradaADataURL: imagenCuadradaADataURL
   };
 })(window);

@@ -144,14 +144,20 @@
     <div class="perfil__banner perfil__banner--clasico" id="banner"></div>
     <div class="perfil__identidad">
       <div class="perfil__avatar-wrap">
-        <div class="perfil__avatar" id="avatar-jugador">FE</div>
+        <button class="perfil__avatar perfil__avatar--editable marco--clasico" type="button" id="avatar-jugador"
+                aria-label="Cambiar foto de perfil" title="Cambiar foto de perfil desde tu escritorio">
+          <span id="avatar-iniciales">·</span>
+          <img id="avatar-foto" alt="Tu foto de perfil" hidden>
+          <span class="perfil__avatar-editar" aria-hidden="true">CAMBIAR FOTO</span>
+        </button>
+        <input type="file" accept="image/*" id="input-foto-perfil" hidden>
       </div>
       <div class="perfil__nombre">
-        <h2><span id="nick-jugador">FEISPLA</span>
+        <h2><span id="nick-jugador">JUGADOR</span>
           <span class="sello" id="sello-jugador" style="width:26px;height:26px;font-size:12px">V</span>
           <button class="btn btn--fino" type="button" onclick="document.getElementById('mis-datos').scrollIntoView({behavior:'smooth'})">EDITAR MIS DATOS</button>
         </h2>
-        <p class="perfil__sub"><b>@feispla</b> · <span id="sub-pais">Venezuela</span> · <span id="sub-region">LATAM</span> · MIEMBRO DESDE 2026</p>
+        <p class="perfil__sub"><b id="sub-handle">@jugador</b> · <span id="sub-pais">—</span> · <span id="sub-region">—</span><span id="sub-miembro"></span></p>
       </div>
     </div>
 
@@ -166,8 +172,8 @@
         <button class="btn btn--fino" type="button" id="btn-quitar-foto">QUITAR FOTO</button>
         <input type="file" accept="image/*" id="input-foto-equipo" hidden>
       </div>
-      <input class="campo" type="text" id="equipo-nombre" value="VANTS" maxlength="24" placeholder="NOMBRE DEL EQUIPO">
-      <input class="campo" type="text" id="equipo-tag" value="VTS" maxlength="5" placeholder="TAG">
+      <input class="campo" type="text" id="equipo-nombre" value="" maxlength="24" placeholder="NOMBRE DEL EQUIPO">
+      <input class="campo" type="text" id="equipo-tag" value="" maxlength="5" placeholder="TAG">
       <button class="btn btn--rojo btn--bloque" type="button" id="guardar-equipo">GUARDAR MI EQUIPO</button>
     </div>
 
@@ -218,32 +224,27 @@
     <!-- MIS DATOS -->
     <div class="perfil__bloque" id="mis-datos">
       <span class="etiqueta">MIS DATOS</span>
-      <input class="campo" type="text" id="dato-pais" value="Venezuela" maxlength="30" placeholder="PAÍS">
-      <input class="campo" type="text" id="dato-region" value="LATAM" maxlength="30" placeholder="REGIÓN">
-      <input class="campo" type="text" id="dato-discord" value="feistv" maxlength="30" placeholder="DISCORD">
+      <input class="campo" type="text" id="dato-pais" value="" maxlength="30" placeholder="PAÍS">
+      <input class="campo" type="text" id="dato-region" value="" maxlength="30" placeholder="REGIÓN">
+      <input class="campo" type="text" id="dato-discord" value="" maxlength="30" placeholder="DISCORD">
       <button class="btn btn--rojo btn--bloque" type="button" id="guardar-datos">GUARDAR MIS DATOS</button>
     </div>
 
     <!-- INSIGNIAS -->
     <div class="perfil__bloque">
-      <div class="perfil__badges">
-        <span class="badge badge--verificado">✓ VERIFICADO</span>
-        <span class="badge badge--owner">♛ OWNER</span>
-        <span class="badge badge--pro">PRO</span>
-        <span class="badge badge--creator">CREATOR</span>
-        <span class="badge badge--socio">SOCIO VANTS</span>
-      </div>
-      <p class="perfil__nota-nuevo">Nuevo en el circuito VANTS. Conectá tus cuentas, ganá series y subí de rango.</p>
+      <div class="perfil__badges" id="perfil-badges"></div>
+      <p class="perfil__nota-nuevo">Las insignias de tu cuenta aparecen acá cuando entrás con tu sesión VANTS.</p>
     </div>
 
     <!-- STATS -->
     <div class="perfil__bloque">
       <div class="stats-grid">
-        <div class="stat-caja"><b>31</b><small>PARTIDOS</small></div>
-        <div class="stat-caja"><b>29%</b><small>WINRATE</small></div>
-        <div class="stat-caja"><b>0.84</b><small>RATING</small></div>
-        <div class="stat-caja"><b>—</b><small>K/D</small></div>
+        <div class="stat-caja"><b id="stat-partidos">—</b><small>PARTIDOS</small></div>
+        <div class="stat-caja"><b id="stat-winrate">—</b><small>WINRATE</small></div>
+        <div class="stat-caja"><b id="stat-rating">—</b><small>RATING</small></div>
+        <div class="stat-caja"><b id="stat-kd">—</b><small>K/D</small></div>
       </div>
+      <p class="perfil__nota-nuevo">Tus stats del circuito aparecen acá cuando juegues series VANTS.</p>
     </div>
 
     <!-- RANGO -->
@@ -252,75 +253,18 @@
       <div class="rango-caja">
         <div class="rango-caja__hex">⌄⌄</div>
         <div class="rango-caja__info">
-          <b style="color:#9aa7ff">TITANIO</b>
-          <small>200 XP PARA OBSIDIANA</small>
-          <div class="barra"><i id="barra-rango" style="width: 80%"></i></div>
+          <b id="rango-nombre" style="color:var(--gris-2)">SIN RANGO</b>
+          <small id="rango-sub">JUGÁ SERIES PARA ENTRAR AL RANKING</small>
+          <div class="barra"><i id="barra-rango" style="width: 0%"></i></div>
         </div>
-        <div class="rango-caja__xp"><b>800</b><small>XP</small></div>
+        <div class="rango-caja__xp"><b id="rango-xp">0</b><small>XP</small></div>
       </div>
     </div>
 
-    <!-- EXPERIENCIA FACEIT -->
+    <!-- FACEIT -->
     <div class="perfil__bloque">
-      <span class="etiqueta">EXPERIENCIA FACEIT</span>
-      <div class="faceit-caja" style="display:flex;align-items:center;gap:18px">
-        <div style="flex:1;min-width:0">
-          <b>NIVEL 2</b>
-          <small>800 XP TOTAL · 300/500 PARA EL NIVEL 3</small>
-          <div class="barra barra--naranja"><i style="width: 60%"></i></div>
-        </div>
-        <div class="faceit-caja__nivel"><b>2</b><small>NIVEL</small></div>
-      </div>
-    </div>
-
-    <!-- ÚLTIMAS PARTIDAS -->
-    <div class="perfil__bloque">
-      <span class="etiqueta">FACEIT · ÚLTIMAS PARTIDAS</span>
-      <div>
-        
-        <div class="partida-fila">
-          <span class="partida-fila__res partida-fila__res--v">VICTORIA</span>
-          <span class="partida-fila__juego">CS2</span>
-          <span class="partida-fila__fecha">2026-10-04</span>
-          <span class="partida-fila__xp partida-fila__xp--gano">+100 XP</span>
-        </div>
-        
-        <div class="partida-fila">
-          <span class="partida-fila__res partida-fila__res--v">VICTORIA</span>
-          <span class="partida-fila__juego">CS2</span>
-          <span class="partida-fila__fecha">2026-09-01</span>
-          <span class="partida-fila__xp partida-fila__xp--gano">+100 XP</span>
-        </div>
-        
-        <div class="partida-fila">
-          <span class="partida-fila__res partida-fila__res--d">DERROTA</span>
-          <span class="partida-fila__juego">CS2</span>
-          <span class="partida-fila__fecha">2026-07-24</span>
-          <span class="partida-fila__xp ">+0 XP</span>
-        </div>
-        
-        <div class="partida-fila">
-          <span class="partida-fila__res partida-fila__res--d">DERROTA</span>
-          <span class="partida-fila__juego">CS2</span>
-          <span class="partida-fila__fecha">2026-07-16</span>
-          <span class="partida-fila__xp ">+0 XP</span>
-        </div>
-        
-        <div class="partida-fila">
-          <span class="partida-fila__res partida-fila__res--d">DERROTA</span>
-          <span class="partida-fila__juego">CS2</span>
-          <span class="partida-fila__fecha">2026-07-10</span>
-          <span class="partida-fila__xp ">+0 XP</span>
-        </div>
-        
-        <div class="partida-fila">
-          <span class="partida-fila__res partida-fila__res--d">DERROTA</span>
-          <span class="partida-fila__juego">CS2</span>
-          <span class="partida-fila__fecha">2026-07-08</span>
-          <span class="partida-fila__xp ">+0 XP</span>
-        </div>
-        
-      </div>
+      <span class="etiqueta">FACEIT</span>
+      <p class="perfil__nota-nuevo">Conectá tu cuenta de FACEIT en <b>CUENTAS CONECTADAS</b>: tu nivel, tu XP y tus últimas partidas aparecen acá.</p>
     </div>
 
     <!-- MEMBRESÍA -->
@@ -328,8 +272,8 @@
       <span class="etiqueta">MEMBRESÍA</span>
       <div class="membresia-caja">
         <div>
-          <b>VANTS PRO · OWNER</b>
-          <p>Dueño de la arena: todo el contenido premium desbloqueado</p>
+          <b id="membresia-plan">SIN MEMBRESÍA</b>
+          <p id="membresia-detalle">Mirá los planes: insignias, pase premium y torneos con premio.</p>
         </div>
         <a class="btn btn--fino" href="/membresias">VER MEMBRESÍAS</a>
       </div>
@@ -354,20 +298,17 @@
     <!-- CUENTA -->
     <div class="perfil__bloque">
       <span class="etiqueta">CUENTA</span>
-      <div class="cuenta-lineas">
-        <p>Rol en VANTS: <b>OWNER</b></p>
-        <p>Verificado: <b class="si">SÍ</b></p>
-        <p>Correo: <b>geimerjhoan899@gmail.com</b></p>
+      <div class="cuenta-lineas" id="cuenta-lineas">
+        <p>Sin sesión: entrá con tu cuenta para editar tu ficha y publicar clips.</p>
       </div>
       <div class="perfil__botones" style="margin-top:14px">
-        <button class="btn btn--fino btn--bloque" type="button" id="btn-ajustes">AJUSTES DE CUENTA · EMAIL · CONTRASEÑA</button>
-        <button class="btn btn--fino btn--bloque" type="button" id="btn-salir">CERRAR SESIÓN</button>
+        <button class="btn btn--fino btn--bloque" type="button" id="btn-salir" hidden>CERRAR SESIÓN</button>
       </div>
     </div>
 
     <!-- CLIPS DESTACADOS -->
     <div class="perfil__bloque" style="padding-bottom:30px">
-      <span class="etiqueta">CLIPS DESTACADOS · <span id="cuenta-clips">3</span></span>
+      <span class="etiqueta">CLIPS DESTACADOS · <span id="cuenta-clips">0</span></span>
       <div class="perfil-clips" id="clips-perfil"></div>
       <a class="btn btn--fino" href="/clips" style="margin-top:14px">GESTIONAR CLIPS DESTACADOS</a>
     </div>
@@ -418,10 +359,10 @@
   <div class="toast" id="toast" role="status"></div>
   <script src="/static/js/app.js"></script>
   
-<script>window.__PERFIL_SEMILLA__ = {"badges": ["verificado", "owner", "pro", "creator", "socio"], "cuenta": {"correo": "geimerjhoan899@gmail.com", "rol": "OWNER", "verificado": true}, "cuentas": {"discord": {"estado": true, "usuario": "feistv"}, "faceit": {"estado": true, "usuario": "feiss"}, "riot": {"estado": false, "usuario": ""}, "twitch": {"estado": false, "usuario": ""}, "youtube": {"estado": false, "usuario": ""}}, "datos": {"discord": "feistv", "pais": "Venezuela", "region": "LATAM"}, "equipo": {"nombre": "VANTS", "tag": "VTS"}, "faceit": {"meta_nivel": 500, "nivel": 2, "xp_nivel": 300, "xp_total": 800}, "handle": "@feispla", "membresia": {"detalle": "Due\u00f1o de la arena: todo el contenido premium desbloqueado", "plan": "VANTS PRO \u00b7 OWNER"}, "miembro_desde": "2026", "nick": "FEISPLA", "pais": "Venezuela", "partidas": [{"fecha": "2026-10-04", "juego": "CS2", "res": "VICTORIA", "xp": "+100 XP"}, {"fecha": "2026-09-01", "juego": "CS2", "res": "VICTORIA", "xp": "+100 XP"}, {"fecha": "2026-07-24", "juego": "CS2", "res": "DERROTA", "xp": "+0 XP"}, {"fecha": "2026-07-16", "juego": "CS2", "res": "DERROTA", "xp": "+0 XP"}, {"fecha": "2026-07-10", "juego": "CS2", "res": "DERROTA", "xp": "+0 XP"}, {"fecha": "2026-07-08", "juego": "CS2", "res": "DERROTA", "xp": "+0 XP"}], "rango": {"faltan": 200, "id": "titanio", "meta": 1000, "nombre": "TITANIO", "siguiente": "OBSIDIANA", "xp": 800}, "region": "LATAM", "stats": {"kd": "\u2014", "partidos": 31, "rating": "0.84", "winrate": "29%"}};</script>
-<script>window.__CLIPS_SEMILLA__ = [{"autor": "JHOAN PEDROZA SU\u00c1REZ", "duracion": "8:12", "fecha": "19 oct 2026", "id": "c1", "juego": "VALORANT", "peso": "18.5 MB", "tema": "mapa-a", "titulo": "Clip destacado"}, {"autor": "JHOAN PEDROZA SU\u00c1REZ", "duracion": "8:12", "fecha": "19 oct 2026", "id": "c2", "juego": "VALORANT", "peso": "9.4 MB", "tema": "mapa-b", "titulo": "Clip destacado"}, {"autor": "FEISPLA", "duracion": "0:41", "fecha": "04 oct 2026", "id": "c3", "juego": "CS2", "peso": "6.1 MB", "tema": "mapa-c", "titulo": "Ace en Banana"}, {"autor": "FEISPLA", "duracion": "1:07", "fecha": "01 sep 2026", "id": "c4", "juego": "CS2", "peso": "8.8 MB", "tema": "mapa-d", "titulo": "Clutch 1v3 para la serie"}, {"autor": "KRAKEN", "duracion": "0:33", "fecha": "28 sep 2026", "id": "c5", "juego": "VALORANT", "peso": "4.2 MB", "tema": "mapa-e", "titulo": "Operator mid \u00b7 4K"}, {"autor": "NYX", "duracion": "0:52", "fecha": "12 oct 2026", "id": "c6", "juego": "VALORANT", "peso": "5.6 MB", "tema": "mapa-f", "titulo": "Defuse con 0.2s"}];</script>
 <script>window.__TIENDA__ = {"marcos": [{"desc": "El marco original de la arena.", "id": "clasico", "nombre": "CL\u00c1SICO", "tier": "gratis"}, {"desc": "Oro puro para tu avatar.", "id": "dorado", "nombre": "DORADO", "tier": "pro"}, {"desc": "Brillo animado color VANTS.", "id": "neon", "nombre": "NE\u00d3N ROJO", "tier": "pro"}, {"desc": "Llamas animadas alrededor del avatar.", "id": "fuego", "nombre": "FUEGO", "tier": "pro"}, {"desc": "Placa negra con V roja. Exclusivo OWNER.", "id": "octagon", "nombre": "OCT\u00c1GONO OWNER", "tier": "owner"}, {"desc": "Marco dorado del programa de socios.", "id": "socio", "nombre": "SOCIO VANTS", "tier": "socio"}], "tarjetas": [{"desc": "La ficha de siempre: negro sobre negro.", "id": "carbon", "nombre": "CARB\u00d3N", "tier": "gratis"}, {"desc": "Bordes y acentos en rojo de marca.", "id": "rojo", "nombre": "ROJO VANTS", "tier": "pro"}, {"desc": "Degradado dorado en toda la ficha.", "id": "oro", "nombre": "ORO L\u00cdQUIDO", "tier": "pro"}, {"desc": "Fondo placa VANTS con sello grabado.", "id": "owner", "nombre": "PLACA OWNER", "tier": "owner"}], "sellos": [{"desc": "La V junto a tu nick. Siempre disponible.", "id": "v", "nombre": "SELLO VANTS", "tier": "gratis"}, {"desc": "Sello rojo PRO para tu ficha.", "id": "vpro", "nombre": "SELLO PRO", "tier": "pro"}, {"desc": "Sello violeta para creadores.", "id": "vcreator", "nombre": "SELLO CREATOR", "tier": "creator"}, {"desc": "Sello dorado OWNER. Solo para la mesa.", "id": "vowner", "nombre": "SELLO OWNER", "tier": "owner"}]};</script>
 <script src="/static/js/perfil.js"></script>
+<script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
+<script src="/static/js/vants-auth.js"></script>
 <script src="/static/js/perfil_pagina.js"></script>
 
   <!-- Vercel Web Analytics (activo en producción de Vercel) -->

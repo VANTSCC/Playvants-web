@@ -1,4 +1,6 @@
-/* VANTS GAMES — página de perfil: equipo, banner, cuentas, datos, estado */
+/* VANTS GAMES — página de perfil: foto (avatar), equipo, banner, cuentas,
+   datos y cuenta. La sesión viene de Auth0 (vants-auth.js): sin sesión la
+   ficha queda en "sin sesión", nunca con datos inventados. */
 (function () {
   "use strict";
 
@@ -6,6 +8,22 @@
   if (!api) return;
 
   var estado = api.leer();
+
+  /* ── FOTO DE PERFIL: clic en el avatar → archivo del escritorio ── */
+  var inputPerfil = document.getElementById("input-foto-perfil");
+  document.getElementById("avatar-jugador").addEventListener("click", function () { inputPerfil.click(); });
+  inputPerfil.addEventListener("change", function () {
+    var f = inputPerfil.files && inputPerfil.files[0];
+    if (!f) return;
+    if (!/^image\//.test(f.type || "")) { api.toast("ESE ARCHIVO NO ES UNA IMAGEN", true); return; }
+    api.imagenCuadradaADataURL(f, 320, function (data) {
+      estado.foto = data;
+      api.guardar(estado);
+      api.pintarAvatar(estado);
+      api.toast("FOTO DE PERFIL ACTUALIZADA");
+    });
+    inputPerfil.value = "";
+  });
 
   /* ── MI EQUIPO ── */
   var inputFoto = document.getElementById("input-foto-equipo");
@@ -155,22 +173,47 @@
     });
   });
 
-  /* ── CUENTA ── */
-  document.getElementById("btn-ajustes").addEventListener("click", function () {
-    api.toast("AJUSTES DE CUENTA PRONTO · MIENTRAS, EDITA TUS DATOS ARRIBA", true);
-  });
+  /* ── CUENTA: sesión real (Auth0) ── */
+  function pintarSesion() {
+    var lineas = document.getElementById("cuenta-lineas");
+    var btnSalir = document.getElementById("btn-salir");
+    var badges = document.getElementById("perfil-badges");
+    var s = estado.sesion;
+    if (badges) {
+      badges.innerHTML = "";
+      if (s && s.verificado) {
+        var b = document.createElement("span");
+        b.className = "badge badge--verificado";
+        b.textContent = "✓ VERIFICADO";
+        badges.appendChild(b);
+      }
+    }
+    if (!lineas) return;
+    if (!s) {
+      lineas.innerHTML = "<p>Sin sesión: entrá con tu cuenta para editar tu ficha y publicar clips.</p>";
+      if (btnSalir) btnSalir.hidden = true;
+      return;
+    }
+    lineas.innerHTML =
+      "<p>Correo: <b>" + (s.correo || "—") + "</b></p>" +
+      "<p>Verificado: <b class=\"si\">" + (s.verificado ? "SÍ" : "NO") + "</b></p>" +
+      "<p>Cuenta VANTS: <b>" + String(s.nick || "jugador") + "</b></p>";
+    if (btnSalir) btnSalir.hidden = false;
+  }
+
   document.getElementById("btn-salir").addEventListener("click", function () {
     try { localStorage.removeItem("vants_perfil_v1"); } catch (_e) { /* noop */ }
-    api.toast("SESIÓN LOCAL CERRADA · TU FICHA VUELVE AL ESTADO INICIAL");
+    if (window.VantAuth0) { window.VantAuth0.salir(); return; }
+    api.toast("FICHA REINICIADA");
     setTimeout(function () { location.reload(); }, 900);
   });
 
   /* ── arranque ── */
-  document.getElementById("equipo-nombre").value = estado.equipo.nombre;
-  document.getElementById("equipo-tag").value = estado.equipo.tag;
-  document.getElementById("dato-pais").value = estado.pais;
-  document.getElementById("dato-region").value = estado.region;
-  document.getElementById("dato-discord").value = estado.discord;
+  document.getElementById("equipo-nombre").value = estado.equipo.nombre || "";
+  document.getElementById("equipo-tag").value = estado.equipo.tag || "";
+  document.getElementById("dato-pais").value = estado.pais || "";
+  document.getElementById("dato-region").value = estado.region || "";
+  document.getElementById("dato-discord").value = estado.discord || "";
   if (estado.equipo.foto) imgFoto.src = estado.equipo.foto;
   if (estado.banner.tipo === "foto") {
     document.getElementById("btn-banner-foto").classList.add("chip-sel--activo");
@@ -179,6 +222,26 @@
   pintarBanner();
   pintarCuentas();
   pintarEstado();
+  pintarSesion();
   api.aplicarIdentidad(estado);
+  api.pintarAvatar(estado);
   api.renderClipsPerfil(estado);
+
+  /* sesión Auth0: rellena nick, correo y clips reales */
+  if (window.VantAuth0) {
+    window.VantAuth0.listo().then(function (u) {
+      if (u) {
+        estado.sesion = { sub: u.sub, nick: u.nick, correo: u.correo, verificado: u.verificado };
+        api.guardar(estado);
+        document.getElementById("nick-jugador").textContent = String(u.nick || "JUGADOR").toUpperCase();
+        document.getElementById("sub-handle").textContent = "@" + String(u.nick || "jugador").toLowerCase().replace(/[^a-z0-9_\-.]/g, "");
+        api.pintarAvatar(estado);
+      } else {
+        estado.sesion = null;
+        api.guardar(estado);
+      }
+      pintarSesion();
+      api.renderClipsPerfil(estado);
+    });
+  }
 })();

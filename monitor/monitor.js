@@ -26,12 +26,15 @@ const REPORT = process.argv.includes('--report');
 const COLORS = { up: 0x3ddc84, degraded: 0xffb547, down: 0xff4655, info: 0x5865f2 };
 
 const CRIT = [
-  { id: 'web', label: 'Web (Cloudflare Worker)', url: cfg.site, markers: ['VANTS GAMES', 'arena-live.js'] },
+  // Sitio S4 (vants-server/public): rutas reales tras el reemplazo de la web antigua.
+  { id: 'web', label: 'Web (Cloudflare Worker)', url: cfg.site, markers: ['VANTS GAMES'] },
   { id: 'health', label: 'API health', url: cfg.site + 'api/health', markers: ['"ok":true'] },
-  { id: 'css', label: 'arena.css', url: cfg.site + 'assets/css/arena.css' },
-  { id: 'arena', label: 'arena.js', url: cfg.site + 'assets/js/arena.js' },
-  { id: 'live', label: 'arena-live.js', url: cfg.site + 'assets/js/arena-live.js' },
-  { id: 'cfg', label: 'auth0-config.js', url: cfg.site + 'assets/js/auth0-config.js' },
+  { id: 'healthz', label: 'healthz (S4)', url: cfg.site + 'healthz', markers: ['"version":"S4"'] },
+  { id: 'clips', label: 'Vitrina de clips', url: cfg.site + 'api/clips/featured', markers: ['"ok":true'] },
+  { id: 'perfil', label: 'Perfil (página)', url: cfg.site + 'perfil' },
+  { id: 'clips-pag', label: 'Clips (página)', url: cfg.site + 'clips' },
+  { id: 'css', label: 'vants.css (S4)', url: cfg.site + 'static/css/vants.css' },
+  { id: 'appjs', label: 'app.js (S4)', url: cfg.site + 'static/js/app.js' },
   { id: 'proxy', label: 'Neon vantsdata (API)', url: cfg.proxy, markers: ['"ok":true'] },
 ];
 const EXTERN = [

@@ -518,3 +518,100 @@
   .perfil__nombre h2 { font-size: 24px; }
   .cabecera-pagina { padding-left: 16px; padding-right: 16px; }
 }
+
+/* ==================== PERFIL REDUCIDO + EDITOR DE FOTO ==================== */
+.perfil__ventana .perfil__banner { height: 108px; }
+.perfil__ventana .perfil__barra { padding: 12px 18px; }
+.perfil__ventana .perfil__bloque { padding: 18px 18px 0; }
+.perfil__ventana .perfil__identidad { margin-top: -30px; padding: 0 18px; }
+.perfil__nombre h2 { font-size: 25px; }
+
+/* avatar del jugador = botón: clic → editor de foto desde el escritorio */
+.perfil__avatar--editable {
+  cursor: pointer;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  position: relative;
+  transition: border-color .2s, transform .2s;
+}
+.perfil__avatar--editable:hover, .perfil__avatar--editable:focus-visible { border-color: var(--rojo); transform: translateY(-2px); }
+.perfil__avatar-editar {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  padding: 3px 0 8px;
+  background: linear-gradient(transparent, rgba(0,0,0,.85));
+  font-family: var(--mono); font-size: 7.5px; font-weight: 800;
+  letter-spacing: .14em; color: #fff; text-align: center;
+  opacity: 0; transition: opacity .2s;
+  z-index: 2;
+}
+.perfil__avatar--editable:hover .perfil__avatar-editar,
+.perfil__avatar--editable:focus-visible .perfil__avatar-editar { opacity: 1; }
+.perfil__avatar--editable img[hidden] { display: none; }
+.perfil__avatar-wrap .perfil__avatar { display: flex; }
+
+/* ==================== CLIPS · GESTIONAR + VITRINA ==================== */
+.gestionar { padding: 20px; }
+.gestionar__cabeza { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.gestionar__nota { color: var(--gris); font-size: 13px; margin-bottom: 14px; }
+.gestionar__subir { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.gestionar__ayuda { font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em; color: var(--gris-2); }
+.gestionar__acciones { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.gestionar__msg { color: var(--gris); font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; margin-top: 10px; }
+.gestionar__msg b { color: var(--rojo); }
+.clip-seleccion__previa { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+.clip-seleccion__previa img { width: 128px; aspect-ratio: 16/9; object-fit: cover; border: 1px solid var(--borde); border-radius: 5px; background: #0b0c10; }
+.clip-seleccion__previa small { display: block; font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; color: var(--gris-2); margin-top: 4px; }
+.pbar { height: 8px; border: 1px solid var(--borde-2); border-radius: 4px; overflow: hidden; background: #0b0c10; margin-top: 12px; }
+.pbar i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, var(--rojo), #ff5c78); transition: width .2s; }
+.fila-mia { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--borde); }
+.fila-mia span { font-size: 12.5px; color: var(--gris); min-width: 0; }
+.fila-mia b { color: var(--blanco); }
+
+.vitrina { display: grid; grid-template-columns: repeat(auto-fill, minmax(235px, 1fr)); gap: 14px; }
+.vitrina__cargando, .vitrina__vacio { grid-column: 1 / -1; }
+.vitrina__cargando { color: var(--gris); font-family: var(--mono); font-size: 11px; letter-spacing: .14em; padding: 30px 0; text-align: center; }
+.vitrina__vacio { padding: 26px; text-align: center; }
+.vitrina__vacio h3 { font-size: 15px; letter-spacing: .06em; margin-bottom: 8px; }
+.vitrina__vacio p { color: var(--gris); font-size: 13px; }
+
+.clipc { cursor: pointer; transition: border-color .2s, transform .2s; }
+.clipc:hover { border-color: var(--rojo); transform: translateY(-2px); }
+.clipc__mini { position: relative; aspect-ratio: 16 / 9; background: #0b0c10; overflow: hidden; }
+.clipc__mini img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.clipc__play {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 42px; height: 42px; border-radius: 50%;
+  background: rgba(255, 13, 46, .92); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; z-index: 2;
+}
+.clipc__dur { position: absolute; right: 8px; bottom: 8px; z-index: 2; font-family: var(--mono); font-size: 10px; font-weight: 800; background: rgba(0,0,0,.78); padding: 2px 6px; border-radius: 3px; }
+.clipc__cuerpo { padding: 12px 13px 13px; }
+.clipc__titulo { font-size: 13px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.clipc__meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 7px; font-size: 10.5px; color: var(--gris); }
+.clipc__meta b { font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; color: var(--dorado); }
+.clipc__juego { font-family: var(--mono); font-size: 9px; font-weight: 800; letter-spacing: .12em; color: var(--rojo); }
+
+/* reproductor modal */
+.modal-clip { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 18px; }
+.modal-clip[hidden] { display: none; }
+.modal-clip__fondo { position: absolute; inset: 0; background: rgba(4, 5, 8, .86); }
+.modal-clip__card {
+  position: relative; width: min(880px, 100%);
+  background: var(--panel); border: 1px solid var(--borde-2); border-radius: 8px;
+  overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,.6);
+}
+.modal-clip__cabeza { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; }
+.modal-clip__cabeza b { font-size: 13px; letter-spacing: .06em; }
+.modal-clip__x { background: none; border: 0; color: var(--gris); font-size: 18px; line-height: 1; cursor: pointer; }
+.modal-clip__x:hover { color: #fff; }
+.modal-clip__video { aspect-ratio: 16 / 9; background: #000; }
+.modal-clip__video video { width: 100%; height: 100%; display: block; }
+.modal-clip__meta { padding: 10px 16px 14px; font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em; color: var(--gris); }
+.modal-clip__meta b { color: var(--dorado); }
+
+/* mini-clip del perfil con foto real */
+.mini-clip__img--foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.mini-clip--real:hover { border-color: var(--rojo); }

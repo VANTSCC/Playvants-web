@@ -93,13 +93,15 @@ const MAX_CLIP_BYTES = 48 * 1024 * 1024; // vídeo destacado: máx 48 MB
 const MAX_THUMB_BYTES = 400 * 1024;      // miniatura JPEG: máx 400 KB
 
 /* ==================== CLIPS DESTACADOS (GitHub Releases) ====================
-   Repositorio público que almacena los clips que los jugadores destacan:
+   Repositorio que almacena los clips que los jugadores destacan:
    cada clip = un release con 2 assets (video + miniatura), inmutable una vez
    publicado. El índice (manifest.json) vive en el contents del repo y se
    actualiza atómicamente (sha). El video lo sube el navegador con el JWT de
    su sesión; el Worker valida el token (JWKS de Auth0) y nunca acepta un
-   sub distinto al de la sesión. Sin sesión no se publica nada. */
-const GH_CLIPS_REPO = 'VANTSgg/vants-clips';
+   sub distinto al de la sesión. Sin sesión no se publica nada.
+   Repo bajo la org VANTSCC (trasladado desde VANTSgg: GitHub redirige los
+   assets viejos, pero la API apunta a la org actual). */
+const GH_CLIPS_REPO = 'VANTSCC/vants-clips';
 const GH_API = 'https://api.github.com/repos/' + GH_CLIPS_REPO;
 const CLIPS_EXT = ['webm', 'mp4', 'mkv', 'mov', 'm4v'];
 const MAX_MANIFEST_ENTRIES = 60;

@@ -17,9 +17,10 @@
       var nombre = item.getAttribute("data-nombre");
       var tier = item.getAttribute("data-tier");
 
-      /* El dueño de la ficha es OWNER + PRO + CREATOR + SOCIO: todo desbloqueado.
-         Si algún día cambian las insignias, este check lo controla. */
-      var insignias = (window.__PERFIL_SEMILLA__ && window.__PERFIL_SEMILLA__.badges) || [];
+      /* Insignias REALES de la sesión: solo "verificado" existe hoy. Las
+         membresías (pro/owner/creator/socio) llegarán con los planes pagos. */
+      var insignias = [];
+      if (estado.sesion && estado.sesion.verificado) insignias.push("verificado");
       var necesita = { gratis: null, pro: "pro", owner: "owner", creator: "creator", socio: "socio" }[tier];
       if (necesita && insignias.indexOf(necesita) === -1) {
         api.toast("NECESITAS LA MEMBRESÍA " + tier.toUpperCase(), true);
