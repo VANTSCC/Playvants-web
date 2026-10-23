@@ -68,7 +68,9 @@ jobs:
 
       - name: Procesar partidas FACEIT pendientes
         run: |
-          PGCONNECT_TIMEOUT=10 psql --connect-timeout=10 "$NEON_CS" -v ON_ERROR_STOP=1 -At -c "SELECT faceit_procesar_eventos();"
+          # psql NO tiene la opción CLI --connect-timeout: el corte de conexión
+          # lo hace la variable de libpq PGCONNECT_TIMEOUT (ya exportada arriba).
+          psql "$NEON_CS" -v ON_ERROR_STOP=1 -At -c "SELECT faceit_procesar_eventos();"
 
       # Respaldo del webhook: sondea la Data API v4 y registra partidas que
       # el webhook no alcanzó a entregar (idempotente por faceit_match_id).
