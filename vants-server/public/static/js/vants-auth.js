@@ -5,6 +5,13 @@
      · usuario()→ { sub, nick, correo, verificado, picture } | null
      · getToken() → JWT (audience api.vants.app) o null
      · entrar() / salir()
+   COMPORTAMIENTO DEL LOGIN (igual que la web antigua):
+     · El botón ENTRAR de la cabecera y del menú móvil abre el login Auth0
+       en TODAS las páginas, no solo en clips.
+     · Auth0 "VANTS movil" solo acepta https://vants.vants.workers.dev/ como
+       callback, así que el login siempre vuelve a la portada con ?code=...&state=...
+     · Antes de ir al login guardamos en sessionStorage la página donde estabas
+       y, tras cerrar el callback, volvemos ahí (clips, perfil, torneos...).
    Requiere: <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js">
    cargado ANTES de este archivo. */
 (function (window) {
@@ -13,6 +20,7 @@
   var DOMINIO = "vants.eu.auth0.com";
   var CLIENTE = "oaOmNizh7HrASWfmfM29bN284IMJvqPG";
   var AUDIENCIA = "https://api.vants.app";
+  var CLAVE_VOLVER = "vants_volver";
 
   var cliente = null;
   var usuario = null;
@@ -28,12 +36,43 @@
     return resuelto;
   }
 
+  /* ¿volvió del login? el callback llega con ?code=...&state=... (o ?error=...) */
+  function esCallback() {
+    var s = window.location.search;
+    return s.indexOf("code=") !== -1 || s.indexOf("error=") !== -1;
+  }
+
+  function guardarVolver() {
+    try {
+      var destino = window.location.pathname + window.location.search;
+      sessionStorage.setItem(CLAVE_VOLVER, destino);
+    } catch (_e) { /* sessionStorage bloqueado: el login igual funciona */ }
+  }
+
+  function volverTrasLogin() {
+    var destino = null;
+    try {
+      destino = sessionStorage.getItem(CLAVE_VOLVER);
+      sessionStorage.removeItem(CLAVE_VOLVER);
+    } catch (_e) { /* noop */ }
+    if (
+      destino && destino.charAt(0) === "/" && destino.indexOf("//") !== 0 &&
+      destino !== window.location.pathname
+    ) {
+      window.location.replace(window.location.origin + destino);
+      return true;
+    }
+    return false;
+  }
+
   async function arrancar() {
     if (!window.auth0) return null; // CDN caído: la web sigue sin sesión
+
     cliente = await window.auth0.createAuth0Client({
       domain: DOMINIO,
       clientId: CLIENTE,
       authorizationParams: {
+        /* Auth0 "VANTS movil" solo tiene esta URL en Allowed Callback URLs */
         redirect_uri: window.location.origin + "/",
         audience: AUDIENCIA,
         scope: "openid profile email",
@@ -42,12 +81,17 @@
       useRefreshTokens: true,
     });
 
-    /* ¿vuelve del login (?code=...&state=...)? cierra el flujo una sola vez */
-    if (window.location.search.indexOf("code=") !== -1 && window.location.search.indexOf("state=") !== -1) {
+    /* ¿vuelve del login? cierra el flujo una sola vez y regresa a su página */
+    if (esCallback()) {
+      var procesado = false;
       try {
         await cliente.handleRedirectCallback();
-        window.history.replaceState({}, "", window.location.origin + window.location.pathname);
-      } catch (_e) { /* ya manejado u origen distinto: seguir */ }
+        procesado = true;
+      } catch (_e) { /* code usado o de otra app: seguir */ }
+      window.history.replaceState({}, "", window.location.origin + window.location.pathname);
+      if (procesado && volverTrasLogin()) {
+        return new Promise(function () {}); /* redirigiendo: corta aquí */
+      }
     }
 
     if (await cliente.isAuthenticated()) {
@@ -76,7 +120,16 @@
   }
 
   function entrar() {
-    if (!cliente) return;
+    guardarVolver(); /* tras el login volvemos a esta misma página */
+    if (!cliente) {
+      /* cliente aún no listo (CDN lento) o caído: ir al /authorize a mano */
+      window.location.href = "https://" + DOMINIO + "/authorize?response_type=code" +
+        "&client_id=" + encodeURIComponent(CLIENTE) +
+        "&redirect_uri=" + encodeURIComponent(window.location.origin + "/") +
+        "&scope=" + encodeURIComponent("openid profile email") +
+        "&audience=" + encodeURIComponent(AUDIENCIA);
+      return;
+    }
     cliente.loginWithRedirect({
       authorizationParams: { redirect_uri: window.location.origin + "/", audience: AUDIENCIA, scope: "openid profile email" },
     });
@@ -89,13 +142,36 @@
     } catch (_e) { window.location.href = "/"; }
   }
 
-  /* El botón ENTRAR de la cabecera y del menú móvil muestran el nick con sesión */
+  /* Con sesión el ENTRAR de la cabecera muestra el nick y lleva al perfil;
+     sin sesión los botones ya dicen ENTRAR y el clic abre el login. */
   function pintarNav() {
-    var txt = usuario ? usuario.nick.toUpperCase().slice(0, 14) : "ENTRAR";
+    if (!usuario) return;
+    var txt = usuario.nick.toUpperCase().slice(0, 14);
     document.querySelectorAll(".nav-entrar, .mega__entrar").forEach(function (a) {
       a.textContent = txt;
+      a.setAttribute("href", "/perfil");
     });
   }
+
+  /* CABLEADO: clic en ENTRAR (cabecera y menú móvil) = login en cualquier página */
+  function cablearEntrar() {
+    document.querySelectorAll(".nav-entrar, .mega__entrar").forEach(function (a) {
+      a.addEventListener("click", function (e) {
+        if (usuario) return; /* con sesión el enlace normal lleva a /perfil */
+        e.preventDefault();
+        entrar();
+      });
+    });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", cablearEntrar);
+  } else {
+    cablearEntrar();
+  }
+
+  /* AUTO-ARRANQUE en todas las páginas: evalúa la sesión, procesa el callback
+     (?code=...&state=... tras el login) y pinta el nick en la nav. */
+  listo();
 
   window.VantAuth0 = {
     listo: listo,

@@ -190,7 +190,13 @@
     }
     if (!lineas) return;
     if (!s) {
-      lineas.innerHTML = "<p>Sin sesión: entrá con tu cuenta para editar tu ficha y publicar clips.</p>";
+      lineas.innerHTML = "<p>Sin sesión: entrá con tu cuenta para editar tu ficha y publicar clips.</p>" +
+        '<button class="btn btn--rojo" type="button" id="btn-perfil-entrar">ENTRAR CON MI CUENTA</button>';
+      var bpe = document.getElementById("btn-perfil-entrar");
+      if (bpe) bpe.addEventListener("click", function () {
+        if (window.VantAuth0) window.VantAuth0.entrar();
+        else api.toast("NO SE PUDO ABRIR EL LOGIN · RECARGA LA PÁGINA", true);
+      });
       if (btnSalir) btnSalir.hidden = true;
       return;
     }
