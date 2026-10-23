@@ -1,0 +1,15 @@
+{
+  "name": "vants-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "VANTS GAMES — arena competitiva. Worker de Cloudflare: web estática + notificaciones a Discord vía REST API.",
+  "main": "worker.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.151.1"
+  }
+}

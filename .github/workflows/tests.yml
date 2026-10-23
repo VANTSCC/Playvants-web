@@ -1,0 +1,222 @@
+name: "VANTS · pruebas automáticas"
+
+# Fase 6 · Pruebas automáticas: la suite del matchmaking (51 asserts:
+# auth JWT, validaciones, elegibilidad, duplicados, emparejamiento
+# atómico, reporte, RR, historial) corre en cada push/PR que toque
+# backend o scripts. Rojo = no se despliega con confianza.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "services/**"
+      - "scripts/**"
+      - "vants-server/**"
+      - "neon-functions/**"
+      - "db/**"
+      - "desktop-electron/**"
+      - ".github/workflows/tests.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "services/**"
+      - "scripts/**"
+      - "vants-server/**"
+      - "neon-functions/**"
+      - "db/**"
+      - "desktop-electron/**"
+      - ".github/workflows/tests.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+# Mínimo privilegio: los tests solo leen el repo
+permissions:
+  contents: read
+
+jobs:
+  matchmaking:
+    name: Matchmaking service (51 asserts)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+
+      - name: Dependencias
+        working-directory: services/matchmaking-service
+        run: npm install --no-audit --no-fund
+
+      - name: Suite completa (memoria, sin red)
+        working-directory: services/matchmaking-service
+        env:
+          LOG_LEVEL: silent
+        run: npm test
+
+  neon_functions:
+    name: Neon Functions (vantsbot 36 + mm 16 asserts)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # Node 24: type-stripping nativo para importar los index.ts de las funciones
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+
+      - name: Dependencias (pg para el bundling/imports)
+        run: npm install --no-audit --no-fund
+
+      - name: "vantsbot (Discord: interactions, puente, /setup, eventos)"
+        run: node scripts/test_vantsbot.js
+
+      - name: "mm (matchmaking serverless: JWT RS256, cola, RR, invites)"
+        run: node scripts/test_mm_neon.js
+
+  agente:
+    name: Agente VANTS (61 + 60 + 28 asserts)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+
+      - name: Dependencias del agente
+        working-directory: services/agent-service
+        run: npm ci --no-audit --no-fund
+
+      - name: Núcleo, reglas y memoria
+        working-directory: services/agent-service
+        run: node ../../scripts/test_agente.js
+
+      - name: Sandbox (memoria autoalojada + exec aislado)
+        working-directory: services/agent-service
+        run: node ../../scripts/test_sandbox_agente.js
+
+      - name: Cerebro agéntico GLM (function calling, servidores falsos)
+        working-directory: services/agent-service
+        run: node ../../scripts/test_llm_agente.js
+
+  plataforma:
+    name: Plataforma de torneos (90 asserts unit + integración)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+
+      - name: Lógica pura compartida worker↔tests (validación, orden, paginación, fechas, XSS, fichas, proveedores)
+        run: node scripts/test_plataforma.js
+
+      - name: Launcher VANTS (detección de juego por proceso + presencia, 24 asserts)
+        run: node scripts/test_hub_juegos.js
+
+      - name: Launcher VANTS HUB IPC security (30 tests)
+        run: node scripts/test_hub_seguridad.js
+
+      - name: Telemetría (Worker + launcher)
+        run: node scripts/test_telemetria.js
+
+      - name: Launcher VANTS · ready-check del matchmaking + cadena ExitLag (45 asserts)
+        run: node scripts/test_mm_ready.js
+
+      - name: Launcher VANTS · invitaciones por email o nick (21 asserts)
+        run: node scripts/test_mm_invitar.js
+
+  e2e:
+    name: E2E Playwright · plataforma en producción
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+
+      - name: Dependencias (@playwright/test)
+        run: npm install --no-audit --no-fund
+
+      - name: Navegador Chromium (caché + 1 reintento ante fallo de descarga)
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-1.57.0
+
+      - name: Instalar Chromium
+        run: |
+          npx playwright install chromium --with-deps || \
+          { echo "descarga fallida — reintento único"; sleep 10; npx playwright install chromium --with-deps; }
+
+      - name: Esperar al despliegue del Worker (hasta 6 min, sin bloquear)
+        run: |
+          for i in $(seq 1 36); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -A "Mozilla/5.0 (compatible; VANTS-CI/1.0)" https://vants.vants.workers.dev/calendario.html || true)
+            echo "intento $i: /calendario.html → HTTP $code"
+            [ "$code" = "200" ] && echo "Despliegue con las páginas T53 visible" && exit 0
+            sleep 10
+          done
+          echo "AVISO: /calendario.html aún no responde 200 (deploy en cola). Se prueba el estado actual de producción."
+
+      - name: Suite E2E (desktop + móvil 390)
+        env:
+          CI: "true"
+        run: npx playwright test
+
+      - name: Capturas de producción con datos (el runner SÍ alcanza el proxy de Neon)
+        if: ${{ !cancelled() }}
+        run: |
+          mkdir -p artefactos/qa-t53
+          node -e '
+          const { chromium } = require("@playwright/test");
+          const fs = require("fs");
+          (async () => {
+            const b = await chromium.launch();
+            const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, locale: "es-ES" });
+            const page = await ctx.newPage();
+            const B = "https://vants.vants.workers.dev";
+            const shots = [
+              ["/calendario.html", "prod-calendario.png"],
+              ["/resultados.html", "prod-resultados.png"],
+              ["/equipo-ficha.html?slug=demo-equipo-fenix", "prod-ficha-equipo.png"],
+              ["/jugador.html?slug=demo-jugador-alex", "prod-ficha-jugador.png"],
+              ["/equipos.html", "prod-equipos.png"],
+            ];
+            for (const [ruta, archivo] of shots) {
+              try {
+                await page.goto(B + ruta, { waitUntil: "networkidle", timeout: 30000 });
+                await page.waitForTimeout(2500);
+                await page.screenshot({ path: "artefactos/qa-t53/" + archivo, fullPage: true });
+                const n = await page.evaluate(() => document.querySelectorAll(".sf-mrow, .pf-card, .pf-ficha, .pf-error, .pf-empty").length);
+                console.log(archivo + " · elementos=" + n);
+              } catch (e) { console.log(archivo + " ERROR " + e.message.split("\n")[0]); }
+            }
+            const mp = await ctx.newPage();
+            await mp.setViewportSize({ width: 390, height: 844 });
+            try {
+              await mp.goto(B + "/equipo-ficha.html?slug=demo-equipo-fenix", { waitUntil: "networkidle", timeout: 30000 });
+              await mp.waitForTimeout(2500);
+              await mp.screenshot({ path: "artefactos/qa-t53/prod-movil-ficha.png", fullPage: true });
+            } catch (e) {}
+            await b.close();
+          })();'
+
+      - name: Subir capturas como artefacto
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: qa-t53-capturas-produccion
+          path: artefactos/qa-t53/
+          retention-days: 30

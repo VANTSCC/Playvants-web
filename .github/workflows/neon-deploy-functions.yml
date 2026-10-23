@@ -1,0 +1,168 @@
+name: "Neon · deploy de funciones (linker + vantsdata + vantsbot)"
+
+# Despliega las Neon Functions con sus variables de entorno:
+#   · linker    — conectores OAuth de cuentas (FACEIT, Twitch, Kick...)
+#   · vantsdata — proxy público de lectura (lecturas anónimas de la web)
+#   · vantsbot  — mando del Agente VANTS por Discord (Interactions + puente
+#                 de DMs + /setup), 100% HTTP sin Gateway: sustituye el
+#                 hosting de pago (Railway/Render) del bot para el control.
+# Requiere los secretos del repo:
+#   NEON_API_KEY        — API key de Neon (ya existente, la usa neon-migrate)
+#   FACEIT_CLIENT_ID    — client ID OAuth PKCE de FACEIT
+#   FACEIT_API_KEY      — API key server-side de FACEIT
+#   DISCORD_BOT_TOKEN   — token del bot (dueno; Discord Developer Portal)
+#   DISCORD_PUBLIC_KEY  — Public Key de la app de Discord (portal → General)
+#   VANTS_BOT_SECRET    — cabecera x-vants-bot para /tarea y /setup (>=32)
+#   AGENT_DISCORD_IDS   — (opcional) ids de Discord separados por comas:
+#                         allowlist de /agente en vantsbot. Sin ella, cualquier
+#                         usuario con la app instalada puede invocar el comando.
+#   SUPERVISOR_DM_ID    — (opcional) Discord id del dueño para DMs
+# Se ejecuta al cambiar neon-functions/** o manualmente (Run workflow).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "neon-functions/**"
+      - ".github/workflows/neon-deploy-functions.yml"
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+# Mínimo privilegio: el job no escribe en el repo
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # environment: production  (configurar en Settings→Environments con revisores)
+    env:
+      NK: ${{ secrets.NEON_API_KEY }}
+      NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+      FACEIT_CLIENT_ID: ${{ secrets.FACEIT_CLIENT_ID }}
+      FACEIT_API_KEY: ${{ secrets.FACEIT_API_KEY }}
+      LINKER_URL: https://br-sweet-shape-b42xhogj-linker.compute.c-6.us-east-2.aws.neon.tech
+      VANTSBOT_URL: https://br-sweet-shape-b42xhogj-vantsbot.compute.c-6.us-east-2.aws.neon.tech
+      MM_URL: https://br-sweet-shape-b42xhogj-mm.compute.c-6.us-east-2.aws.neon.tech
+      DISCORD_PUBLIC_KEY: ${{ secrets.DISCORD_PUBLIC_KEY }}
+      DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+      # App id: el dueño lo guardó como DISCORD_ID_APP (fallback si no hay
+      # DISCORD_APP_ID); /setup lo usa si no puede derivarlo del token.
+      DISCORD_APP_ID: ${{ secrets.DISCORD_APP_ID || secrets.DISCORD_ID_APP }}
+      VANTS_BOT_SECRET: ${{ secrets.VANTS_BOT_SECRET }}
+      # Allowlist de /agente: ids de Discord separados por comas (secret o var).
+      AGENT_DISCORD_IDS: ${{ secrets.AGENT_DISCORD_IDS || vars.AGENT_DISCORD_IDS }}
+      SUPERVISOR_DM_ID: ${{ secrets.SUPERVISOR_DM_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Instalar Neon CLI
+        run: npm install -g neon@latest
+
+      # esbuild (bundling de la función) necesita resolver 'pg' localmente:
+      # el package.json de la raíz lo declara para esto.
+      - name: Instalar dependencias de bundling (pg)
+        run: npm install --no-audit --no-fund
+
+      - name: Desplegar linker
+        run: |
+          neon functions deploy linker \
+            --project-id square-surf-41242074 \
+            --branch br-sweet-shape-b42xhogj \
+            --src neon-functions/linker \
+            --api-key "$NK" \
+            --wait \
+            --env AUTH0_DOMAIN=vants.eu.auth0.com \
+            --env AUTH0_AUDIENCE=https://api.vants.app \
+            --env VANTS_SITE_URL=https://feispla.github.io/Vants \
+            --env LINKER_URL=$LINKER_URL \
+            ${FACEIT_CLIENT_ID:+--env FACEIT_CLIENT_ID=$FACEIT_CLIENT_ID} \
+            ${FACEIT_API_KEY:+--env FACEIT_API_KEY=$FACEIT_API_KEY}
+
+      - name: Desplegar vantsdata (proxy público de lectura)
+        run: |
+          neon functions deploy vantsdata \
+            --project-id square-surf-41242074 \
+            --branch br-sweet-shape-b42xhogj \
+            --src neon-functions/vantsdata \
+            --api-key "$NK" \
+            --wait
+
+      - name: Desplegar vantsbot (mando del Agente por Discord)
+        run: |
+          neon functions deploy vantsbot \
+            --project-id square-surf-41242074 \
+            --branch br-sweet-shape-b42xhogj \
+            --src neon-functions/vantsbot \
+            --api-key "$NK" \
+            --wait \
+            ${DISCORD_PUBLIC_KEY:+--env DISCORD_PUBLIC_KEY=$DISCORD_PUBLIC_KEY} \
+            ${DISCORD_BOT_TOKEN:+--env DISCORD_BOT_TOKEN=$DISCORD_BOT_TOKEN} \
+            ${DISCORD_APP_ID:+--env DISCORD_APP_ID=$DISCORD_APP_ID} \
+            ${VANTS_BOT_SECRET:+--env VANTS_BOT_SECRET=$VANTS_BOT_SECRET} \
+            ${AGENT_DISCORD_IDS:+--env AGENT_DISCORD_IDS=$AGENT_DISCORD_IDS} \
+            ${SUPERVISOR_DM_ID:+--env SUPERVISOR_DM_ID=$SUPERVISOR_DM_ID}
+
+      - name: "Desplegar mm (matchmaking serverless · cola, partidas, RR, historiales, invites)"
+        run: |
+          neon functions deploy mm \
+            --project-id square-surf-41242074 \
+            --branch br-sweet-shape-b42xhogj \
+            --src neon-functions/mm \
+            --api-key "$NK" \
+            --wait \
+            --env AUTH0_DOMAIN=vants.eu.auth0.com \
+            --env AUTH0_AUDIENCE=https://api.vants.app
+
+      - name: Verificación (diagnóstico público del linker)
+        run: |
+          sleep 5
+          curl -s --max-time 20 "$LINKER_URL/" | head -c 900
+          echo
+
+      - name: "Verificación vantsdata (diagnóstico + lectura real)"
+        env:
+          VANTSDATA_URL: https://br-sweet-shape-b42xhogj-vantsdata.compute.c-6.us-east-2.aws.neon.tech
+        run: |
+          sleep 5
+          echo "--- GET / (debe responder {\"ok\":true,...}) ---"
+          curl -s --max-time 20 "$VANTSDATA_URL/" | head -c 300; echo
+          echo "--- GET /?table=players&limit=1 (lectura real) ---"
+          RESP=$(curl -s --max-time 30 -w "\nHTTP:%{http_code}" "$VANTSDATA_URL/?table=players&limit=1&select=username,verified")
+          echo "$RESP" | head -c 400; echo
+          CODE=$(echo "$RESP" | tail -1 | sed 's/HTTP://')
+          if [ "$CODE" != "200" ]; then
+            echo "::warning::vantsdata devolvió HTTP $CODE en la verificación (puede necesitar un reintento si el compute acaba de arrancar)"
+          fi
+
+      - name: "Verificación vantsbot (salud + registro de /agente + ciclo del puente)"
+        run: |
+          sleep 5
+          echo "--- GET /salud (config visible, sin secretos) ---"
+          curl -s --max-time 30 "$VANTSBOT_URL/salud" | head -c 600; echo
+          if [ -z "$VANTS_BOT_SECRET" ]; then
+            echo "::warning::Falta el secret VANTS_BOT_SECRET — /tarea y /setup quedan desactivados hasta añadirlo."
+            exit 0
+          fi
+          echo "--- POST /setup (registra /agente como comando global) ---"
+          curl -s --max-time 60 -X POST -H "x-vants-bot: $VANTS_BOT_SECRET" "$VANTSBOT_URL/setup" | head -c 400; echo
+          echo "--- POST /tarea (entrega DMs pendientes de incidentes/respuestas) ---"
+          curl -s --max-time 60 -X POST -H "x-vants-bot: $VANTS_BOT_SECRET" "$VANTSBOT_URL/tarea" | head -c 400; echo
+          if [ -z "$DISCORD_BOT_TOKEN" ] || [ -z "$DISCORD_PUBLIC_KEY" ]; then
+            echo "::warning::Faltan DISCORD_BOT_TOKEN y/o DISCORD_PUBLIC_KEY — añade los secrets para activar el mando /agente."
+          fi
+
+      - name: "Verificación mm (salud del matchmaking serverless)"
+        run: |
+          sleep 5
+          echo "--- GET /salud (mm · cola/partidas/RR/invites) ---"
+          curl -s --max-time 30 "$MM_URL/salud" | head -c 500; echo
+          echo "--- POST /encolar sin token (esperado 401) ---"
+          CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 -X POST -H 'content-type: application/json' -d '{"game":"valorant"}' "$MM_URL/encolar")
+          echo "HTTP $CODE"
+          if [ "$CODE" != "401" ]; then echo "::warning::mm /encolar sin token respondió $CODE (esperado 401)"; fi
