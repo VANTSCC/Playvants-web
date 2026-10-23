@@ -336,7 +336,7 @@
           redSincronizar();
           api.toast("FACEIT CONECTADO · " + String(j.usuario.nickname).toUpperCase() + (j.usuario.nivel ? " · NIVEL " + j.usuario.nivel : ""));
         } else if (j && j.error === "no_encontrado") {
-          api.toast("ESE NICK NO EXISTE EN FACEIT · REVISÁ LAS MAYÚSCULAS", true);
+          api.toast("ESE NICK NO EXISTE EN FACEIT · COPIA EL NICK EXACTO DE TU PERFIL (MAYÚSCULAS INCLUIDAS)", true);
           input.focus();
         } else {
           api.toast("FACEIT NO RESPONDIÓ · PROBÁ DE NUEVO", true);

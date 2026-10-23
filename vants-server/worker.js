@@ -1743,29 +1743,45 @@ async function fetchWorker(request, env, ctx) {
       }
       let salida;
       try {
-        const r = await fetch('https://api.faceit.com/users/v1/nicknames/' + encodeURIComponent(nick), {
-          headers: { 'User-Agent': 'vants-worker', Accept: 'application/json' },
-          signal: AbortSignal.timeout(9000),
-        });
-        if (r.status === 404) {
-          salida = { ok: false, error: 'no_encontrado' };
-        } else if (!r.ok) {
-          salida = { ok: false, error: 'faceit_no_responde' };
-        } else {
-          const j = await r.json().catch(() => null);
-          const p = j && j.payload;
-          if (!p || !p.nickname) {
+        /* La API de FACEIT es estricta con mayúsculas/minúsculas ("s1mple" ≠
+           "S1mple") y no tiene búsqueda pública: probamos el nick tal cual y
+           3 variantes de caja (minúsculas, MAYÚSCULAS, Capitalizada) antes de
+           dar el nick por inexistente. */
+        const variantes = [];
+        const apuntar = (v) => {
+          if (v && v.length >= 2 && v.length <= 24 && /^[a-zA-Z0-9_.\-]+$/.test(v) && !variantes.includes(v)) variantes.push(v);
+        };
+        apuntar(nick);
+        apuntar(nick.toLowerCase());
+        apuntar(nick.toUpperCase());
+        apuntar(nick.charAt(0).toUpperCase() + nick.slice(1).toLowerCase());
+        let payload = null;
+        for (const variante of variantes) {
+          const r = await fetch('https://api.faceit.com/users/v1/nicknames/' + encodeURIComponent(variante), {
+            headers: { 'User-Agent': 'vants-worker', Accept: 'application/json' },
+            signal: AbortSignal.timeout(9000),
+          });
+          if (r.status === 200) {
+            const j = await r.json().catch(() => null);
+            if (j && j.payload && j.payload.nickname) { payload = j.payload; break; }
+          } else if (r.status !== 404) {
+            salida = { ok: false, error: 'faceit_no_responde' };
+            break;
+          }
+        }
+        if (!salida) {
+          if (!payload) {
             salida = { ok: false, error: 'no_encontrado' };
           } else {
-            const juegos = p.games || {};
+            const juegos = payload.games || {};
             const cs = juegos.cs2 || juegos.csgo || {};
             salida = {
               ok: true,
               usuario: {
-                id: String(p.id || '').slice(0, 40),
-                nickname: String(p.nickname).slice(0, 24),
-                pais: String(p.country || '').toLowerCase().slice(0, 8),
-                avatar: String(p.avatar || '').slice(0, 300) || null,
+                id: String(payload.id || '').slice(0, 40),
+                nickname: String(payload.nickname).slice(0, 24),
+                pais: String(payload.country || '').toLowerCase().slice(0, 8),
+                avatar: String(payload.avatar || '').slice(0, 300) || null,
                 nivel: Number.isFinite(cs.skill_level) ? cs.skill_level : null,
                 region: String(cs.region || '').slice(0, 8) || null,
               },
