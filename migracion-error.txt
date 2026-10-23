@@ -1,0 +1,3 @@
+psql:db/migrations/34-vants-feed.sql:21: NOTICE:  relation "vants_feed" already exists, skipping
+psql:db/migrations/34-vants-feed.sql:23: NOTICE:  relation "idx_vants_feed_ts" already exists, skipping
+psql:db/migrations/34-vants-feed.sql:24: NOTICE:  relation "idx_vants_feed_type" already exists, skipping
