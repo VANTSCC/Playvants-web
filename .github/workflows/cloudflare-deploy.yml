@@ -4,7 +4,8 @@ name: "Cloudflare · deploy del Worker (vants)"
 # (secret del repo). Pipeline fiable e independiente de Workers Builds.
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - "vants-server/**"
       - ".github/workflows/cloudflare-deploy.yml"
