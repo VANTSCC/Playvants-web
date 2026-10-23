@@ -7,8 +7,11 @@ account_id = "8f2424e95fec4860e19257226f209fbc"
 VANTS_BUS_URL = "https://vants-bus.vants.workers.dev"
 FEED_RETENTION_DAYS = "7"
 
+# Cuota Neon: cada 15 min en vez de cada minuto (96 vs 1440 visitas/dia).
+# El feed lo consume la web; 15 min de desfase maximo es aceptable.
+# Para volver a tiempo real: crons = ["* * * * *"] y wrangler deploy.
 [triggers]
-crons = ["* * * * *"]
+crons = ["*/15 * * * *"]
 
 [observability]
 enabled = true
