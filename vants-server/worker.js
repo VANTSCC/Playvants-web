@@ -1314,7 +1314,7 @@ async function fetchWorker(request, env, ctx) {
 
     // --- 7b1b) EN VIVO: jugadores conectados / jugando AHORA (presencia).
     // Fuente: vista v_en_vivo (presence actualizado hace < 2 min). Lectura
-    // pública; con sesión el token va y RLS confirma. Caché 10 s.
+    // pública vía proxy vantsdata. Caché 10 s.
     if (url.pathname === '/api/en-vivo') {
       if (method !== 'GET') {
         return json({ ok: false, error: 'Solo GET' }, 405, { Allow: 'GET' });
@@ -1334,10 +1334,11 @@ async function fetchWorker(request, env, ctx) {
         resC.headers.set('Cache-Control', 'public, max-age=10');
         return resC;
       }
-      const token = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
+      // Lectura pública por el proxy vantsdata (la Data API exige JWT y esta
+      // ruta es anónima). La vista no lleva PII.
       let payload2 = null;
       try {
-        const r = await neonGet('/v_en_vivo?order=actualizado.desc&limit=50', token || null);
+        const r = await proxyConsulta('v_en_vivo', { order: 'actualizado.desc', limit: 50 });
         if (r.ok) payload2 = { ok: true, jugadores: r.body, ahora: new Date().toISOString() };
       } catch (e) { payload2 = null; }
       if (!payload2) payload2 = { ok: false, motivo: 'base_no_disponible', jugadores: [] };
@@ -1365,12 +1366,11 @@ async function fetchWorker(request, env, ctx) {
       if (!torneo || !/^[a-z0-9_-]{1,40}$/i.test(torneo)) {
         return json({ ok: false, error: 'torneo_invalido' }, 400, { 'Access-Control-Allow-Origin': origin || '*' });
       }
-      const token = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
       let equipos = [], llaves = [];
       try {
         const [re, rb] = await Promise.all([
-          neonGet('/v_torneo_equipos?tournament_id=eq.' + encodeURIComponent(torneo) + '&order=created_at', token || null),
-          neonGet('/v_torneo_bracket?tournament_id=eq.' + encodeURIComponent(torneo) + '&limit=100', token || null),
+          proxyConsulta('v_torneo_equipos', { 'tournament_id.eq': torneo, order: 'created_at' }),
+          proxyConsulta('v_torneo_bracket', { 'tournament_id.eq': torneo, limit: 100 }),
         ]);
         if (re.ok) equipos = re.body;
         if (rb.ok) llaves = rb.body;
