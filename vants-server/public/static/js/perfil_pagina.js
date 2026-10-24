@@ -1284,9 +1284,13 @@
    · HISTORIAL REAL: /api/faceit/historia (Data API v4 con la clave del
      worker). Si FACEIT no responde o no hay cuenta conectada, estados
      honestos — nunca datos inventados.
-   · La gestión de siempre (mis datos, equipo, banner, redes, membresía,
-     cuenta, inscripciones) queda abajo, intacta. LA ESCALERA sigue
-     como sección fina antes de la gestión.
+   · S4.7.2 · CIERRE DEL PERFIL (lo que quedó del diseño viejo, fuera):
+     LA ESCALERA deja de montarse (la identidad del circuito vive en la
+     tarjeta RANGO de la sidebar y completa en /ranking#rangos) y la
+     gestión de siempre (mis datos, equipo, banner, redes, membresía,
+     cuenta, inscripciones, estado) queda COLAPSADA tras una barra fina:
+     el perfil termina limpio, como el mockup aprobado — un clic la
+     despliega (también el botón EDITAR FICHA) y nada se pierde.
    ════════════════════════════════════════════════════════════════════ */
 (function () {
   "use strict";
@@ -1375,9 +1379,14 @@
     ".v47 .v47-tabla .chipl{background:rgba(255,13,46,.13);color:#ff5a6e}" +
     ".v47 .v47-nota{margin-top:8px;font-family:var(--mono);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:#52525b}" +
     ".v47 .v47-vacio{font-size:12.5px;color:#a1a1aa;line-height:1.55;margin:0}" +
-    ".v47 .v47-seccion-gestion{padding:0 20px;display:block;margin-top:6px}" +
-    ".v47 .v46-escalera{padding:0 20px 4px}" +
-    ".v47 .v46-grilla{padding:6px 20px 26px}" +
+    ".v47 .v47-ges-bar{display:flex;align-items:center;gap:14px;width:calc(100% - 40px);margin:10px 20px 26px;padding:14px 18px;background:#101014;border:1px solid #222228;border-radius:12px;cursor:pointer;text-align:left;color:#edede7;font-family:inherit}" +
+    ".v47 .v47-ges-bar b{font-family:Archivo,sans-serif;font-size:13px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}" +
+    ".v47 .v47-ges-bar small{flex:1;min-width:0;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#7e7e88;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+    ".v47 .v47-ges-bar i{color:#ff0d2e;font-style:normal;font-size:12px;transition:transform .18s ease;flex:none}" +
+    ".v47 .v47-ges-bar:hover{border-color:rgba(255,13,46,.45)}" +
+    ".v47 .v47-ges-bar--abierta i{transform:rotate(90deg)}" +
+    ".v47 .v46-grilla{display:none;padding:6px 20px 26px}" +
+    ".v47 .v46-grilla.v47-ges--abierta{display:grid}" +
     "@media (max-width:1020px){.v47 .v47-marco{grid-template-columns:1fr}.v47 .v47-things{margin-left:0}}" +
     "@media (max-width:640px){.v47 .v47-perfil-card .v46-hero__acciones{flex-direction:column}.v47 .v47-perfil-card .v46-hero__acciones .btn{width:100%}.v47 .v47-season__stats{margin-left:0}}";
   document.head.appendChild(st);
@@ -1513,17 +1522,36 @@
   marco.appendChild(side);
   marco.appendChild(main);
 
-  /* ── montaje final ── */
+  /* ── montaje final (S4.7.2): sin escalera y con la gestión colapsada ── */
   while (vent.firstChild) vent.removeChild(vent.firstChild);
   vent.appendChild(barra);
   vent.appendChild(cab);
   vent.appendChild(marco);
-  if (esc) vent.appendChild(esc);
-  var gestion = document.createElement("span");
-  gestion.className = "v47-etq v47-etq--gris v47-seccion-gestion";
-  gestion.textContent = "GESTIÓN DE TU FICHA";
-  vent.appendChild(gestion);
+  var gesBar = document.createElement("button");
+  gesBar.type = "button";
+  gesBar.className = "v47-ges-bar";
+  gesBar.innerHTML = '<b>Gestión de tu ficha</b><small>mis datos \u00b7 equipo \u00b7 banner \u00b7 redes y cuentas \u00b7 membresía \u00b7 cuenta \u00b7 suscripciones \u00b7 estado</small><i>\u25b8</i>';
+  gesBar.addEventListener("click", function () {
+    var ab = grilla.classList.toggle("v47-ges--abierta");
+    gesBar.classList.toggle("v47-ges-bar--abierta", ab);
+  });
+  vent.appendChild(gesBar);
   vent.appendChild(grilla);
+
+  /* EDITAR FICHA (botón de la tarjeta) abre la gestión y baja al formulario */
+  function abrirGestion() {
+    if (!grilla.classList.contains("v47-ges--abierta")) {
+      grilla.classList.add("v47-ges--abierta");
+      gesBar.classList.add("v47-ges-bar--abierta");
+    }
+  }
+  var btnEd = null;
+  pc.querySelectorAll("button").forEach(function (b) { if (!btnEd && /editar/i.test(b.textContent || "")) btnEd = b; });
+  if (btnEd) btnEd.addEventListener("click", function () {
+    abrirGestion();
+    var md = document.getElementById("mis-datos");
+    if (md) setTimeout(function () { md.scrollIntoView({ behavior: "smooth", block: "start" }); }, 60);
+  });
 
   /* ── pintado de las piezas nuevas ── */
   function fDeEstado() {
