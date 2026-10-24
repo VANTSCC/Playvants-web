@@ -13,7 +13,6 @@ automático en **Cloudflare Workers**.
 ```
 ├── index.html                  ← home (layout strafe: tabs EN CURSO/PRÓXIMOS/ARCHIVO)
 ├── equipos.html                ← equipos de la arena (API /api/teams)
-├── noticias.html, noticia.html ← noticias + ficha de artículo (API /api/articles)
 ├── busqueda.html               ← búsqueda global (API /api/search)
 ├── torneos.html / torneo.html  ← inscripción real + ficha de torneo
 ├── partidos/ranking/jugadores/llaves/clips/membresías/tienda/…
