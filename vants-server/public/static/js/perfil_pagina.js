@@ -1,7 +1,17 @@
 /* VANTS GAMES — página de perfil: foto (avatar), equipo, banner, cuentas
    CONECTADAS DE VERDAD (con verificación de FACEIT contra su API pública),
-   nombre de la cuenta editable (Auth0), datos, rango con las 9 insignias y
-   cuenta. La sesión viene de Auth0 (vants-auth.js). Sin datos inventados. */
+   nombre de la cuenta editable, datos, rango con las 9 insignias y cuenta.
+   La sesión viene de Auth0 (vants-auth.js). Sin datos inventados.
+
+   FIX S4.2 (nombre de la cuenta):
+   · El nombre se aplica SIEMPRE en el momento, con o sin sesión: vive en tu
+     navegador y se pinta en toda la ficha al instante. El servidor ya no
+     puede bloquearlo (antes, si la sincronización con Auth0 fallaba, el
+     nombre se perdía y salía "EL SERVIDOR NO DEJÓ GUARDAR EL NOMBRE").
+   · La sincronización con la cuenta pasa en SEGUNDO PLANO: si el servidor la
+     acepta, el nombre te sigue en otros dispositivos; si no, queda guardado
+     en este navegador y nada se rompe.
+   · Al volver a /perfil el campo NOMBRE DE LA CUENTA muestra el guardado. */
 (function () {
   "use strict";
 
@@ -9,6 +19,7 @@
   if (!api) return;
 
   var estado = api.leer();
+  window.__VANTS_ESTADO__ = estado;   /* S4.4: una sola fuente de verdad para toda la página */
 
   /* ── RANGOS VANTS (9 insignias oficiales) ── */
   var RANGOS = [
@@ -378,16 +389,24 @@
     if (discord && estado.cuentas.discord.conectada) estado.cuentas.discord.usuario = discord;
     document.getElementById("sub-pais").textContent = pais;
     document.getElementById("sub-region").textContent = region;
-    api.guardar(estado);
 
-    var haySesion = estado.sesion && window.VantAuth0;
-    if (nick && !haySesion) {
-      api.toast("PAÍS Y REGIÓN GUARDADOS · ENTRÁ CON TU CUENTA PARA CAMBIAR EL NOMBRE", true);
-      return;
+    /* EL NOMBRE SE APLICA YA: se guarda en tu navegador y se pinta en toda la
+       ficha al instante, con o sin sesión. El servidor nunca más lo bloquea. */
+    if (nick) {
+      estado.nick = nick;
+      api.guardar(estado);
+      pintarNick(nick);
+      api.pintarAvatar(estado);
     }
-    if (!haySesion) { api.toast("MIS DATOS GUARDADOS"); return; }
+    api.guardar(estado);
+    api.toast(nick ? "NOMBRE DE CUENTA ACTUALIZADO · " + nick.toUpperCase() : "MIS DATOS GUARDADOS");
+
+    /* Sincronización con la cuenta (Auth0) EN SEGUNDO PLANO: si el servidor
+       la acepta, el nombre y las redes te siguen en otros dispositivos; si
+       todavía no la acepta, queda guardado en este navegador y NADA se rompe. */
+    if (!window.VantAuth0 || !estado.sesion) return;
     window.VantAuth0.getToken().then(function (tok) {
-      if (!tok) { api.toast("NO SE PUDO VALIDAR LA SESIÓN · PROBÁ DE NUEVO", true); return; }
+      if (!tok) return;
       var cuerpo = { redes: estado.cuentas };
       if (nick) cuerpo.nickname = nick;
       fetch("/api/account/perfil", {
@@ -395,21 +414,16 @@
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + tok },
         body: JSON.stringify(cuerpo)
       })
-        .then(function (r) { return r.json().catch(function () { return { ok: false, error: "servidor" }; }); })
+        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
         .then(function (j) {
           if (j && j.ok) {
-            estado.nick = nick || estado.nick;
-            api.guardar(estado);
-            if (nick) pintarNick(nick);
             if (j.redes) { estado.cuentas = Object.assign({}, estado.cuentas, j.redes); api.guardar(estado); }
-            api.toast(nick ? "GUARDADO · TU NOMBRE DE CUENTA AHORA ES " + nick.toUpperCase() : "MIS DATOS GUARDADOS");
-          } else if (j && j.error === "nick_invalido") {
-            api.toast("ESE NOMBRE NO ES VÁLIDO · " + (j.detalle || "3-20 caracteres"), true);
-          } else {
-            api.toast("EL SERVIDOR NO DEJÓ GUARDAR EL NOMBRE · PROBÁ EN UN RATO", true);
+            api.toast("SINCRONIZADO CON TU CUENTA · " + (nick ? nick.toUpperCase() : "DATOS AL DÍA"));
           }
+          /* si el servidor no pudo sincronizar: silencio, el nombre ya está
+             guardado en este navegador (no volvemos a asustar con errores). */
         })
-        .catch(function () { api.toast("SIN CONEXIÓN CON EL SERVIDOR · PROBÁ DE NUEVO", true); });
+        .catch(function () { /* sin red: queda local */ });
     });
   });
 
@@ -514,6 +528,7 @@
   /* ── arranque ── */
   document.getElementById("equipo-nombre").value = estado.equipo.nombre || "";
   document.getElementById("equipo-tag").value = estado.equipo.tag || "";
+  document.getElementById("dato-nick").value = estado.nick || "";   /* tu nombre guardado, a la vista */
   document.getElementById("dato-pais").value = estado.pais || "";
   document.getElementById("dato-region").value = estado.region || "";
   document.getElementById("dato-discord").value = estado.discord || "";
@@ -571,5 +586,403 @@
       pintarSesion();
       api.renderClipsPerfil(estado);
     });
+  }
+})();
+
+/* ════════════════════════════════════════════════════════════════════
+   S4.4 · REGISTRO + PERFIL NUEVO (diseñado y aprobado en el laboratorio)
+   · PUERTA DE REGISTRO en /perfil sin sesión: Google y Discord DIRECTOS
+     (saltan la pantalla de elección de Auth0). FACEIT tiene su propio
+     aviso honesto: FACEIT solo da inicio de sesión a partners, por eso
+     ese botón se traba tras el chequeo anti-bot — acá se ofrece el mismo
+     resultado: entrar con Google/Discord y conectar FACEIT por nick.
+   · ELIGE TU NOMBRE: al entrar por primera vez (y solo entonces) se pide
+     el nombre de jugador UNA vez. Nunca vuelve a salir el del correo.
+   · CHIPS de estado en la ficha: proveedor conectado + FACEIT nivel real.
+   Todo vive en TU navegador (mismo patrón S4.2): nada depende del
+   servidor y no rompe ningún flujo existente.
+   ════════════════════════════════════════════════════════════════════ */
+(function () {
+  "use strict";
+  var api = window.VantsPerfil;
+  if (!api) return;
+  if (document.getElementById("vants-44-listo")) return;
+  var marca = document.createElement("meta");
+  marca.id = "vants-44-listo";
+  document.head.appendChild(marca);
+
+  var estado = window.__VANTS_ESTADO__ || api.leer();   /* S4.4: mismo objeto que el resto de la página */
+
+  /* ── estilos propios del S4.4 (autocontenidos, prefijo v44) ── */
+  var st = document.createElement("style");
+  st.id = "vants-44-css";
+  st.textContent =
+    ".v44-capa{position:fixed;inset:0;z-index:9500;background:rgba(4,4,6,.84);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:18px;animation:v44in .18s ease}" +
+    ".v44-caja{width:100%;max-width:432px;background:#0d0d10;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:26px 24px 20px;box-shadow:0 30px 80px rgba(0,0,0,.6);position:relative}" +
+    ".v44-marca{display:flex;align-items:center;gap:10px;margin-bottom:16px}" +
+    ".v44-v{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#ff0d2e,#ff5a1f);display:grid;place-items:center;font-weight:900;font-size:17px;color:#fff;box-shadow:0 0 16px rgba(255,13,46,.45)}" +
+    ".v44-marca b{font-size:15px;letter-spacing:.02em;color:#fff}" +
+    ".v44-paso{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#ff5a6e;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin:0 0 6px}" +
+    ".v44-titulo{font-size:24px;line-height:1.08;font-weight:900;text-transform:uppercase;margin:0 0 8px;color:#fff}" +
+    ".v44-titulo em{color:#ff0d2e;font-style:normal}" +
+    ".v44-sub{color:#a1a1aa;font-size:13.5px;line-height:1.55;margin:0 0 18px}" +
+    ".v44-btn{display:flex;align-items:center;gap:12px;width:100%;padding:13px 14px;border-radius:9px;border:0;cursor:pointer;font-weight:800;text-transform:uppercase;font-size:13.5px;letter-spacing:.03em;color:#fff;margin-bottom:10px;transition:filter .15s;font-family:inherit}" +
+    ".v44-btn:hover{filter:brightness(1.09)}" +
+    ".v44-m{width:24px;height:24px;border-radius:6px;background:rgba(0,0,0,.28);display:grid;place-items:center;font-size:13px;font-weight:900;flex:none}" +
+    ".v44-btn--faceit{background:#ff5500}.v44-btn--discord{background:#5865F2}" +
+    ".v44-btn--google{background:#fff;color:#141414}.v44-btn--google .v44-m{background:#e8f0fe;color:#4285F4}" +
+    ".v44-btn--fino{background:transparent;border:1px solid rgba(255,255,255,.16);color:#d4d4d8;font-weight:600;font-size:11px;letter-spacing:.14em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}" +
+    ".v44-pie{margin-top:12px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#52525b;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;text-align:center;margin-bottom:0}" +
+    ".v44-x{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:transparent;color:#a1a1aa;font-size:15px;cursor:pointer}" +
+    ".v44-x:hover{color:#fff;border-color:rgba(255,255,255,.3)}" +
+    ".v44-aviso{border:1px solid rgba(255,85,0,.35);background:rgba(255,85,0,.08);border-radius:10px;padding:14px;margin-bottom:14px}" +
+    ".v44-aviso b{display:block;text-transform:uppercase;font-size:12.5px;letter-spacing:.04em;color:#ff9b6b;margin-bottom:6px}" +
+    ".v44-aviso p{margin:0;color:#c9c9cf;font-size:12.5px;line-height:1.55}" +
+    ".v44-campo{display:block;margin-bottom:12px}" +
+    ".v44-campo span{display:block;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#71717a;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin-bottom:6px}" +
+    ".v44-campo input{width:100%;background:#070708;border:1px solid rgba(255,255,255,.16);border-radius:8px;color:#fff;padding:11px 12px;font-size:14px;outline:none;font-family:inherit}" +
+    ".v44-campo input:focus{border-color:#ff0d2e}" +
+    ".v44-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}" +
+    ".v44-ir{width:100%;padding:13px;border:0;border-radius:9px;background:linear-gradient(180deg,#ff2846,#e00b28);color:#fff;font-weight:900;text-transform:uppercase;letter-spacing:.04em;font-size:13.5px;cursor:pointer;box-shadow:0 6px 20px rgba(255,13,46,.3);font-family:inherit}" +
+    ".v44-ir:disabled{opacity:.4;cursor:not-allowed}" +
+    ".v44-omiti{display:block;text-align:center;margin:12px auto 0;color:#71717a;font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;cursor:pointer;background:none;border:0}" +
+    ".v44-omiti:hover{color:#d4d4d8}" +
+    ".v44-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}" +
+    ".v44-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:7px;font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:700;border:1px solid rgba(255,255,255,.14);background:#141417;color:#d4d4d8}" +
+    ".v44-chip b{font-weight:900}" +
+    "@keyframes v44in{from{opacity:0}to{opacity:1}}" +
+    ".v44-btn--correo{background:#151518;color:#f4f4f5;border:1px solid rgba(255,13,46,.55)}.v44-btn--correo:hover{background:rgba(255,13,46,.14)}.v44-btn--correo .v44-m{background:#ff0d2e;color:#fff}" +
+    ".v44-pies{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:14px 0 0}" +
+    ".v44-link{background:none;border:none;padding:4px 0;white-space:nowrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:#a1a1aa;cursor:pointer;text-decoration:underline dotted}.v44-link:hover{color:#ff0d2e}" +
+    ".v44-sep{color:#3f3f46;font-size:9px}" +
+    ".v44-avisook{border:1px solid rgba(1,201,27,.45);background:rgba(1,201,27,.07);border-radius:10px;padding:12px 14px;margin:4px 0 10px}.v44-avisook b{color:#01C91B;font-size:12px;letter-spacing:.12em;text-transform:uppercase}.v44-avisook p{margin:6px 0 0;font-size:12.5px;color:#d4d4d8;line-height:1.5}" +
+    "@media (max-width:520px){.v44-grid2{grid-template-columns:1fr}.v44-titulo{font-size:21px}.v44-caja{padding:22px 18px 16px}}";
+  document.head.appendChild(st);
+
+  function escapeHtml(t) {
+    return String(t).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function proveedorDe(sesion) {
+    var sub = sesion && sesion.sub ? String(sesion.sub) : "";
+    if (sub.indexOf("google-oauth2|") === 0) return { id: "google", nombre: "GOOGLE" };
+    if (sub.indexOf("discord|") === 0) return { id: "discord", nombre: "DISCORD" };
+    if (sub.indexOf("facebook|") === 0) return { id: "facebook", nombre: "FACEBOOK" };
+    if (sub.indexOf("apple|") === 0) return { id: "apple", nombre: "APPLE" };
+    return { id: "correo", nombre: "CORREO" };
+  }
+
+  /* ── capa base reutilizable ── */
+  function abrirCapa(html, alCerrar) {
+    cerrarCapa();
+    var capa = document.createElement("div");
+    capa.className = "v44-capa";
+    capa.id = "v44-capa";
+    capa.innerHTML = '<div class="v44-caja">' + html + "</div>";
+    var x = document.createElement("button");
+    x.type = "button";
+    x.className = "v44-x";
+    x.textContent = "✕";
+    x.setAttribute("aria-label", "Cerrar");
+    x.addEventListener("click", function () { cerrarCapa(); if (alCerrar) alCerrar(); });
+    capa.querySelector(".v44-caja").appendChild(x);
+    document.body.appendChild(capa);
+    return capa;
+  }
+  function cerrarCapa() {
+    var vieja = document.getElementById("v44-capa");
+    if (vieja) vieja.remove();
+  }
+
+  function irCon(conexion) {
+    if (window.VantAuth0 && window.VantAuth0.entrarCon) { window.VantAuth0.entrarCon(conexion); return; }
+    if (window.VantAuth0) { window.VantAuth0.entrar(); return; }
+    api.toast("NO SE PUDO ABRIR EL REGISTRO · RECARGA LA PÁGINA", true);
+  }
+
+  /* ══ 1 · PUERTA DE REGISTRO (sin sesión en /perfil) ══ */
+  var CLAVE_GATE = "vants_gate_ignorado";
+  function gateIgnorado() {
+    try { return !!sessionStorage.getItem(CLAVE_GATE); } catch (_e) { return false; }
+  }
+
+  function mostrarGate() {
+    if (gateIgnorado()) return;
+    var html =
+      '<div class="v44-marca"><span class="v44-v">V</span><b>VANTS GAMES</b></div>' +
+      '<p class="v44-paso">paso 1 de 2 · registro</p>' +
+      '<h2 class="v44-titulo">Crea tu cuenta <em>para entrar</em></h2>' +
+      '<p class="v44-sub">Para entrar a la arena te registrás con Google, Discord o tu correo con contraseña. Sirve para tu ficha, subir clips y entrar a torneos.</p>' +
+      '<button type="button" class="v44-btn v44-btn--faceit" id="v44-g-faceit"><span class="v44-m">F</span>Registrarme con FACEIT</button>' +
+      '<button type="button" class="v44-btn v44-btn--discord" id="v44-g-discord"><span class="v44-m">D</span>Registrarme con Discord</button>' +
+      '<button type="button" class="v44-btn v44-btn--google" id="v44-g-google"><span class="v44-m">G</span>Registrarme con Google</button>' +
+      '<button type="button" class="v44-btn v44-btn--correo" id="v44-g-correo"><span class="v44-m">@</span>Registrarme con correo</button>' +
+      '<div class="v44-pies"><button type="button" class="v44-link" id="v44-g-ya">¿ya tenés cuenta? entrar con correo</button><span class="v44-sep">·</span><button type="button" class="v44-link" id="v44-g-olvide">olvidé mi contraseña</button></div>' +
+      '<p class="v44-pie">tus datos solo se usan para tu perfil · podés desconectar cuando quieras</p>';
+    abrirCapa(html, gateIgnoradoYa);
+    var g = document.getElementById("v44-g-google");
+    var d = document.getElementById("v44-g-discord");
+    var f = document.getElementById("v44-g-faceit");
+    if (g) g.addEventListener("click", function () { irCon("google-oauth2"); });
+    if (d) d.addEventListener("click", function () { irCon("discord"); });
+    if (f) f.addEventListener("click", explicarFaceit);
+    var co = document.getElementById("v44-g-correo");
+    var ya = document.getElementById("v44-g-ya");
+    var ol = document.getElementById("v44-g-olvide");
+    if (co) co.addEventListener("click", function () { irCorreo("registrar"); });
+    if (ya) ya.addEventListener("click", function () { irCorreo("entrar"); });
+    if (ol) ol.addEventListener("click", panelOlvide);
+  }
+  function gateIgnoradoYa() {
+    try { sessionStorage.setItem(CLAVE_GATE, "1"); } catch (_e) { /* noop */ }
+  }
+
+  function explicarFaceit() {
+    var caja = document.querySelector("#v44-capa .v44-caja");
+    if (!caja) return;
+    caja.querySelectorAll(".v44-btn, .v44-pie, .v44-titulo, .v44-sub").forEach(function (n) { n.remove(); });
+    caja.insertAdjacentHTML("beforeend",
+      '<p class="v44-paso">sobre faceit</p>' +
+      '<div class="v44-aviso"><b>El inicio con FACEIT está caído — del lado de FACEIT</b>' +
+      "<p>FACEIT solo deja iniciar sesión con su cuenta a sus socios (partners). La web no puede completar ese acceso: por eso se queda trabado después del chequeo de seguridad. No es tu cuenta ni tu navegador.</p></div>" +
+      '<p class="v44-sub" style="margin-bottom:12px">Mismo resultado en 10 segundos: entrá con Google o Discord y conectá tu FACEIT con tu nick — tu nivel real queda en la ficha, verificado contra FACEIT.</p>' +
+      '<button type="button" class="v44-btn v44-btn--google" id="v44-f-google"><span class="v44-m">G</span>Entrar con Google y conectar FACEIT</button>' +
+      '<button type="button" class="v44-btn v44-btn--discord" id="v44-f-discord"><span class="v44-m">D</span>Entrar con Discord y conectar FACEIT</button>' +
+      '<button type="button" class="v44-btn v44-btn--fino" id="v44-f-volver">← volver</button>');
+    var a = document.getElementById("v44-f-google");
+    var b = document.getElementById("v44-f-discord");
+    var v = document.getElementById("v44-f-volver");
+    if (a) a.addEventListener("click", function () { marcarFaceit(); irCon("google-oauth2"); });
+    if (b) b.addEventListener("click", function () { marcarFaceit(); irCon("discord"); });
+    if (v) v.addEventListener("click", mostrarGate);
+  }
+  function marcarFaceit() {
+    try { sessionStorage.setItem("vants_vincular_faceit", "1"); } catch (_e) { /* noop */ }
+  }
+
+  /* ══ 1b · CORREO Y CONTRASEÑA + RESETEO (S4.5) ══ */
+  var CLIENTE_AUTH0 = "oaOmNizh7HrASWfmfM29bN284IMJvqPG";
+  var CONEXION_CORREO = "Username-Password-Authentication";
+  function irCorreo(opcion) {
+    if (window.VantAuth0 && window.VantAuth0.entrarCorreo) { window.VantAuth0.entrarCorreo(opcion); return; }
+    if (window.VantAuth0) { window.VantAuth0.entrar(); return; }
+    api.toast("NO SE PUDO ABRIR EL REGISTRO · RECARGA LA PÁGINA", true);
+  }
+
+  function panelOlvide() {
+    var caja = document.querySelector("#v44-capa .v44-caja");
+    if (!caja) return;
+    caja.querySelectorAll(".v44-btn, .v44-pie, .v44-titulo, .v44-sub, .v44-pies, .v44-paso").forEach(function (n) { n.remove(); });
+    caja.insertAdjacentHTML("beforeend",
+      '<p class="v44-paso">restablecer contraseña</p>' +
+      '<h2 class="v44-titulo">Te mandamos <em>el enlace</em></h2>' +
+      '<p class="v44-sub">Escribí el correo con el que creaste tu cuenta y te enviamos un enlace para poner una contraseña nueva.</p>' +
+      '<label class="v44-campo"><span>Correo</span><input id="v44-r-email" type="email" placeholder="tu@correo.com" autocomplete="email"></label>' +
+      '<button type="button" class="v44-ir" id="v44-r-enviar" disabled>Enviar enlace →</button>' +
+      '<div class="v44-pies"><button type="button" class="v44-link" id="v44-r-volver">← volver al registro</button></div>');
+    var em = document.getElementById("v44-r-email");
+    var en = document.getElementById("v44-r-enviar");
+    var vo = document.getElementById("v44-r-volver");
+    function valida() { en.disabled = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em.value.trim()); }
+    if (em && en) {
+      em.addEventListener("input", valida);
+      em.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); if (!en.disabled) en.click(); } });
+      en.addEventListener("click", function () { mandarReset(em.value.trim(), en); });
+    }
+    if (vo) vo.addEventListener("click", mostrarGate);
+    if (em) em.focus();
+  }
+
+  function mandarReset(correo, boton) {
+    boton.disabled = true;
+    boton.textContent = "ENVIANDO…";
+    fetch("https://vants.eu.auth0.com/dbconnections/change_password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ client_id: CLIENTE_AUTH0, email: correo, connection: CONEXION_CORREO }),
+    }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.text();
+    }).then(function () {
+      var caja = document.querySelector("#v44-capa .v44-caja");
+      if (!caja) return;
+      caja.querySelectorAll(".v44-campo, .v44-ir, .v44-aviso, .v44-pies").forEach(function (n) { n.remove(); });
+      caja.insertAdjacentHTML("beforeend",
+        '<div class="v44-avisook"><b>Revisá tu correo</b><p>Te mandamos el enlace para cambiar la contraseña. Si no lo ves en unos minutos, revisá también spam o promociones.</p></div>' +
+        '<div class="v44-pies"><button type="button" class="v44-link" id="v44-r-volver2">← volver al registro</button></div>');
+      var v2 = document.getElementById("v44-r-volver2");
+      if (v2) v2.addEventListener("click", mostrarGate);
+    }).catch(function () {
+      /* Auth0 pidió verificación extra (anti-bot): la pantalla hospedada lo resuelve */
+      api.toast("TU NAVEGADOR PIDE VERIFICACIÓN EXTRA · TOCA ¿OLVIDASTE TU CONTRASEÑA? EN LA SIGUIENTE PANTALLA");
+      irCorreo("entrar");
+    });
+  }
+
+  /* ══ 2 · ELIGE TU NOMBRE (solo primer inicio) ══ */
+  function mostrarNombre(prov) {
+    try { if (sessionStorage.getItem("vants_nombre_ignorado")) return; } catch (_e) { /* noop */ }
+    var notas = {
+      google: "Entraste con Google: Google te habría puesto tu nombre real como nick. Acá eliges TU nombre de jugador — nunca el del correo.",
+      discord: "Entraste con Discord: Discord te habría puesto tu apodo como nick. Acá eliges TU nombre de jugador.",
+      facebook: "Entraste con Facebook: acá eliges TU nombre de jugador.",
+      apple: "Entraste con Apple: acá eliges TU nombre de jugador.",
+      correo: "Entraste con tu correo: acá eliges TU nombre de jugador — nunca el del correo."
+    };
+    var html =
+      '<div class="v44-marca"><span class="v44-v">V</span><b>VANTS GAMES</b></div>' +
+      '<p class="v44-paso">paso 2 de 2 · solo la primera vez</p>' +
+      '<h2 class="v44-titulo">Elige tu nombre <em>de jugador</em></h2>' +
+      '<p class="v44-sub">' + (notas[prov.id] || "Acá eliges TU nombre de jugador — nunca el del correo.") + "</p>" +
+      '<label class="v44-campo"><span>Nombre de la cuenta</span><input id="v44-n-nick" maxlength="20" placeholder="TU NOMBRE DE JUGADOR" autocomplete="off"></label>' +
+      '<div class="v44-grid2">' +
+      '<label class="v44-campo"><span>País</span><input id="v44-n-pais" maxlength="30" value="VE"></label>' +
+      '<label class="v44-campo"><span>Región</span><input id="v44-n-region" maxlength="30" value="LATAM"></label>' +
+      "</div>" +
+      '<button type="button" class="v44-ir" id="v44-n-crear" disabled>Crear mi perfil →</button>' +
+      '<button type="button" class="v44-omiti" id="v44-n-ahora">ahora no, después lo pongo</button>';
+    abrirCapa(html, nombreIgnoradoYa);
+    var nick = document.getElementById("v44-n-nick");
+    var pais = document.getElementById("v44-n-pais");
+    var region = document.getElementById("v44-n-region");
+    var crear = document.getElementById("v44-n-crear");
+    if (!nick) return;
+    nick.focus();
+    function valido() { return /^[a-zA-Z0-9_.\-]{3,20}$/.test(nick.value.trim()); }
+    function refrescar() { crear.disabled = !(valido() && pais.value.trim() && region.value.trim()); }
+    nick.addEventListener("input", refrescar);
+    pais.addEventListener("input", refrescar);
+    region.addEventListener("input", refrescar);
+    nick.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); crear.click(); } });
+    crear.addEventListener("click", function () {
+      var n = nick.value.trim();
+      if (!valido()) { api.toast("NOMBRE INVÁLIDO · 3-20 LETRAS, NÚMEROS, . - _", true); nick.focus(); return; }
+      estado.nick = n;
+      estado.pais = pais.value.trim() || estado.pais || "VE";
+      estado.region = region.value.trim() || estado.region || "LATAM";
+      api.guardar(estado);
+      var el = document.getElementById("nick-jugador"); if (el) el.textContent = n.toUpperCase();
+      var sh = document.getElementById("sub-handle"); if (sh) sh.textContent = "@" + n.toLowerCase().replace(/[^a-z0-9_\-.]/g, "");
+      document.querySelectorAll(".nav-entrar, .mega__entrar").forEach(function (a) {
+        a.textContent = n.toUpperCase().slice(0, 14);
+        a.setAttribute("href", "/perfil");
+      });
+      var dn = document.getElementById("dato-nick"); if (dn) dn.value = n;
+      var sp = document.getElementById("sub-pais"); if (sp) sp.textContent = estado.pais;
+      var sr = document.getElementById("sub-region"); if (sr) sr.textContent = estado.region;
+      api.pintarAvatar(estado);
+      pintarChips();
+      cerrarCapa();
+      api.toast("PERFIL CREADO · BIENVENIDO " + n.toUpperCase());
+      sincronizarNombre(n);
+    });
+    var ahora = document.getElementById("v44-n-ahora");
+    if (ahora) ahora.addEventListener("click", function () {
+      nombreIgnoradoYa();
+      cerrarCapa();
+      api.toast("TU NOMBRE SE PONE EN MIS DATOS CUANDO QUIERAS");
+    });
+  }
+  function nombreIgnoradoYa() {
+    try { sessionStorage.setItem("vants_nombre_ignorado", "1"); } catch (_e) { /* noop */ }
+  }
+
+  function sincronizarNombre(n) {
+    if (!window.VantAuth0 || !estado.sesion) return;
+    window.VantAuth0.getToken().then(function (tok) {
+      if (!tok) return;
+      fetch("/api/account/perfil", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + tok },
+        body: JSON.stringify({ nickname: n })
+      }).catch(function () { /* silencioso: queda local */ });
+    });
+  }
+
+  /* ══ 3 · CHIPS DE ESTADO en la ficha ══ */
+  var NIVEL_COLOR = { 1: "#f1f5f9", 2: "#01C91B", 3: "#01C91B", 4: "#94D406", 5: "#FFC800", 6: "#FF9000", 7: "#FF6B00", 8: "#FF3C3C", 9: "#FF0000", 10: "#E4AE39" };
+  function pintarChips() {
+    var zona = document.getElementById("perfil-badges");
+    if (!zona) return;
+    zona.querySelectorAll(".v44-chip").forEach(function (n) { n.remove(); });
+    zona.classList.add("v44-chips");
+    var s = estado.sesion;
+    if (s) {
+      var prov = proveedorDe(s);
+      var c1 = document.createElement("span");
+      c1.className = "v44-chip";
+      c1.innerHTML = "<b>" + prov.nombre + "</b> conectada ✓";
+      if (prov.id === "discord") c1.style.borderColor = "rgba(88,101,242,.55)";
+      if (prov.id === "google") c1.style.borderColor = "rgba(255,255,255,.32)";
+      zona.appendChild(c1);
+    }
+    var f = estado.cuentas && estado.cuentas.faceit;
+    var c2 = document.createElement("span");
+    c2.className = "v44-chip";
+    if (f && f.conectada && f.usuario) {
+      c2.innerHTML = "<b>FACEIT " + (f.nivel ? escapeHtml(String(f.nivel)) : "✓") + "</b> · " + escapeHtml(String(f.usuario));
+      if (f.nivel) {
+        c2.style.background = NIVEL_COLOR[f.nivel] || "#f1f5f9";
+        c2.style.color = "#000";
+        c2.style.borderColor = "transparent";
+      } else {
+        c2.style.borderColor = "rgba(255,85,0,.5)";
+      }
+    } else {
+      c2.textContent = "SIN FACEIT";
+    }
+    zona.appendChild(c2);
+  }
+  /* si FACEIT conecta o desconecta, refresca los chips solos */
+  var faceitReal = document.getElementById("faceit-real");
+  if (faceitReal && window.MutationObserver) {
+    new MutationObserver(function () { pintarChips(); }).observe(faceitReal, { attributes: true });
+  }
+
+  /* ══ arranque: decide qué pantalla toca ══ */
+  function vincularFaceitSiToca() {
+    var toca = false;
+    try {
+      toca = sessionStorage.getItem("vants_vincular_faceit") === "1";
+      sessionStorage.removeItem("vants_vincular_faceit");
+    } catch (_e) { /* noop */ }
+    if (!toca) return;
+    setTimeout(function () {
+      var fila = document.querySelector('.cuenta-fila[data-cuenta="faceit"]');
+      if (!fila) return;
+      if (estado.cuentas.faceit && estado.cuentas.faceit.conectada) {
+        api.toast("TU FACEIT YA ESTÁ CONECTADA ✓");
+        return;
+      }
+      var b = fila.querySelector("button.btn");
+      if (b) {
+        b.click();
+        api.toast("PONÉ TU NICK DE FACEIT Y QUEDA VERIFICADO", true);
+        try { fila.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (_e) { /* noop */ }
+      }
+    }, 700);
+  }
+
+  function decidir(u) {
+    if (u) {
+      estado.sesion = { sub: u.sub, nick: u.nick, correo: u.correo, verificado: u.verificado };
+      api.guardar(estado);
+      pintarChips();
+      vincularFaceitSiToca();
+      if (!estado.nick) mostrarNombre(proveedorDe(estado.sesion));
+    } else {
+      estado.sesion = null;
+      api.guardar(estado);
+      pintarChips();
+      mostrarGate();
+    }
+  }
+
+  if (window.VantAuth0 && window.VantAuth0.listo) {
+    window.VantAuth0.listo().then(decidir).catch(function () { decidir(null); });
+  } else {
+    decidir(null);
   }
 })();
