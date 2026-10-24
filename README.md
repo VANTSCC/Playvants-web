@@ -1,4 +1,4 @@
-# VANTS OFICIAL Arena competitiva🇻🇪 · Plataforma de esports
+# VANTS OFICIAL Arena competitiva 🇻🇪 · Plataforma de esports
 
 Plataforma de esports estilo torneos (referencia de UX: strafe.com): calendario de torneos
 por juego y estado, partidas en vivo, ranking, brackets, equipos, jugadores, noticias,
