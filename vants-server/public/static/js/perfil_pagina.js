@@ -986,3 +986,286 @@
     decidir(null);
   }
 })();
+
+/* ════════════════════════════════════════════════════════════════════
+   S4.6 · PERFIL 2.0 (diseñado y aprobado en el laboratorio — pestaña 4)
+   Re-layout completo de la ficha SIN tocar datos ni flujos:
+   · HERO de verdad: banner con rejilla y línea de marca, avatar con
+     brillo, nombre grande, chips de estado, acciones (COMPARTIR PERFIL
+     que copia tu URL + EDITAR FICHA) y tu rango VANTS al costado con
+     la barra de XP en degradado de marca.
+   · 6 stats como TILES (los 4 reales que ya existían + 2 reservados
+     con «próximamente»: nada de datos inventados).
+   · LA ESCALERA (9 rangos) pasa a sección de ancho completo.
+   · GRILLA de 2 columnas para las secciones (antes: una columna larga
+     donde todo se perdía): datos/FACEIT/redes a la izquierda; clips,
+     equipo, banner, membresía y cuenta a la derecha.
+   · TODO se MUEVE, nada se re-crea: mismos nodos, mismos IDs, mismos
+     listeners — la puerta S4.5, el nombre S4.4 y los clips S4.3 siguen
+     funcionando exactamente igual.
+   ════════════════════════════════════════════════════════════════════ */
+(function () {
+  "use strict";
+  var vent = document.getElementById("ventana-perfil");
+  if (!vent || document.getElementById("vants-46-listo")) return;
+  var marca = document.createElement("meta");
+  marca.id = "vants-46-listo";
+  document.head.appendChild(marca);
+
+  /* ── estilos propios del S4.6 (scope .v46 sobre la ventana del perfil) ── */
+  var st = document.createElement("style");
+  st.id = "vants-46-css";
+  st.textContent =
+    ".v46 .v46-hero{background:linear-gradient(180deg,rgba(255,13,46,.055),transparent 34%),#070708;border-bottom:1px solid var(--borde-2)}" +
+    ".v46 .v46-hero__banner{position:relative}" +
+    ".v46 #banner::before{content:\"\";position:absolute;inset:0;background-image:linear-gradient(rgba(255,13,46,.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,13,46,.5) 1px,transparent 1px);background-size:26px 26px;opacity:.14;pointer-events:none;z-index:1}" +
+    ".v46 .v46-hero__linea{position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,#ff0d2e,#ff5a1f 55%,transparent);z-index:1;pointer-events:none}" +
+    ".v46 .v46-hero__cuerpo{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:0 20px 18px;margin-top:-34px;position:relative;z-index:2}" +
+    ".v46 .perfil__identidad{margin-top:0;padding:0;flex:1 1 320px;min-width:0;align-items:flex-start}" +
+    ".v46 .perfil__avatar{border-radius:16px;box-shadow:0 0 26px rgba(255,13,46,.4)}" +
+    ".v46 .perfil__nombre h2{font-size:clamp(26px,4vw,36px)}" +
+    ".v46 .perfil__sub{margin:6px 0 10px}" +
+    ".v46 .v46-hero__lado{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;justify-content:flex-end}" +
+    ".v46 .v46-hero__acciones{display:flex;flex-direction:column;gap:8px;min-width:172px}" +
+    ".v46 .v46-hero__acciones .btn{width:100%;justify-content:center;text-align:center}" +
+    ".v46 .v46-hero__rango .rango-caja{width:216px;flex-direction:column;text-align:center;gap:12px;padding:16px 14px;border-radius:12px;border-color:var(--borde-2);background:rgba(10,11,15,.75)}" +
+    ".v46 .rango-caja__insignia{width:64px;height:64px;border-radius:12px}" +
+    ".v46 .rango-caja__insignia img{width:52px;height:52px;filter:drop-shadow(0 0 12px rgba(255,13,46,.35))}" +
+    ".v46 .rango-caja__info{flex:none;width:100%}" +
+    ".v46 .rango-caja__info b{font-size:19px}" +
+    ".v46 .rango-caja__info small{margin:4px 0 8px}" +
+    ".v46 .rango-caja__xp{width:100%;text-align:center}" +
+    ".v46 .rango-caja__xp b{font-size:17px}" +
+    ".v46 .rango-caja .barra i{background:linear-gradient(90deg,#ff0d2e,#ff5a1f)}" +
+    ".v46 .v46-chip{display:inline-flex;align-items:center;padding:6px 10px;border-radius:7px;font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;border:1px solid rgba(255,255,255,.14);background:#141417;color:#d4d4d8}" +
+    ".v46 .v46-stats{padding:18px 20px 0}" +
+    ".v46 .stats-grid.v46-tiles{grid-template-columns:repeat(6,1fr);gap:10px;border:0;border-radius:0;overflow:visible;background:none}" +
+    ".v46 .v46-tiles .stat-caja{text-align:left;padding:14px 14px 12px;border:1px solid var(--borde);border-right:1px solid var(--borde);border-radius:12px;background:rgba(10,11,15,.66);transition:border-color .15s ease,box-shadow .15s ease}" +
+    ".v46 .v46-tiles .stat-caja:hover{border-color:rgba(255,13,46,.5);box-shadow:0 0 18px rgba(255,13,46,.14)}" +
+    ".v46 .stat-caja b{font-size:26px}" +
+    ".v46 .stat-caja small{color:var(--gris-2);white-space:nowrap;letter-spacing:.16em;font-size:8.5px}" +
+    ".v46 .v46-pronto{display:block;margin-top:7px;font-family:var(--mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:#454c58;white-space:nowrap}" +
+    ".v46 .v46-escalera{padding:14px 20px 0}" +
+    ".v46 .v46-grilla{display:grid;grid-template-columns:2fr 3fr;gap:14px;padding:16px 20px 26px;align-items:start}" +
+    ".v46 .v46-col{display:grid;gap:14px;min-width:0}" +
+    ".v46 .v46-fila2{display:grid;grid-template-columns:1fr 1fr;gap:14px}" +
+    ".v46 .cuenta-fila{flex-wrap:wrap;row-gap:8px}" +
+    ".v46 .perfil__bloque{background:rgba(10,11,15,.66);border:1px solid var(--borde);border-radius:12px;padding:18px}" +
+    ".v46 .perfil__bloque .etiqueta{color:#ff5a6e;letter-spacing:.18em;font-size:10px}" +
+    ".v46 .perfil__nota-nuevo{font-size:12.5px}" +
+    "@media (max-width:1120px){.v46 .stats-grid.v46-tiles{grid-template-columns:repeat(3,1fr)}}" +
+    "@media (max-width:980px){.v46 .v46-grilla{grid-template-columns:1fr}.v46 .v46-hero__lado{justify-content:flex-start;width:100%}}" +
+    "@media (max-width:640px){.v46 .stats-grid.v46-tiles{grid-template-columns:repeat(2,1fr)}.v46 .v46-fila2{grid-template-columns:1fr}.v46 .v46-hero__rango .rango-caja,.v46 .v46-hero__acciones{width:100%}.v46 .v46-hero__rango{width:100%}}";
+  document.head.appendChild(st);
+  vent.classList.add("v46");
+
+  function q(sel) { return vent.querySelector(sel); }
+
+  /* ── piezas existentes (por ID / contenido — nunca se re-crean) ── */
+  var barra = q(".perfil__barra");
+  var banner = document.getElementById("banner");
+  var identidad = q(".perfil__identidad");
+  var bEquipo = null, bBanner = null, bCuentas = null, bInsignias = null, bStats = null,
+      bRango = null, bFaceit = null, bMembresia = null, bEstado = null, bInscrip = null,
+      bCuenta = null, bClips = null;
+  var bDatos = document.getElementById("mis-datos");
+  var badges = document.getElementById("perfil-badges");
+  var badgesNota = null;
+  vent.querySelectorAll(".perfil__bloque").forEach(function (b) {
+    if (b === bDatos) return;
+    var e = b.querySelector("span.etiqueta");
+    var t = e ? e.textContent : "";
+    if (badges && b.contains(badges)) { bInsignias = b; badgesNota = b.querySelector(".perfil__nota-nuevo"); return; }
+    if (b.querySelector(".stats-grid")) { bStats = b; return; }
+    if (b.querySelector(".rango-caja")) { bRango = b; return; }
+    if (t.indexOf("MI EQUIPO") === 0) { bEquipo = b; return; }
+    if (t.indexOf("BANNER") === 0) { bBanner = b; return; }
+    if (t.indexOf("CUENTAS") === 0) { bCuentas = b; return; }
+    if (t.indexOf("FACEIT") === 0) { bFaceit = b; return; }
+    if (t.indexOf("MEMBRESÍA") === 0) { bMembresia = b; return; }
+    if (t.indexOf("ESTADO") === 0) { bEstado = b; return; }
+    if (t.indexOf("INSCRIPCIONES") !== -1) { bInscrip = b; return; }
+    if (t === "CUENTA") { bCuenta = b; return; }
+    if (t.indexOf("CLIPS") !== -1) { bClips = b; return; }
+  });
+  if (!bDatos || !identidad || !banner) return;
+
+  /* ── HERO: banner + identidad + acciones + rango ── */
+  var hero = document.createElement("div");
+  hero.className = "v46-hero";
+  var heroB = document.createElement("div");
+  heroB.className = "v46-hero__banner";
+  var linea = document.createElement("div");
+  linea.className = "v46-hero__linea";
+  heroB.appendChild(banner);
+  heroB.appendChild(linea);
+
+  var cuerpo = document.createElement("div");
+  cuerpo.className = "v46-hero__cuerpo";
+  cuerpo.appendChild(identidad);
+
+  /* los chips de estado (S4.4) pasan a vivir bajo el nombre, como en el LAB */
+  var sub = identidad.querySelector(".perfil__sub");
+  if (badges && sub) sub.parentNode.insertBefore(badges, sub.nextSibling);
+  var plan = document.getElementById("membresia-plan");
+  var txtPlan = plan ? String(plan.textContent || "").trim() : "";
+  var chipPlan = document.createElement("span");
+  chipPlan.className = "v46-chip";
+  chipPlan.textContent = /sin membres/i.test(txtPlan) ? "CUENTA GRATIS" : (txtPlan || "CUENTA GRATIS").toUpperCase();
+  if (badges) badges.parentNode.insertBefore(chipPlan, badges.nextSibling);
+
+  /* acciones: COMPARTIR PERFIL (nuevo) + EDITAR FICHA (el botón que ya existía) */
+  var acc = document.createElement("div");
+  acc.className = "v46-hero__acciones";
+  var comp = document.createElement("button");
+  comp.type = "button";
+  comp.className = "btn btn--rojo";
+  comp.textContent = "COMPARTIR PERFIL";
+  function copiarAlPortapapeles(texto, hecho) {
+    function alViejo() {
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = texto;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+      } catch (_e) { /* noop */ }
+      hecho();
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(texto).then(hecho, alViejo);
+    } else alViejo();
+  }
+  comp.addEventListener("click", function () {
+    copiarAlPortapapeles(location.origin + "/perfil", function () {
+      comp.textContent = "¡COPIADO ✓!";
+      setTimeout(function () { comp.textContent = "COMPARTIR PERFIL"; }, 1800);
+    });
+  });
+  var btnEditar = identidad.querySelector(".perfil__nombre h2 button");
+  if (!btnEditar) {
+    btnEditar = document.createElement("button");
+    btnEditar.type = "button";
+    btnEditar.className = "btn btn--fino";
+    btnEditar.addEventListener("click", function () {
+      var d = document.getElementById("mis-datos");
+      if (d) d.scrollIntoView({ behavior: "smooth" });
+    });
+  }
+  btnEditar.textContent = "EDITAR FICHA ↓";
+  acc.appendChild(comp);
+  acc.appendChild(btnEditar);
+
+  /* rango: la MISMA caja de siempre (IDs intactos), al costado del hero */
+  var lado = document.createElement("div");
+  lado.className = "v46-hero__lado";
+  var rangoWrap = document.createElement("div");
+  rangoWrap.className = "v46-hero__rango";
+  if (bRango) {
+    var rangoCaja = bRango.querySelector(".rango-caja");
+    if (rangoCaja) rangoWrap.appendChild(rangoCaja);
+  }
+  lado.appendChild(acc);
+  lado.appendChild(rangoWrap);
+  cuerpo.appendChild(lado);
+
+  hero.appendChild(heroB);
+  hero.appendChild(cuerpo);
+
+  /* ── STATS TILES: los 4 reales + 2 reservados (sin datos inventados) ── */
+  var statsSec = document.createElement("div");
+  statsSec.className = "v46-stats";
+  if (bStats) {
+    var grid = bStats.querySelector(".stats-grid");
+    if (grid) {
+      grid.classList.add("v46-tiles");
+      ["HEADSHOT %", "RACHA"].forEach(function (etq) {
+        var d = document.createElement("div");
+        d.className = "stat-caja v46-stat--pronto";
+        var b = document.createElement("b");
+        b.textContent = "—";
+        var s = document.createElement("small");
+        s.textContent = etq;
+        var p = document.createElement("span");
+        p.className = "v46-pronto";
+        p.textContent = "pronto";
+        d.appendChild(b); d.appendChild(s); d.appendChild(p);
+        grid.appendChild(d);
+      });
+    }
+    statsSec.appendChild(bStats);
+  }
+
+  /* ── ESCALERA (9 rangos) como sección de ancho completo ── */
+  var esc = document.createElement("div");
+  esc.className = "v46-escalera";
+  if (bRango) {
+    var eR = bRango.querySelector("span.etiqueta");
+    if (eR) eR.textContent = "VANTS RANKED · LA ESCALERA";
+    esc.appendChild(bRango);
+  }
+
+  /* ── GRILLA de secciones (2 columnas) ── */
+  var grilla = document.createElement("div");
+  grilla.className = "v46-grilla";
+  var colA = document.createElement("div");
+  colA.className = "v46-col";
+  var colB = document.createElement("div");
+  colB.className = "v46-col v46-col--ancha";
+  if (bCuentas) { var eC = bCuentas.querySelector("span.etiqueta"); if (eC) eC.textContent = "REDES Y CUENTAS"; }
+  if (bCuenta) { var eU = bCuenta.querySelector("span.etiqueta"); if (eU) eU.textContent = "CUENTA VINCULADA"; }
+  if (bClips) {
+    var eK = bClips.querySelector("span.etiqueta");
+    if (eK && eK.firstChild && eK.firstChild.nodeType === 3) eK.firstChild.nodeValue = "MIS CLIPS · ";
+    bClips.removeAttribute("style");
+  }
+  [bDatos, bFaceit, bCuentas, bEstado].forEach(function (b) { if (b) colA.appendChild(b); });
+  var fila2 = document.createElement("div");
+  fila2.className = "v46-fila2";
+  if (bMembresia) fila2.appendChild(bMembresia);
+  if (bCuenta) fila2.appendChild(bCuenta);
+  [bClips, bEquipo, bBanner, fila2, bInscrip].forEach(function (b) { if (b) colB.appendChild(b); });
+  grilla.appendChild(colA);
+  grilla.appendChild(colB);
+
+  /* ── montaje final de la ventana ── */
+  if (bInsignias) bInsignias.remove();   /* los badges ya viven en el hero */
+  while (vent.firstChild) vent.removeChild(vent.firstChild);
+  vent.appendChild(barra);
+  vent.appendChild(hero);
+  vent.appendChild(statsSec);
+  vent.appendChild(esc);
+  vent.appendChild(grilla);
+
+  /* ── el nombre VIVE en tu navegador: al recargar, el hero lo mantiene.
+     (S4.2 promete "el nombre se aplica SIEMPRE, con o sin sesión": el
+     campo MIS DATOS ya lo mostraba al volver; ahora también la ficha) ── */
+  var est46 = window.__VANTS_ESTADO__;
+  if (est46 && est46.nick) {
+    var limpio = String(est46.nick);
+    var elN = document.getElementById("nick-jugador");
+    var elH = document.getElementById("sub-handle");
+    if (elN && elN.textContent === "JUGADOR") elN.textContent = limpio.toUpperCase();
+    if (elH && /^@jugador$/i.test(elH.textContent)) elH.textContent = "@" + limpio.toLowerCase().replace(/[^a-z0-9_\-.]/g, "");
+    var iniciales = document.getElementById("avatar-iniciales");
+    if (iniciales && iniciales.textContent === "·") iniciales.textContent = limpio.trim().charAt(0).toUpperCase();
+    document.querySelectorAll(".nav-entrar, .mega__entrar").forEach(function (a) {
+      a.textContent = limpio.toUpperCase().slice(0, 14);
+      a.setAttribute("href", "/perfil");
+    });
+  }
+  /* país y región también viven en tu navegador: el hero los mantiene al volver */
+  if (est46 && est46.pais) { var sp46 = document.getElementById("sub-pais"); if (sp46 && sp46.textContent === "—") sp46.textContent = est46.pais; }
+  if (est46 && est46.region) { var sr46 = document.getElementById("sub-region"); if (sr46 && sr46.textContent === "—") sr46.textContent = est46.region; }
+  /* el chip del banner marca SIEMPRE el tipo real equipado (antes, al recargar,
+     quedaba marcado CLÁSICO aunque tu banner fuera otro) */
+  if (est46 && est46.banner && est46.banner.tipo) {
+    document.querySelectorAll("#banner-chips .chip-sel[data-banner]").forEach(function (c) {
+      c.classList.toggle("chip-sel--activo", c.getAttribute("data-banner") === est46.banner.tipo);
+    });
+  }
+})();
