@@ -1,0 +1,34 @@
+---
+title: "VantsSeguridad"
+description: "SPA estática de VANTS con bot de Discord y apps de escritorio y Android."
+---
+
+Sitio estático de VANTS con autenticación **Auth0** y datos en **Neon**. Hay una versión nueva en Vue dentro de `web/`.
+
+## Componentes
+
+| Ruta | Contenido |
+| --- | --- |
+| Raíz | SPA estática: HTML, JS y CSS (`app.js`, `auth0-config.js`, `faceit.js`, `admin.js`) |
+| `web/` | App Vue con Vite: vistas de inicio, jugadores, torneos, ranking, planes, calendario, cuenta y admin. Incluye pruebas (Vitest y Playwright) |
+| `bot/` | Bot de Discord en Python |
+| `desktop/` | App de escritorio con Tauri |
+| `android/` | App Android (TWA) |
+| `neon-functions/` | `discord-notify`, `steam-login`, `stripe-webhook` |
+
+## Hosting y CI
+
+Se publica como sitio estático (GitHub Pages y Netlify). Workflows: `web-ci`, `deploy-web`, `desktop-build` y `android-build`.
+
+## Integraciones
+
+- **Auth0**: identidad.
+- **Neon**: PostgreSQL con Data API.
+- **Stripe**: pagos de planes.
+- **Steam**: login con OpenID.
+- **FACEIT**: vinculación de cuenta y partidas.
+- **Discord**: bot y notificaciones.
+
+## Más información
+
+El repositorio incluye `ARCHITECTURE.md` con diagramas completos, `web/ADMIN.md` y `bot/SETUP.md`.

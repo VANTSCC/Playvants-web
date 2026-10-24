@@ -1,0 +1,59 @@
+---
+title: "Playvants-web"
+description: "Frontend, Worker de Cloudflare, bot de Discord y servicios de la plataforma."
+---
+
+Repositorio principal de la plataforma de torneos VANTS.
+
+## Estructura
+
+| Ruta | Contenido |
+| --- | --- |
+| `vants-server/` | Worker de Cloudflare (`worker.js`), lógica compartida (`plataforma-core.js`) y frontend en `public/` |
+| `neon-functions/` | Funciones: `vantsdata`, `mm`, `vantsbot`, `linker`, `supervisor`, `stripe-checkout`, `stripe-webhook`, `discord-notify` |
+| `services/agent-service/` | Servicio de agente con LLM (cerebro, herramientas, memoria, sandbox) |
+| `bot/` | Bot de Discord en Python |
+| `vants-bus/` | Bus de eventos y worker consumidor |
+| `db/migrations/` | Migraciones SQL idempotentes (01 a 34) |
+| `scripts/` | Pruebas, sincronización con FACEIT, scraper de vlr.gg |
+| `vlr-results/` | App en Python para resultados |
+| `architecture/`, `product/`, `docs/` | Diseño, requisitos y guías internas |
+| `android/` | App Android |
+
+## Rutas públicas
+
+El Worker expone rutas limpias como `/es/tournaments/:juego/:estado/` (también `/en/...`) y una API JSON pública (`/api/tournaments`, `/api/teams`, `/api/articles`, `/api/search`, entre otras).
+
+## Despliegue
+
+El Worker sirve el frontend desde `vants-server/public/`. Verificación posterior al despliegue: las páginas principales deben responder `200` con un User-Agent de navegador. Sin User-Agent la protección contra bots responde `403`.
+
+Para revertir: `git revert <sha>` y push a `main`; el CI vuelve a desplegar.
+
+## Secretos necesarios
+
+`CLOUDFLARE_API_TOKEN`, `NEON_API_KEY`, `FACEIT_API_KEY`, `FACEIT_CLIENT_ID`, `FACEIT_WEBHOOK_SECRET`, `HENRIKDEV_API_KEY`, `STEAM_API_KEY`, `AGENT_LLM_KEY`, `AGENT_LLM_URL`, `DISCORD_ID_APP`, `DISCORD_PUBLIC_KEY`, `VANTS_BOT_SECRET`.
+
+<Warning>
+Nunca subas secretos ni archivos `.env` al repositorio.
+</Warning>
+
+## Bot de Discord
+
+Variables de entorno:
+
+| Variable | Uso |
+| --- | --- |
+| `DISCORD_TOKEN` | Token del bot |
+| `DISCORD_GUILD_ID` | Servidor donde se registran los comandos |
+| `DATABASE_URL` | Cadena de conexión de Neon (`sslmode=require`) |
+| `PORT` | Puerto del health check (8080 por defecto) |
+
+```bash
+cd bot
+pip install -r requirements.txt
+cp .env.example .env
+python main.py
+```
+
+Los comandos viven en `bot/commands/`: análisis, comunidad, informes, moderación, perfil, verificar, vincular y agente.

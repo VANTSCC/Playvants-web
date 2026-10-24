@@ -1,0 +1,89 @@
+{
+  "theme": "luma",
+  "name": "VANTS",
+  "colors": {
+    "primary": "#FF001E",
+    "light": "#FF001E",
+    "dark": "#FF001E"
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "favicon": "/favicon.svg",
+  "appearance": {
+    "default": "dark"
+  },
+  "navbar": {
+    "links": [
+      {
+        "href": "mailto:support@mintlify.com",
+        "label": "Support"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Dashboard",
+      "href": "https://app.mintlify.com"
+    }
+  },
+  "footer": {
+    "socials": {
+      "x": "https://x.com/mintlify",
+      "github": "https://github.com/mintlify",
+      "linkedin": "https://linkedin.com/company/mintlify"
+    }
+  },
+  "icons": {
+    "library": "lucide"
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ],
+    "display": "header"
+  },
+  "navigation": {
+    "global": {
+      "anchors": [
+        {
+          "anchor": "Documentation",
+          "icon": "book-open-cover",
+          "href": "https://mintlify.com/docs"
+        },
+        {
+          "anchor": "Blog",
+          "icon": "newspaper",
+          "href": "https://mintlify.com/blog"
+        }
+      ]
+    },
+    "pages": [
+      {
+        "group": "Getting Started",
+        "pages": [
+          "index",
+          "arquitectura"
+        ]
+      },
+      {
+        "group": "Repos",
+        "pages": [
+          "repos/playvants-web",
+          "repos/vants-dev-launcher",
+          "repos/vants-seguridad",
+          "repos/vants-base-de-datos",
+          "repos/vants-clips",
+          "repos/vants-faceit-webhook"
+        ]
+      }
+    ]
+  }
+}

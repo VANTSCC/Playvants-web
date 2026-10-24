@@ -1,0 +1,37 @@
+---
+title: "Arquitectura general"
+description: "Componentes de VANTS y cómo se conectan."
+---
+
+## Componentes
+
+| Capa | Tecnología |
+| --- | --- |
+| Frontend | HTML, CSS y JS sin framework (más una home en Astro con islas React y Vue) |
+| Backend | Cloudflare Worker (`vants`): seguridad, rutas, API pública JSON, eventos de Discord, inscripciones |
+| Datos | Neon Postgres, vía Data API y Neon Functions |
+| Identidad | Auth0 |
+| Pagos | Stripe (webhooks en Neon Functions) |
+| Bot | Bot de Discord en Python (discord.py) |
+| Clientes | Web, launcher Electron, app Android (TWA) |
+
+## Flujo
+
+```text
+Navegador -> Cloudflare Worker -> Neon Data API -> Postgres
+                  |
+                  +-> assets estáticos (public/)
+```
+
+El Worker atiende todas las peticiones, aplica protección contra bots, límites de uso y cabeceras de seguridad, y luego sirve los archivos estáticos o la API.
+
+## CI/CD
+
+Un push a `main` ejecuta, en orden:
+
+1. Pruebas automáticas.
+2. Migraciones de la base de datos (idempotentes).
+3. Despliegue de Neon Functions.
+4. Despliegue del Worker con `wrangler deploy`.
+
+Más detalle en [Playvants-web](/repos/playvants-web) y [VantsBasededatos](/repos/vants-base-de-datos).

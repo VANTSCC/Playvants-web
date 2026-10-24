@@ -161,6 +161,32 @@
     });
   }
 
+  /* ENTRAR CON CORREO Y CONTRASEÑA (S4.5): usa la conexión de base de datos del
+     tenant (Username-Password-Authentication), que está activa para esta app.
+     opcion = "registrar" → pantalla CREAR CUENTA de Auth0 (email + contraseña).
+     opcion = "entrar"    → pantalla ENTRAR de Auth0 (tiene su propio enlace
+     "¿Olvidaste tu contraseña?" con el restablecimiento completo hospedado). */
+  var CONEXION_CORREO = "Username-Password-Authentication";
+  function entrarCorreo(opcion) {
+    guardarVolver();
+    var extra = opcion === "registrar" ? "&screen_hint=signup" : "";
+    if (!cliente) {
+      window.location.href = "https://" + DOMINIO + "/authorize?response_type=code" +
+        "&client_id=" + encodeURIComponent(CLIENTE) +
+        "&redirect_uri=" + encodeURIComponent(window.location.origin + "/") +
+        "&scope=" + encodeURIComponent("openid profile email") +
+        "&audience=" + encodeURIComponent(AUDIENCIA) +
+        "&connection=" + encodeURIComponent(CONEXION_CORREO) + extra;
+      return;
+    }
+    var params = {
+      redirect_uri: window.location.origin + "/", audience: AUDIENCIA,
+      scope: "openid profile email", connection: CONEXION_CORREO,
+    };
+    if (opcion === "registrar") params.screen_hint = "signup";
+    cliente.loginWithRedirect({ authorizationParams: params });
+  }
+
   function salir() {
     try {
       window.location.href = "https://" + DOMINIO + "/v2/logout?client_id=" + CLIENTE +
@@ -168,11 +194,20 @@
     } catch (_e) { window.location.href = "/"; }
   }
 
+  /* FIX S4.2: el NOMBRE DE LA CUENTA propio (perfil → Mis datos) manda sobre
+     el del correo de Auth0 en toda la navegación. Vive en localStorage. */
+  function nickPropio() {
+    try {
+      var p = JSON.parse(localStorage.getItem("vants_perfil_v1") || "null");
+      return (p && p.nick) ? String(p.nick) : "";
+    } catch (_e) { return ""; }
+  }
+
   /* Con sesión el ENTRAR de la cabecera muestra el nick y lleva al perfil;
      sin sesión los botones ya dicen ENTRAR y el clic abre el login. */
   function pintarNav() {
     if (!usuario) return;
-    var txt = usuario.nick.toUpperCase().slice(0, 14);
+    var txt = (nickPropio() || usuario.nick).toUpperCase().slice(0, 14);
     document.querySelectorAll(".nav-entrar, .mega__entrar").forEach(function (a) {
       a.textContent = txt;
       a.setAttribute("href", "/perfil");
@@ -205,6 +240,7 @@
     getToken: getToken,
     entrar: entrar,
     entrarCon: entrarCon,
+    entrarCorreo: entrarCorreo,
     salir: salir,
   };
 })(window);

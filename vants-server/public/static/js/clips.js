@@ -1,7 +1,14 @@
 /* VANTS GAMES — clips: vitrina pública + gestión con subida desde el escritorio.
    Igual que la web antigua: GET /api/clips/featured (vitrina), POST con el JWT
    de tu sesión (video + miniatura capturada en el navegador + título), DELETE
-   de tus propios clips. Los datos vienen SIEMPRE de la API: nada de semillas. */
+   de tus propios clips. Los datos vienen SIEMPRE de la API: nada de semillas.
+
+   FIX S4.3 (nombre de la cuenta en los clips):
+   · TUS clips muestran tu NOMBRE DE LA CUENTA (perfil → Mis datos), no el del
+     correo ni el de Google. Se reconocen por el sub de tu sesión.
+   · Al subir, el clip viaja también con "nombre_vants" para que, cuando el
+     servidor lo guarde, tu nombre se vea en TODOS los navegadores.
+   · Si no hay nombre propio guardado, se muestra el de siempre. */
 (function () {
   "use strict";
 
@@ -37,6 +44,23 @@
   }
 
   var cacheClips = null, cacheAt = 0;
+
+  /* ── FIX S4.3: nombre de la cuenta para los clips ── */
+  function nickVants() {
+    try {
+      var p = JSON.parse(localStorage.getItem("vants_perfil_v1") || "null");
+      return (p && p.nick) ? String(p.nick) : "";
+    } catch (_e) { return ""; }
+  }
+  function nombreParaClip(c) {
+    if (c && c.nombre_vants) return c.nombre_vants;              /* futuro campo del servidor */
+    if (sesion && c && c.sub && c.sub === sesion.sub) {          /* tus clips → tu nombre VANTS */
+      var propio = nickVants();
+      if (propio) return propio;
+    }
+    return (c && (c.nick || c.username)) || "JUGADOR";           /* como hoy */
+  }
+
   function clipsDestacados() {
     if (cacheClips && Date.now() - cacheAt < 60000) return Promise.resolve(cacheClips);
     return fetch("/api/clips/featured", { headers: { Accept: "application/json" } })
@@ -62,7 +86,7 @@
       "</div>" +
       '<div class="clipc__cuerpo">' +
       '<div class="clipc__titulo">' + esc(c.titulo || "Clip destacado") + "</div>" +
-      '<div class="clipc__meta"><b>' + esc(c.nick || "JUGADOR") + "</b>" +
+      '<div class="clipc__meta"><b>' + esc(nombreParaClip(c)) + "</b>" +
       '<span class="clipc__juego">' + esc(c.juego || "VALORANT") + "</span>" +
       (c.tam ? "<span>" + esc(fmtMB(c.tam)) + "</span>" : "") +
       "<span>" + esc(fmtFecha(c.fecha)) + "</span></div>" +
@@ -92,7 +116,7 @@
       if (!c) { toast("ESE CLIP YA NO ESTÁ DISPONIBLE", true); return; }
       document.getElementById("modal-titulo").textContent = (c.titulo || "Clip destacado").toUpperCase();
       document.getElementById("modal-meta").innerHTML =
-        "SUBIDO POR <b>" + esc(c.nick || "JUGADOR") + "</b> · " + esc(c.juego || "VALORANT") +
+        "SUBIDO POR <b>" + esc(nombreParaClip(c)) + "</b> · " + esc(c.juego || "VALORANT") +
         " · " + esc(fmtFecha(c.fecha)) + (c.tam ? " · " + esc(fmtMB(c.tam)) : "");
       var v = document.getElementById("modal-video");
       v.src = c.video || "";
@@ -127,7 +151,7 @@
       });
       return;
     }
-    estadoGestionar.textContent = "@" + String(sesion.nick || "jugador").toUpperCase();
+    estadoGestionar.textContent = "@" + (nickVants() || String(sesion.nick || "jugador")).toUpperCase();
     cuerpoGestionar.innerHTML =
       '<div class="gestionar__subir">' +
       '<input type="file" id="input-clip" accept="video/*,.mkv" hidden>' +
@@ -228,6 +252,8 @@
     fd.append("juego", "VALORANT");
     fd.append("nick", sesion.nick || "JUGADOR");
     fd.append("username", String(sesion.nick || "").replace(/[^a-z0-9_\-.]/gi, "").slice(0, 32));
+    var nombrePropio = nickVants();
+    if (nombrePropio) fd.append("nombre_vants", nombrePropio);   /* FIX S4.3: tu nombre viaja con el clip */
     fd.append("ext", sel.ext);
     fd.append("dur", String(sel.dur || 0));
 

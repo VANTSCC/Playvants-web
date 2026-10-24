@@ -1,0 +1,42 @@
+---
+title: "vants-dev-launcher"
+description: "Plataforma de esports VANTS con launcher de escritorio, app Android y automatizaciones."
+---
+
+Plataforma de torneos estilo strafe.com: calendario por juego y estado, partidas en vivo, ranking, brackets, equipos, jugadores, noticias, búsqueda, tienda y membresías.
+
+Web: https://vants.vants.workers.dev
+
+## Estructura
+
+| Ruta | Contenido |
+| --- | --- |
+| Raíz y `public/` | Páginas HTML (inicio, equipos, torneos, partidos, ranking, clips, membresías, tienda) |
+| `vants-server/` | Worker de Cloudflare y lógica compartida |
+| `webapp/` | Astro con islas React (Explore) y Vue + Three (Emblema3D) |
+| `neon-functions/` | `vantsdata`, `mm`, `vantsbot`, `linker`, `supervisor`, Stripe, Discord |
+| `services/` | Servicio de agente y matchmaking |
+| `bot/` | Bot ORION de Discord (Python) |
+| `desktop-electron/` | Launcher Electron con auto-update |
+| `android/` | App Android |
+| `mcp/` | Servidor MCP stdio con 4 herramientas |
+| `monitor/` | Monitor de disponibilidad |
+| `db/migrations/` | Migraciones SQL (01 a 34) |
+| `docs/` | Guías: testing, despliegue, troubleshooting, configuración |
+| `product/`, `architecture/`, `research/` | Requisitos, diseño y análisis de referencia |
+
+## Requisitos
+
+- Node 20 o superior.
+- Cuenta de Cloudflare con el Worker `vants`.
+- Proyecto Neon y tenant de Auth0.
+
+## Workflows de GitHub Actions
+
+`tests`, `neon-migrate`, `neon-deploy-functions`, `cloudflare-deploy`, `fullstack`, `agente`, `faceit-sync`, `faceit-xp`, `monitor`, `mejoras-discord`, `desktop-electron`, `windows-build` y `android-build`.
+
+Al hacer push a `main` se prueban, migran y despliegan todas las piezas. Consulta [Arquitectura general](/arquitectura).
+
+## Docker
+
+`docker-compose.yml` levanta un `api-gateway` (Express, puerto 8080) y `matchmaking` (puerto 8081).
