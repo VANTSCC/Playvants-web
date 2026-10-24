@@ -543,6 +543,19 @@
   pintarBanner();
   pintarCuentas();
   pintarFaceitBloque();
+  var btnVincularFaceit = document.getElementById("btn-vincular-faceit");
+  if (btnVincularFaceit) {
+    btnVincularFaceit.addEventListener("click", function () {
+      var grilla = document.querySelector(".v46-grilla");
+      var fila = document.querySelector('.cuenta-fila[data-cuenta="faceit"]');
+      if (grilla) grilla.classList.add("v47-ges--abierta");
+      if (fila) {
+        fila.scrollIntoView({ behavior: "smooth", block: "center" });
+        var input = fila.querySelector("input");
+        if (input) input.focus();
+      }
+    });
+  }
   pintarEstado();
   pintarEscalera();
   pintarSesion();
