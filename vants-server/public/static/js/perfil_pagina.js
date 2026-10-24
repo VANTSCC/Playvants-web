@@ -334,6 +334,7 @@
         if (j && j.ok && j.usuario) {
           estado.cuentas.faceit = {
             conectada: true,
+            id: j.usuario.id,        /* S4.7.1: ID del jugador — la historia va por ID, sin ambigüedad de caja */
             usuario: j.usuario.nickname,
             url: "https://www.faceit.com/en/players/" + encodeURIComponent(j.usuario.nickname),
             nivel: j.usuario.nivel,
@@ -1757,7 +1758,10 @@
     if (cargadoNick === f.usuario) return;   /* ya cargado (o en curso) para este nick */
     cargadoNick = f.usuario;
     vacioHistoria("Cargando tu historial de FACEIT\u2026");
-    fetch("/api/faceit/historia?nick=" + encodeURIComponent(f.usuario), { headers: { Accept: "application/json" } })
+    /* S4.7.1: con ID de jugador la historia es SIEMPRE de la cuenta correcta */
+    var pid47 = f.id && /^[a-f0-9\-]{8,40}$/i.test(String(f.id)) ? String(f.id) : "";
+    var urlH = "/api/faceit/historia?" + (pid47 ? "id=" + encodeURIComponent(pid47) + "&" : "") + "nick=" + encodeURIComponent(f.usuario);
+    fetch(urlH, { headers: { Accept: "application/json" } })
       .then(function (r) { return r.json().catch(function () { return null; }); })
       .then(function (j) {
         if (j && j.ok && j.resumen && j.partidas) {

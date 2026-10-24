@@ -1735,7 +1735,9 @@ async function fetchWorker(request, env, ctx) {
       if (!/^[a-zA-Z0-9_.\-]{2,24}$/.test(nick)) {
         return json({ ok: false, error: 'nick_invalido' }, 400, { 'Access-Control-Allow-Origin': originF || '*' });
       }
-      const clave = nick.toLowerCase();
+      /* S4.7.1: caché por nick TAL CUAL (la API de FACEIT distingue la caja:
+         "feiss" y "FEISS" pueden ser cuentas distintas — no cruzar datos). */
+      const clave = nick;
       const ahora = Date.now();
       if (faceitCache.has(clave) && ahora - faceitCache.get(clave).at < 60000) {
         const c = faceitCache.get(clave);
@@ -1815,10 +1817,15 @@ async function fetchWorker(request, env, ctx) {
         return json({ ok: false, error: 'Demasiadas peticiones' }, 429, { 'Retry-After': String(aH.retry), 'Access-Control-Allow-Origin': originH || '*' });
       }
       const nickH = url.searchParams.get('nick') || '';
-      if (!/^[a-zA-Z0-9_.\-]{2,24}$/.test(nickH)) {
+      const idH = url.searchParams.get('id') || '';
+      /* S4.7.1: si llega el ID de jugador (guardado al conectar la cuenta), se
+         usa directo — el nick solo es el plan B. Así la historia SIEMPRE es de
+         la cuenta correcta aunque existan nicks que se diferencien por caja. */
+      const pidDirecto = /^[a-f0-9\-]{8,40}$/i.test(idH) ? idH : '';
+      if (!pidDirecto && !/^[a-zA-Z0-9_.\-]{2,24}$/.test(nickH)) {
         return json({ ok: false, error: 'nick_invalido' }, 400, { 'Access-Control-Allow-Origin': originH || '*' });
       }
-      const claveH = 'hist:' + nickH.toLowerCase();
+      const claveH = 'hist:' + (pidDirecto ? 'id:' + pidDirecto.toLowerCase() : 'n:' + nickH);
       const ahoraH = Date.now();
       if (faceitCache.has(claveH) && ahoraH - faceitCache.get(claveH).at < 120000) {
         const cH = faceitCache.get(claveH);
@@ -1834,95 +1841,103 @@ async function fetchWorker(request, env, ctx) {
         if (!String(cabH.Authorization).replace('Bearer', '').trim()) {
           salidaH = { ok: false, motivo: 'sin_api_key' };
         } else {
-          /* 1) jugador por nick (v4) */
-          const rP = await fetch('https://open.faceit.com/data/v4/players?nickname=' + encodeURIComponent(nickH), {
-            headers: cabH, signal: AbortSignal.timeout(9000),
-          });
-          if (rP.status === 401 || rP.status === 403) {
-            salidaH = { ok: false, motivo: 'faceit_key' };
-          } else if (rP.status === 404) {
-            salidaH = { ok: false, motivo: 'no_encontrado' };
-          } else if (!rP.ok) {
-            salidaH = { ok: false, motivo: 'faceit_no_responde' };
-          } else {
-            const pP = await rP.json().catch(() => null);
-            const pid = pP && pP.player_id;
-            if (!pid) {
+          /* 1) jugador: por ID directo (preferente) o resolviendo el nick (v4) */
+          let pidH = pidDirecto;
+          let perfilH = null;
+          if (!pidH) {
+            const rP = await fetch('https://open.faceit.com/data/v4/players?nickname=' + encodeURIComponent(nickH), {
+              headers: cabH, signal: AbortSignal.timeout(9000),
+            });
+            if (rP.status === 401 || rP.status === 403) {
+              salidaH = { ok: false, motivo: 'faceit_key' };
+            } else if (rP.status === 404) {
               salidaH = { ok: false, motivo: 'no_encontrado' };
+            } else if (!rP.ok) {
+              salidaH = { ok: false, motivo: 'faceit_no_responde' };
             } else {
-              /* 2) historial CS2 (últimas 20, usamos hasta 12) */
-              const rHi = await fetch('https://open.faceit.com/data/v4/players/' + encodeURIComponent(pid) + '/history?game=cs2&limit=20', {
-                headers: cabH, signal: AbortSignal.timeout(9000),
-              });
-              const jHi = rHi.ok ? await rHi.json().catch(() => null) : null;
-              const items = (jHi && Array.isArray(jHi.items)) ? jHi.items.slice(0, 12) : [];
-              /* 3) estadísticas por partido (en paralelo, máx 10 subpeticiones) */
-              const detalles = await Promise.all(items.slice(0, 10).map(async (it) => {
-                try {
-                  const rM = await fetch('https://open.faceit.com/data/v4/matches/' + encodeURIComponent(String(it.match_id || '')) + '/stats', {
-                    headers: cabH, signal: AbortSignal.timeout(9000),
-                  });
-                  if (!rM.ok) return null;
-                  const jM = await rM.json().catch(() => null);
-                  const round = jM && jM.rounds && jM.rounds[0];
-                  if (!round || !round.round_stats || !Array.isArray(round.teams)) return null;
-                  const rs = round.round_stats;
-                  let eqMio = null;
-                  let yo = null;
-                  for (const t of round.teams) {
-                    const ps = (t.players || []).find((p) => p && p.player_id === pid);
-                    if (ps) { eqMio = t; yo = ps; break; }
-                  }
-                  if (!yo || !eqMio) return null;
-                  const gps = yo.game_player_stats || {};
-                  const kills = Number(gps.Kills || 0);
-                  const muertes = Number(gps.Deaths || 0);
-                  const asis = Number(gps.Assists || 0);
-                  const gano = String(eqMio.team_id) === String(rs.Winner);
-                  const trozos = String(rs.Score || '').split('/');
-                  const esLocal = String(eqMio.team_id) === String((round.teams[0] || {}).team_id);
-                  const s0 = parseInt(trozos[0], 10) || 0;
-                  const s1 = parseInt(trozos[1], 10) || 0;
-                  const hsPct = Number(gps['Headshots %']);
-                  const krR = Number(gps['K/R Ratio']);
-                  return {
-                    fecha: it.started_at ? String(it.started_at).slice(0, 10) : null,
-                    mapa: String(rs.Map || '').slice(0, 20) || null,
-                    gano: gano,
-                    score: (esLocal ? s0 : s1) + ':' + (esLocal ? s1 : s0),
-                    kills: kills,
-                    muertes: muertes,
-                    asis: asis,
-                    hs: Number.isFinite(hsPct) ? hsPct : null,
-                    kr: Number.isFinite(krR) ? krR : null,
-                    kd: muertes > 0 ? Math.round((kills / muertes) * 100) / 100 : kills,
-                    mvp: Number(gps.MVPs || 0) || 0,
-                  };
-                } catch (_eM) {
-                  return null;
-                }
-              }));
-              const partidas = detalles.filter(Boolean);
-              const promH = (lista) => (lista.length ? Math.round((lista.reduce((a, b) => a + b, 0) / lista.length) * 100) / 100 : null);
-              const victoriasH = partidas.filter((p) => p.gano).length;
-              const csGH = (pP.games && (pP.games.cs2 || pP.games.csgo)) || {};
-              salidaH = {
-                ok: partidas.length > 0,
-                motivo: partidas.length > 0 ? null : 'sin_partidas',
-                resumen: {
-                  jugadas: partidas.length,
-                  victorias: victoriasH,
-                  winrate: partidas.length ? Math.round((victoriasH / partidas.length) * 1000) / 10 : null,
-                  kd: promH(partidas.map((p) => p.kd)),
-                  kr: promH(partidas.map((p) => p.kr).filter((v) => v !== null)),
-                  hs: promH(partidas.map((p) => p.hs).filter((v) => v !== null)),
-                  mvp: partidas.reduce((a, p) => a + (p.mvp || 0), 0),
-                  nivel: Number.isFinite(csGH.skill_level) ? csGH.skill_level : null,
-                  elo: Number.isFinite(csGH.elo) ? csGH.elo : null,
-                },
-                partidas: partidas,
-              };
+              perfilH = await rP.json().catch(() => null);
+              pidH = perfilH && perfilH.player_id;
+              if (!pidH) salidaH = { ok: false, motivo: 'no_encontrado' };
             }
+          } else {
+            const rP2 = await fetch('https://open.faceit.com/data/v4/players/' + encodeURIComponent(pidH), {
+              headers: cabH, signal: AbortSignal.timeout(9000),
+            });
+            if (rP2.ok) perfilH = await rP2.json().catch(() => null);
+          }
+          if (!salidaH && pidH) {
+            /* 2) historial CS2 (últimas 20, usamos hasta 12) */
+            const rHi = await fetch('https://open.faceit.com/data/v4/players/' + encodeURIComponent(pidH) + '/history?game=cs2&limit=20', {
+              headers: cabH, signal: AbortSignal.timeout(9000),
+            });
+            const jHi = rHi.ok ? await rHi.json().catch(() => null) : null;
+            const items = (jHi && Array.isArray(jHi.items)) ? jHi.items.slice(0, 12) : [];
+            /* 3) estadísticas por partido (en paralelo, máx 10 subpeticiones) */
+            const detalles = await Promise.all(items.slice(0, 10).map(async (it) => {
+              try {
+                const rM = await fetch('https://open.faceit.com/data/v4/matches/' + encodeURIComponent(String(it.match_id || '')) + '/stats', {
+                  headers: cabH, signal: AbortSignal.timeout(9000),
+                });
+                if (!rM.ok) return null;
+                const jM = await rM.json().catch(() => null);
+                const round = jM && jM.rounds && jM.rounds[0];
+                if (!round || !round.round_stats || !Array.isArray(round.teams)) return null;
+                const rs = round.round_stats;
+                let eqMio = null;
+                let yo = null;
+                for (const t of round.teams) {
+                  const ps = (t.players || []).find((p) => p && p.player_id === pidH);
+                  if (ps) { eqMio = t; yo = ps; break; }
+                }
+                if (!yo || !eqMio) return null;
+                const gps = yo.game_player_stats || {};
+                const kills = Number(gps.Kills || 0);
+                const muertes = Number(gps.Deaths || 0);
+                const asis = Number(gps.Assists || 0);
+                const gano = String(eqMio.team_id) === String(rs.Winner);
+                const trozos = String(rs.Score || '').split('/');
+                const esLocal = String(eqMio.team_id) === String((round.teams[0] || {}).team_id);
+                const s0 = parseInt(trozos[0], 10) || 0;
+                const s1 = parseInt(trozos[1], 10) || 0;
+                const hsPct = Number(gps['Headshots %']);
+                const krR = Number(gps['K/R Ratio']);
+                return {
+                  fecha: it.started_at ? String(it.started_at).slice(0, 10) : null,
+                  mapa: String(rs.Map || '').slice(0, 20) || null,
+                  gano: gano,
+                  score: (esLocal ? s0 : s1) + ':' + (esLocal ? s1 : s0),
+                  kills: kills,
+                  muertes: muertes,
+                  asis: asis,
+                  hs: Number.isFinite(hsPct) ? hsPct : null,
+                  kr: Number.isFinite(krR) ? krR : null,
+                  kd: muertes > 0 ? Math.round((kills / muertes) * 100) / 100 : kills,
+                  mvp: Number(gps.MVPs || 0) || 0,
+                };
+              } catch (_eM) {
+                return null;
+              }
+            }));
+            const partidas = detalles.filter(Boolean);
+            const promH = (lista) => (lista.length ? Math.round((lista.reduce((a, b) => a + b, 0) / lista.length) * 100) / 100 : null);
+            const victoriasH = partidas.filter((p) => p.gano).length;
+            const csGH = (perfilH && perfilH.games && (perfilH.games.cs2 || perfilH.games.csgo)) || {};
+            salidaH = {
+              ok: partidas.length > 0,
+              motivo: partidas.length > 0 ? null : 'sin_partidas',
+              resumen: {
+                jugadas: partidas.length,
+                victorias: victoriasH,
+                winrate: partidas.length ? Math.round((victoriasH / partidas.length) * 1000) / 10 : null,
+                kd: promH(partidas.map((p) => p.kd)),
+                kr: promH(partidas.map((p) => p.kr).filter((v) => v !== null)),
+                hs: promH(partidas.map((p) => p.hs).filter((v) => v !== null)),
+                mvp: partidas.reduce((a, p) => a + (p.mvp || 0), 0),
+                nivel: Number.isFinite(csGH.skill_level) ? csGH.skill_level : null,
+                elo: Number.isFinite(csGH.elo) ? csGH.elo : null,
+              },
+              partidas: partidas,
+            };
           }
         }
       } catch (eHI) {
