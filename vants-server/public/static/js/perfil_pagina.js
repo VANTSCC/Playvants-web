@@ -1285,12 +1285,16 @@
      worker). Si FACEIT no responde o no hay cuenta conectada, estados
      honestos — nunca datos inventados.
    · S4.7.2 · CIERRE DEL PERFIL (lo que quedó del diseño viejo, fuera):
-     LA ESCALERA deja de montarse (la identidad del circuito vive en la
-     tarjeta RANGO de la sidebar y completa en /ranking#rangos) y la
-     gestión de siempre (mis datos, equipo, banner, redes, membresía,
-     cuenta, inscripciones, estado) queda COLAPSADA tras una barra fina:
-     el perfil termina limpio, como el mockup aprobado — un clic la
-     despliega (también el botón EDITAR FICHA) y nada se pierde.
+     LA ESCALERA deja de montarse y la gestión de siempre (mis datos,
+     equipo, banner, redes, membresía, cuenta, inscripciones, estado)
+     queda COLAPSADA tras una barra fina: el perfil termina limpio, como
+     el mockup aprobado — un clic la despliega (también el botón EDITAR
+     FICHA) y nada se pierde.
+   · S4.7.3 · UN SOLO RANGO: la tarjeta «RANGO · VANTS RANKED» de la
+     sidebar se QUITA — con la season card de FACEIT en el panel había
+     DOS tarjetas de rango en la misma pantalla (y la de VANTS en 0 XP
+     solo repetía «SIN RANGO»). El circuito y sus 9 rangos viven
+     completos en /ranking#rangos.
    ════════════════════════════════════════════════════════════════════ */
 (function () {
   "use strict";
@@ -1324,14 +1328,6 @@
     ".v47 .v47-perfil-card .v47-desde{display:none;margin:8px 0 0;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#52525b}" +
     ".v47 .v47-perfil-card .v46-hero__acciones{flex-direction:row;gap:8px;min-width:0;width:100%;justify-content:center;margin-top:12px}" +
     ".v47 .v47-perfil-card .v46-hero__acciones .btn{width:auto;flex:1;justify-content:center;text-align:center;font-size:10.5px;padding:9px 8px;min-width:0}" +
-    ".v47 .v47-rango-caja .rango-caja{width:100%;flex-direction:row;text-align:left;gap:12px;padding:12px;border-radius:10px;background:#0d0d10}" +
-    ".v47 .v47-rango-caja .rango-caja__insignia{width:48px;height:48px;border-radius:10px;flex:none}" +
-    ".v47 .v47-rango-caja .rango-caja__insignia img{width:40px;height:40px}" +
-    ".v47 .v47-rango-caja .rango-caja__info{flex:1;min-width:0;width:auto}" +
-    ".v47 .v47-rango-caja .rango-caja__info b{font-size:15px}" +
-    ".v47 .v47-rango-caja .rango-caja__info small{margin:2px 0 6px;display:block}" +
-    ".v47 .v47-rango-caja .rango-caja__xp{width:auto;flex:none;text-align:right}" +
-    ".v47 .v47-rango-caja .rango-caja__xp b{font-size:14px}" +
     ".v47 .v47-hist-fila{display:flex;align-items:center;gap:10px;border:1px solid var(--borde);border-radius:8px;background:#0d0d10;padding:9px 11px}" +
     ".v47 .v47-hist-juego{width:30px;height:30px;border-radius:6px;display:grid;place-items:center;font-family:var(--mono);font-weight:800;font-size:9px;background:#1d1d22;color:#f1f5f9;flex:none}" +
     ".v47 .v47-hist-fila b{display:block;font-size:12.5px}" +
@@ -1402,8 +1398,6 @@
   var banner = document.getElementById("banner");
   if (!barra || !hero || !identidad || !banner || !grilla) return;
   var acc = hero.querySelector(".v46-hero__acciones");
-  var rangoWrap = hero.querySelector(".v46-hero__rango");
-  var rangoCaja = rangoWrap ? rangoWrap.querySelector(".rango-caja") : null;
   var linea = hero.querySelector(".v46-hero__linea");
   var bStats = statsSec ? statsSec.querySelector(".perfil__bloque") : null;
   var bFaceit = vent.querySelector("#faceit-real") ? vent.querySelector("#faceit-real").closest(".perfil__bloque") : null;
@@ -1469,11 +1463,10 @@
     side.appendChild(bFaceit);
   }
 
-  /* 5 · rango VANTS (la MISMA caja del hero, compacta) */
-  var cR = cajaNueva("RANGO · VANTS RANKED");
-  cR.className += " v47-rango-caja";
-  if (rangoCaja) cR.appendChild(rangoCaja);
-  side.appendChild(cR);
+  /* 5 · rango VANTS — QUITADO en S4.7.3: la season card de FACEIT ya
+       muestra el rango; dos tarjetas de rango era una de más. La caja
+       original (.rango-caja) se descarta con el hero del S4.6 y el
+       circuito completo (9 rangos) vive en /ranking#rangos. */
 
   /* ── MAIN ── */
   /* 1 · tabs de juego */
