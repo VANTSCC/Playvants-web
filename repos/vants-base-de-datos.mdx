@@ -1,0 +1,64 @@
+---
+title: "VantsBasededatos"
+description: "Fuente de verdad de la base de datos de VANTS en Neon, con migraciones y ramas por PR."
+---
+
+Repositorio con las migraciones SQL de la base de datos de VANTS (Neon Postgres, 69 tablas en producción).
+
+## Estructura
+
+```text
+db/migrations/        34 migraciones SQL idempotentes (01 a 34)
+docs/estado-db.sql    consulta que publica estado-db.json
+.github/workflows/
+  neon-migrate.yml    aplica migraciones en producción
+  neon-pr-branch.yml  crea y borra una rama Neon por PR
+```
+
+Las migraciones se ejecutan en orden alfabético y son idempotentes (`CREATE TABLE IF NOT EXISTS`, guards en PL/pgSQL), por lo que es seguro reaplicarlas.
+
+## Flujo de trabajo
+
+<Steps>
+  <Step title="Crear la migración">
+    Añade `db/migrations/35-mi-cambio.sql` en una rama.
+  </Step>
+  <Step title="Abrir un PR">
+    Se crea la rama Neon `pr-<n>` con las migraciones aplicadas y un comentario con la cadena de conexión enmascarada.
+  </Step>
+  <Step title="Verificar">
+    Prueba tu SQL contra esa rama, que es una copia de producción.
+  </Step>
+  <Step title="Mergear a main">
+    `neon-migrate.yml` aplica el cambio en producción. La rama del PR se borra al cerrarlo.
+  </Step>
+</Steps>
+
+## Áreas del esquema
+
+| Área | Tablas de ejemplo |
+| --- | --- |
+| Bot y alertas | `bot_heartbeat`, `bot_settings`, `discord_channels`, `bot_alerts` |
+| Cuentas y pagos | `vants_links`, `purchases`, `entitlements`, `audit_logs` |
+| Ranked y FACEIT | `series_ranked`, `faceit_matches`, `faceit_webhook_events`, `rr_historial` |
+| Matchmaking | `mm_tickets`, `mm_matches`, `mm_match_players`, `mm_invites`, `mm_ready` |
+| Plataforma de torneos | `pt_games`, `pt_torneos`, `pt_teams`, `pt_matches`, `pt_articulos`, `pt_players` |
+| Agente | `agent_runs`, `agent_events`, `agent_comandos`, `agent_memoria`, `agent_archivos` |
+| Bus de eventos | `vants_events`, `vants_consumers`, `vants_bus_dedup`, `vants_feed` |
+
+## Variables opcionales
+
+`NEON_PROJECT_ID` y `NEON_BRANCH_ID` permiten cambiar de proyecto o rama sin editar los workflows. El secreto `NEON_API_KEY` está a nivel de la organización VANTSCC.
+
+## Hyperdrive
+
+Una config de Cloudflare Hyperdrive (`vants-neon`) agrupa y cachea conexiones al pooler de Neon para reducir horas de cómputo. Se usa con el binding `HYPERDRIVE` y el driver `pg`.
+
+## Cuota de Neon
+
+El plan gratuito tiene horas de cómputo limitadas, y solo se consumen con el cómputo despierto. Para reducirlas:
+
+1. Evita consumidores 24/7 con long-poll al bus.
+2. Usa el mínimo de *Suspend delay* (5 min) y el tamaño mínimo de cómputo.
+3. Cierra los PR para que sus ramas se borren.
+4. Usa Hyperdrive para lecturas repetidas.
