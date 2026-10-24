@@ -1,0 +1,81 @@
+---
+title: "vants-faceit-webhook"
+description: "Worker de Cloudflare que recibe webhooks de FACEIT, los guarda en Neon y los publica en el bus de eventos de VANTS."
+---
+
+## Qué es
+
+Backend de VANTS para recibir webhooks de FACEIT (App Studio) e integrarlos con Neon PostgreSQL. Corre como Cloudflare Worker y usa `@neondatabase/serverless`.
+
+## Endpoints
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/api/webhooks/faceit` | Valida el secreto, guarda el evento en `faceit_webhook_events` y responde `200`. |
+| `GET` | `/api/webhooks/faceit` | Sondeo de disponibilidad (`200`). |
+| `GET` | `/healthz` | Estado del servicio e indica si el bus está configurado. |
+
+## Validación del secreto
+
+El secreto se acepta por header o por query string.
+
+<Tabs>
+  <Tab title="Headers">
+    - `X-VANTS-FACEIT-SECRET`
+    - `X_VANTS_FACEIT_SECRET`
+    - `Faceit_webhook_secret`
+    - `Faceit-webhook-secret`
+  </Tab>
+  <Tab title="Query string">
+    - `secret`
+    - `faceit_webhook_secret`
+    - `faceit-webhook-secret`
+    - `x-vants-faceit-secret`
+    - `x_vants_faceit_secret`
+  </Tab>
+</Tabs>
+
+## Secrets del Worker
+
+| Secret | Uso |
+|---|---|
+| `FACEIT_WEBHOOK_SECRET` | Secreto compartido con FACEIT. |
+| `DATABASE_URL` | Conexión a Neon. |
+| `VANTS_BUS_URL` | URL del bus (`https://vants-bus.vants.workers.dev`). |
+| `VANTS_BUS_SECRET` | Secreto HMAC del proyecto en el bus. |
+
+<Note>Ninguno vive en el repo. Para cambiarlos: `npx wrangler secret put <NOMBRE>`.</Note>
+
+## Puente al bus de eventos (VANTS-BUS)
+
+Cada webhook verificado se guarda en Neon y además se publica en el bus central para que la web, el launcher y los agentes reaccionen en vivo.
+
+| Evento FACEIT | Evento del bus | Reacción esperada |
+|---|---|---|
+| `match_status_finished` | `match.finished` | Ranking en vivo, resumen por agentes, aviso en el launcher. |
+| `match_object_created` | `match.scheduled` | La agenda de la arena se actualiza. |
+| Cancelaciones | `match.canceled` | Se retira de la agenda. |
+
+Los eventos sin mapeo se ignoran.
+
+### Garantías
+
+- La respuesta a FACEIT no cambia: primero se guarda en Neon y se responde `200`. La publicación al bus va en background (`ctx.waitUntil`).
+- Deduplicación por `event_id` con la tabla `vants_bus_dedup` (se crea sola en Neon).
+- 3 reintentos con backoff hacia el bus.
+
+### Consumir eventos desde otros proyectos
+
+```http
+GET https://vants-bus.vants.workers.dev/events?since=<cursor>&types=match.finished
+X-VANTS-Project: <tu-proyecto>
+X-VANTS-Timestamp: <unix seconds>
+X-VANTS-Signature: hex(hmac_sha256(SECRETO, `${ts}.`))
+```
+
+## Despliegue
+
+```bash
+npm install
+npm run deploy
+```

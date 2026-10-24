@@ -80,7 +80,8 @@
           "repos/vants-dev-launcher",
           "repos/vants-seguridad",
           "repos/vants-base-de-datos",
-          "repos/vants-clips"
+          "repos/vants-clips",
+          "repos/vants-faceit-webhook"
         ]
       }
     ]
