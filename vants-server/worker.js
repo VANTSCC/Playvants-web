@@ -985,7 +985,7 @@ async function fetchWorker(request, env, ctx) {
     // --- 2) Pre-flight CORS solo para la API propia
     if (method === 'OPTIONS') {
       const origin = request.headers.get('origin') || '';
-      const isGetApi = url.pathname === '/api/valorant/esports' || url.pathname === '/api/teams' || url.pathname === '/api/teams-live' || url.pathname === '/api/gpr' || url.pathname === '/api/clips/featured' || url.pathname === '/api/torneos/bracket' || url.pathname === '/api/en-vivo' || url.pathname === '/api/faceit/usuario' || url.pathname === '/api/account/perfil' || url.pathname === '/api/games' || url.pathname === '/api/tournaments' || url.pathname === '/api/matches' || url.pathname === '/api/players' || url.pathname === '/api/articles' || url.pathname === '/api/search' || /^\/api\/tournaments\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/articles\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/teams\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/players\/[a-z0-9-]+$/.test(url.pathname);
+      const isGetApi = url.pathname === '/api/valorant/esports' || url.pathname === '/api/teams' || url.pathname === '/api/teams-live' || url.pathname === '/api/gpr' || url.pathname === '/api/clips/featured' || url.pathname === '/api/torneos/bracket' || url.pathname === '/api/en-vivo' || url.pathname === '/api/faceit/usuario' || url.pathname === '/api/faceit/historia' || url.pathname === '/api/account/perfil' || url.pathname === '/api/games' || url.pathname === '/api/tournaments' || url.pathname === '/api/matches' || url.pathname === '/api/players' || url.pathname === '/api/articles' || url.pathname === '/api/search' || /^\/api\/tournaments\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/articles\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/teams\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/players\/[a-z0-9-]+$/.test(url.pathname);
       const isPostApi = url.pathname === '/api/discord/notify' || url.pathname === '/api/account/email-verify' || url.pathname === '/api/account/password-reset' || url.pathname === '/api/account/perfil' || url.pathname === '/api/clips/featured' || url.pathname === '/api/torneos/inscribir' || url.pathname === '/api/torneos/gestionar' || url.pathname === '/api/telemetria';
       if ((isPostApi || isGetApi) && SITE_ORIGINS.has(origin)) {
         return harden(new Response(null, { status: 204 }), {
@@ -1784,6 +1784,9 @@ async function fetchWorker(request, env, ctx) {
                 avatar: String(payload.avatar || '').slice(0, 300) || null,
                 nivel: Number.isFinite(cs.skill_level) ? cs.skill_level : null,
                 region: String(cs.region || '').slice(0, 8) || null,
+                /* S4.7: elo y fecha de registro de FACEIT para el panel nuevo */
+                elo: Number.isFinite(cs.elo) ? cs.elo : null,
+                desde: payload.activated_at ? String(payload.activated_at).slice(0, 24) : null,
               },
             };
           }
@@ -1794,6 +1797,140 @@ async function fetchWorker(request, env, ctx) {
       if (faceitCache.size > 400) faceitCache.clear();
       faceitCache.set(clave, { at: ahora, body: salida });
       return json(salida, salida.ok ? 200 : (salida.error === 'no_encontrado' ? 404 : 502), { 'Access-Control-Allow-Origin': originF || '*', 'Cache-Control': 'public, max-age=60' });
+    }
+
+    // --- 7b2d2) FACEIT HISTORIA (S4.7): historial REAL de partidas CS2 del
+    // jugador con la Data API oficial v4 (open.faceit.com) usando el secret
+    // FACEIT_API_KEY. Alimenta el panel nuevo del perfil: partidos recientes,
+    // rendimiento reciente y actividad por día. Si la clave no está o FACEIT
+    // rechaza, responde { ok:false, motivo } y el perfil muestra un estado
+    // honesto (nunca datos inventados). Caché de 120 s por nick.
+    if (url.pathname === '/api/faceit/historia') {
+      const originH = request.headers.get('origin') || '';
+      if (originH && !SITE_ORIGINS.has(originH)) {
+        return json({ ok: false, error: 'Origen no permitido' }, 403, { 'Access-Control-Allow-Origin': originH || '*' });
+      }
+      const aH = rateLimit(rlFaceit, ip, LIMIT_FACEIT);
+      if (!aH.ok) {
+        return json({ ok: false, error: 'Demasiadas peticiones' }, 429, { 'Retry-After': String(aH.retry), 'Access-Control-Allow-Origin': originH || '*' });
+      }
+      const nickH = url.searchParams.get('nick') || '';
+      if (!/^[a-zA-Z0-9_.\-]{2,24}$/.test(nickH)) {
+        return json({ ok: false, error: 'nick_invalido' }, 400, { 'Access-Control-Allow-Origin': originH || '*' });
+      }
+      const claveH = 'hist:' + nickH.toLowerCase();
+      const ahoraH = Date.now();
+      if (faceitCache.has(claveH) && ahoraH - faceitCache.get(claveH).at < 120000) {
+        const cH = faceitCache.get(claveH);
+        return json(cH.body, 200, { 'Access-Control-Allow-Origin': originH || '*', 'Cache-Control': 'public, max-age=120' });
+      }
+      const cabH = {
+        Authorization: 'Bearer ' + String((env && env.FACEIT_API_KEY) || ''),
+        'User-Agent': 'vants-worker',
+        Accept: 'application/json',
+      };
+      let salidaH;
+      try {
+        if (!String(cabH.Authorization).replace('Bearer', '').trim()) {
+          salidaH = { ok: false, motivo: 'sin_api_key' };
+        } else {
+          /* 1) jugador por nick (v4) */
+          const rP = await fetch('https://open.faceit.com/data/v4/players?nickname=' + encodeURIComponent(nickH), {
+            headers: cabH, signal: AbortSignal.timeout(9000),
+          });
+          if (rP.status === 401 || rP.status === 403) {
+            salidaH = { ok: false, motivo: 'faceit_key' };
+          } else if (rP.status === 404) {
+            salidaH = { ok: false, motivo: 'no_encontrado' };
+          } else if (!rP.ok) {
+            salidaH = { ok: false, motivo: 'faceit_no_responde' };
+          } else {
+            const pP = await rP.json().catch(() => null);
+            const pid = pP && pP.player_id;
+            if (!pid) {
+              salidaH = { ok: false, motivo: 'no_encontrado' };
+            } else {
+              /* 2) historial CS2 (últimas 20, usamos hasta 12) */
+              const rHi = await fetch('https://open.faceit.com/data/v4/players/' + encodeURIComponent(pid) + '/history?game=cs2&limit=20', {
+                headers: cabH, signal: AbortSignal.timeout(9000),
+              });
+              const jHi = rHi.ok ? await rHi.json().catch(() => null) : null;
+              const items = (jHi && Array.isArray(jHi.items)) ? jHi.items.slice(0, 12) : [];
+              /* 3) estadísticas por partido (en paralelo, máx 10 subpeticiones) */
+              const detalles = await Promise.all(items.slice(0, 10).map(async (it) => {
+                try {
+                  const rM = await fetch('https://open.faceit.com/data/v4/matches/' + encodeURIComponent(String(it.match_id || '')) + '/stats', {
+                    headers: cabH, signal: AbortSignal.timeout(9000),
+                  });
+                  if (!rM.ok) return null;
+                  const jM = await rM.json().catch(() => null);
+                  const round = jM && jM.rounds && jM.rounds[0];
+                  if (!round || !round.round_stats || !Array.isArray(round.teams)) return null;
+                  const rs = round.round_stats;
+                  let eqMio = null;
+                  let yo = null;
+                  for (const t of round.teams) {
+                    const ps = (t.players || []).find((p) => p && p.player_id === pid);
+                    if (ps) { eqMio = t; yo = ps; break; }
+                  }
+                  if (!yo || !eqMio) return null;
+                  const gps = yo.game_player_stats || {};
+                  const kills = Number(gps.Kills || 0);
+                  const muertes = Number(gps.Deaths || 0);
+                  const asis = Number(gps.Assists || 0);
+                  const gano = String(eqMio.team_id) === String(rs.Winner);
+                  const trozos = String(rs.Score || '').split('/');
+                  const esLocal = String(eqMio.team_id) === String((round.teams[0] || {}).team_id);
+                  const s0 = parseInt(trozos[0], 10) || 0;
+                  const s1 = parseInt(trozos[1], 10) || 0;
+                  const hsPct = Number(gps['Headshots %']);
+                  const krR = Number(gps['K/R Ratio']);
+                  return {
+                    fecha: it.started_at ? String(it.started_at).slice(0, 10) : null,
+                    mapa: String(rs.Map || '').slice(0, 20) || null,
+                    gano: gano,
+                    score: (esLocal ? s0 : s1) + ':' + (esLocal ? s1 : s0),
+                    kills: kills,
+                    muertes: muertes,
+                    asis: asis,
+                    hs: Number.isFinite(hsPct) ? hsPct : null,
+                    kr: Number.isFinite(krR) ? krR : null,
+                    kd: muertes > 0 ? Math.round((kills / muertes) * 100) / 100 : kills,
+                    mvp: Number(gps.MVPs || 0) || 0,
+                  };
+                } catch (_eM) {
+                  return null;
+                }
+              }));
+              const partidas = detalles.filter(Boolean);
+              const promH = (lista) => (lista.length ? Math.round((lista.reduce((a, b) => a + b, 0) / lista.length) * 100) / 100 : null);
+              const victoriasH = partidas.filter((p) => p.gano).length;
+              const csGH = (pP.games && (pP.games.cs2 || pP.games.csgo)) || {};
+              salidaH = {
+                ok: partidas.length > 0,
+                motivo: partidas.length > 0 ? null : 'sin_partidas',
+                resumen: {
+                  jugadas: partidas.length,
+                  victorias: victoriasH,
+                  winrate: partidas.length ? Math.round((victoriasH / partidas.length) * 1000) / 10 : null,
+                  kd: promH(partidas.map((p) => p.kd)),
+                  kr: promH(partidas.map((p) => p.kr).filter((v) => v !== null)),
+                  hs: promH(partidas.map((p) => p.hs).filter((v) => v !== null)),
+                  mvp: partidas.reduce((a, p) => a + (p.mvp || 0), 0),
+                  nivel: Number.isFinite(csGH.skill_level) ? csGH.skill_level : null,
+                  elo: Number.isFinite(csGH.elo) ? csGH.elo : null,
+                },
+                partidas: partidas,
+              };
+            }
+          }
+        }
+      } catch (eHI) {
+        salidaH = { ok: false, motivo: 'faceit_no_responde' };
+      }
+      if (faceitCache.size > 400) faceitCache.clear();
+      faceitCache.set(claveH, { at: ahoraH, body: salidaH });
+      return json(salidaH, salidaH.ok ? 200 : 502, { 'Access-Control-Allow-Origin': originH || '*', 'Cache-Control': 'public, max-age=120' });
     }
 
     // --- 7b2e) Cuenta: NOMBRE DE LA CUENTA + REDES CONECTADAS (Auth0 Mgmt).

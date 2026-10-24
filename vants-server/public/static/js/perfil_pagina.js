@@ -340,6 +340,8 @@
             pais: j.usuario.pais,
             region: j.usuario.region,
             avatar: j.usuario.avatar,
+            elo: j.usuario.elo,      /* S4.7: elo de FACEIT para el panel */
+            desde: j.usuario.desde,  /* S4.7: miembro desde (fecha FACEIT) */
           };
           api.guardar(estado);
           pintarCuentas();
@@ -1268,4 +1270,537 @@
       c.classList.toggle("chip-sel--activo", c.getAttribute("data-banner") === est46.banner.tipo);
     });
   }
+})();
+
+/* ════════════════════════════════════════════════════════════════════
+   S4.7 · PERFIL CON LA CARA DE FACEIT (diseñado y aprobado en el LAB)
+   La estructura del perfil de FACEIT — sidebar de identidad a la
+   izquierda y panel de juego a la derecha (temporada, season, rendimiento
+   reciente, partidos recientes, destacados) — con la marca VANTS y los
+   mismos tokens del launcher (Archivo, mono, rojo #FF0D2E, paneles oscuros).
+   · TODO se MUEVE, nada se re-crea: mismos nodos, mismos IDs, mismos
+     listeners (el hero del S4.6 se redistribuye).
+   · HISTORIAL REAL: /api/faceit/historia (Data API v4 con la clave del
+     worker). Si FACEIT no responde o no hay cuenta conectada, estados
+     honestos — nunca datos inventados.
+   · La gestión de siempre (mis datos, equipo, banner, redes, membresía,
+     cuenta, inscripciones) queda abajo, intacta. LA ESCALERA sigue
+     como sección fina antes de la gestión.
+   ════════════════════════════════════════════════════════════════════ */
+(function () {
+  "use strict";
+  var vent = document.getElementById("ventana-perfil");
+  if (!vent || document.getElementById("vants-47-listo")) return;
+  var marca = document.createElement("meta");
+  marca.id = "vants-47-listo";
+  document.head.appendChild(marca);
+
+  /* ── estilos propios del S4.7 (scope .v47) ── */
+  var st = document.createElement("style");
+  st.id = "vants-47-css";
+  st.textContent =
+    ".v47 .v47-cabecera{position:relative;overflow:hidden}" +
+    ".v47 .v47-cabecera .v47-linea{position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,#ff0d2e,#ff5a1f 55%,transparent);z-index:1;pointer-events:none}" +
+    ".v47 .v47-marco{display:grid;grid-template-columns:296px minmax(0,1fr);gap:14px;padding:14px 20px 0;align-items:start}" +
+    ".v47 .v47-side{display:grid;gap:14px;min-width:0}" +
+    ".v47 .v47-main{display:grid;gap:14px;min-width:0}" +
+    ".v47 .v47-caja{background:rgba(10,11,15,.66);border:1px solid var(--borde);border-radius:12px;padding:16px}" +
+    ".v47 .v47-etq{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#ff5a6e;margin-bottom:10px}" +
+    ".v47 .v47-etq--gris{color:#93939d}" +
+    ".v47 .v47-perfil-card{background:linear-gradient(180deg,rgba(255,13,46,.06),transparent 40%),rgba(10,11,15,.66);border:1px solid var(--borde);border-radius:12px;padding:18px 14px 16px}" +
+    ".v47 .v47-perfil-card .perfil__identidad{display:flex;flex-direction:column;align-items:center;padding:0;margin:0;flex:none}" +
+    ".v47 .v47-perfil-card .perfil__avatar-wrap{margin:0 auto}" +
+    ".v47 .v47-perfil-card .perfil__avatar{width:84px;height:84px;border-radius:16px}" +
+    ".v47 .v47-perfil-card .perfil__nombre{width:100%;text-align:center;margin-top:10px}" +
+    ".v47 .v47-perfil-card .perfil__nombre h2{font-size:23px;justify-content:center;display:flex;flex-wrap:wrap;gap:6px}" +
+    ".v47 .v47-perfil-card .perfil__sub{margin:6px 0 0;text-align:center}" +
+    ".v47 .v47-perfil-card .v44-chips{justify-content:center}" +
+    ".v47 .v47-perfil-card .v46-chip{margin-top:8px}" +
+    ".v47 .v47-perfil-card .v47-desde{display:none;margin:8px 0 0;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#52525b}" +
+    ".v47 .v47-perfil-card .v46-hero__acciones{flex-direction:row;gap:8px;min-width:0;width:100%;justify-content:center;margin-top:12px}" +
+    ".v47 .v47-perfil-card .v46-hero__acciones .btn{width:auto;flex:1;justify-content:center;text-align:center;font-size:10.5px;padding:9px 8px;min-width:0}" +
+    ".v47 .v47-rango-caja .rango-caja{width:100%;flex-direction:row;text-align:left;gap:12px;padding:12px;border-radius:10px;background:#0d0d10}" +
+    ".v47 .v47-rango-caja .rango-caja__insignia{width:48px;height:48px;border-radius:10px;flex:none}" +
+    ".v47 .v47-rango-caja .rango-caja__insignia img{width:40px;height:40px}" +
+    ".v47 .v47-rango-caja .rango-caja__info{flex:1;min-width:0;width:auto}" +
+    ".v47 .v47-rango-caja .rango-caja__info b{font-size:15px}" +
+    ".v47 .v47-rango-caja .rango-caja__info small{margin:2px 0 6px;display:block}" +
+    ".v47 .v47-rango-caja .rango-caja__xp{width:auto;flex:none;text-align:right}" +
+    ".v47 .v47-rango-caja .rango-caja__xp b{font-size:14px}" +
+    ".v47 .v47-hist-fila{display:flex;align-items:center;gap:10px;border:1px solid var(--borde);border-radius:8px;background:#0d0d10;padding:9px 11px}" +
+    ".v47 .v47-hist-juego{width:30px;height:30px;border-radius:6px;display:grid;place-items:center;font-family:var(--mono);font-weight:800;font-size:9px;background:#1d1d22;color:#f1f5f9;flex:none}" +
+    ".v47 .v47-hist-fila b{display:block;font-size:12.5px}" +
+    ".v47 .v47-hist-fila small{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#7e7e88;margin-top:2px}" +
+    ".v47 .v47-tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap}" +
+    ".v47 .v47-juego{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:8px;background:#1d1d22;border:1px solid var(--borde-2);font-family:var(--mono);font-size:10px;letter-spacing:.12em;font-weight:800;color:#f1f5f9}" +
+    ".v47 .v47-juego i{width:14px;height:14px;border-radius:3px;background:#ff0d2e;display:grid;place-items:center;font-style:normal;font-size:8px;color:#fff}" +
+    ".v47 .v47-tab{display:inline-flex;padding:7px 13px;border-radius:8px;background:rgba(19,19,23,.9);border:1px solid var(--borde);border-top-color:#ff0d2e;font-family:var(--mono);font-size:11px;font-weight:800;letter-spacing:.1em;color:#edede7}" +
+    ".v47 .v47-tablink{margin-left:auto;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#93939d;text-decoration:none;border-bottom:1px dotted #52525b;padding-bottom:2px}" +
+    ".v47 .v47-tablink:hover{color:#ff5a6e}" +
+    ".v47 .v47-temporada{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:rgba(19,19,23,.9);border:1px solid var(--borde);border-radius:12px;padding:12px 16px}" +
+    ".v47 .v47-temporada small{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#7e7e88}" +
+    ".v47 .v47-temporada .v47-cifra{font-size:15px;font-weight:900}" +
+    ".v47 .v47-things{margin-left:auto;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}" +
+    ".v47 .v47-things small{color:#93939d}" +
+    ".v47 .v47-verde{color:#3ee6a0}" +
+    ".v47 .v47-season{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:rgba(19,19,23,.9);border:1px solid var(--borde);border-radius:12px;padding:14px 16px}" +
+    ".v47 .v47-season__nivel{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#1d1d22;border:1px solid var(--borde-2);font-weight:900;font-size:17px;color:#f1f5f9;flex:none}" +
+    ".v47 .v47-season__nivel--off{font-size:16px;color:#93939d}" +
+    ".v47 .v47-season__info small{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#7e7e88;margin-bottom:2px}" +
+    ".v47 .v47-season__info b{font-size:17px;font-weight:900;text-transform:uppercase}" +
+    ".v47 .v47-season__stats{margin-left:auto;display:flex;gap:18px;align-items:center;flex-wrap:wrap}" +
+    ".v47 .v47-season__stats p{text-align:right;margin:0}" +
+    ".v47 .v47-season__stats b{display:block;font-size:14px;font-weight:900}" +
+    ".v47 .v47-season__stats small{font-family:var(--mono);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:#7e7e88}" +
+    ".v47 .v47-season__link{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#ff5a6e;text-decoration:none;border-bottom:1px dotted rgba(255,90,110,.5);padding-bottom:2px}" +
+    ".v47 .v47-heat{display:grid;grid-template-rows:repeat(7,8px);grid-auto-flow:column;grid-auto-columns:8px;gap:3px}" +
+    ".v47 .v47-heat span{border-radius:2px;background:#1a1a1f}" +
+    ".v47 .v47-heat span.h1{background:rgba(255,13,46,.35)}" +
+    ".v47 .v47-heat span.h2{background:rgba(255,13,46,.6)}" +
+    ".v47 .v47-heat span.h3{background:#ff0d2e}" +
+    ".v47 .v47-heat-ley{display:flex;align-items:center;gap:5px;margin-top:8px;font-family:var(--mono);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:#52525b}" +
+    ".v47 .v47-heat-ley i{width:8px;height:8px;border-radius:2px;display:inline-block;font-style:normal}" +
+    ".v47 .v47-rend-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:4px}" +
+    ".v47 .v47-rend-head b{font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:.02em}" +
+    ".v47 .v47-rend-head small{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#7e7e88}" +
+    ".v47 .v47-tabla{width:100%;border-collapse:collapse}" +
+    ".v47 .v47-tabla th{font-family:var(--mono);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:#7e7e88;text-align:left;padding:6px 10px 6px 0;font-weight:500}" +
+    ".v47 .v47-tabla td{padding:8px 10px 8px 0;border-top:1px solid #1c1c21;font-size:12.5px;vertical-align:middle}" +
+    ".v47 .v47-tabla td.fecha{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#93939d;white-space:nowrap}" +
+    ".v47 .v47-tabla td.mono{font-family:var(--mono);font-size:12px}" +
+    ".v47 .v47-tabla .wl{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-weight:800;font-size:12px}" +
+    ".v47 .v47-tabla .chipw,.v47 .v47-tabla .chipl{font-family:var(--mono);font-size:9px;font-weight:900;padding:2px 6px;border-radius:4px}" +
+    ".v47 .v47-tabla .chipw{background:rgba(62,230,160,.14);color:#3ee6a0}" +
+    ".v47 .v47-tabla .chipl{background:rgba(255,13,46,.13);color:#ff5a6e}" +
+    ".v47 .v47-nota{margin-top:8px;font-family:var(--mono);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:#52525b}" +
+    ".v47 .v47-vacio{font-size:12.5px;color:#a1a1aa;line-height:1.55;margin:0}" +
+    ".v47 .v47-seccion-gestion{padding:0 20px;display:block;margin-top:6px}" +
+    ".v47 .v46-escalera{padding:0 20px 4px}" +
+    ".v47 .v46-grilla{padding:6px 20px 26px}" +
+    "@media (max-width:1020px){.v47 .v47-marco{grid-template-columns:1fr}.v47 .v47-things{margin-left:0}}" +
+    "@media (max-width:640px){.v47 .v47-perfil-card .v46-hero__acciones{flex-direction:column}.v47 .v47-perfil-card .v46-hero__acciones .btn{width:100%}.v47 .v47-season__stats{margin-left:0}}";
+  document.head.appendChild(st);
+  vent.classList.add("v47");
+
+  /* ── piezas del S4.6 que se redistribuyen (mismos nodos) ── */
+  var barra = vent.querySelector(".perfil__barra");
+  var hero = vent.querySelector(".v46-hero");
+  var statsSec = vent.querySelector(".v46-stats");
+  var esc = vent.querySelector(".v46-escalera");
+  var grilla = vent.querySelector(".v46-grilla");
+  var identidad = vent.querySelector(".perfil__identidad");
+  var banner = document.getElementById("banner");
+  if (!barra || !hero || !identidad || !banner || !grilla) return;
+  var acc = hero.querySelector(".v46-hero__acciones");
+  var rangoWrap = hero.querySelector(".v46-hero__rango");
+  var rangoCaja = rangoWrap ? rangoWrap.querySelector(".rango-caja") : null;
+  var linea = hero.querySelector(".v46-hero__linea");
+  var bStats = statsSec ? statsSec.querySelector(".perfil__bloque") : null;
+  var bFaceit = vent.querySelector("#faceit-real") ? vent.querySelector("#faceit-real").closest(".perfil__bloque") : null;
+  var bClips = document.getElementById("clips-perfil") ? document.getElementById("clips-perfil").closest(".perfil__bloque") : null;
+
+  function cajaNueva(etq, gris) {
+    var d = document.createElement("div");
+    d.className = "v47-caja";
+    var s = document.createElement("span");
+    s.className = "v47-etq" + (gris ? " v47-etq--gris" : "");
+    s.textContent = etq;
+    d.appendChild(s);
+    return d;
+  }
+
+  /* ── cabecera: banner de marca con su línea ── */
+  var cab = document.createElement("div");
+  cab.className = "v47-cabecera";
+  if (linea) cab.appendChild(linea);
+  cab.appendChild(banner);
+
+  /* ── SIDEBAR ── */
+  var marco = document.createElement("div");
+  marco.className = "v47-marco";
+  var side = document.createElement("div");
+  side.className = "v47-side";
+  var main = document.createElement("div");
+  main.className = "v47-main";
+
+  /* 1 · tarjeta de perfil: identidad + acciones */
+  var pc = document.createElement("div");
+  pc.className = "v47-perfil-card";
+  pc.appendChild(identidad);
+  if (acc) pc.appendChild(acc);
+  var subEl = identidad.querySelector(".perfil__sub");
+  var desdeEl = document.createElement("p");
+  desdeEl.className = "v47-desde";
+  if (subEl && subEl.parentNode) subEl.parentNode.insertBefore(desdeEl, subEl.nextSibling);
+  side.appendChild(pc);
+
+  /* 2 · historial de partidas */
+  var cHist = cajaNueva("HISTORIAL DE PARTIDAS", true);
+  var hist = document.createElement("div");
+  hist.id = "v47-hist";
+  cHist.appendChild(hist);
+  side.appendChild(cHist);
+
+  /* 3 · actividad reciente (heatmap) */
+  var cAct = cajaNueva("ACTIVIDAD RECIENTE · ÚLTIMOS 90 DÍAS", true);
+  var heat = document.createElement("div");
+  heat.className = "v47-heat";
+  cAct.appendChild(heat);
+  var ley = document.createElement("p");
+  ley.className = "v47-heat-ley";
+  ley.innerHTML = 'menos <i style="background:#1a1a1f"></i><i style="background:rgba(255,13,46,.35)"></i><i style="background:rgba(255,13,46,.6)"></i><i style="background:#ff0d2e"></i> m\u00e1s';
+  cAct.appendChild(ley);
+  side.appendChild(cAct);
+
+  /* 4 · FACEIT (el bloque de siempre, ahora en la sidebar) */
+  if (bFaceit) {
+    var eF = bFaceit.querySelector("span.etiqueta");
+    if (eF) eF.textContent = "FACEIT · CUENTA DE JUEGO";
+    side.appendChild(bFaceit);
+  }
+
+  /* 5 · rango VANTS (la MISMA caja del hero, compacta) */
+  var cR = cajaNueva("RANGO · VANTS RANKED");
+  cR.className += " v47-rango-caja";
+  if (rangoCaja) cR.appendChild(rangoCaja);
+  side.appendChild(cR);
+
+  /* ── MAIN ── */
+  /* 1 · tabs de juego */
+  var tabs = document.createElement("div");
+  tabs.className = "v47-tabs";
+  tabs.innerHTML = '<span class="v47-juego"><i>\u25b8</i>CS2</span><span class="v47-tab">RESUMEN</span>';
+  main.appendChild(tabs);
+
+  /* 2 · barra de temporada (resumen; se llena con el historial real) */
+  var temp = document.createElement("div");
+  temp.className = "v47-temporada";
+  temp.id = "v47-temporada";
+  temp.innerHTML = '<small>SIN DATOS TODAV\u00cdA \u00b7 CONECT\u00c1 TU FACEIT Y JUG\u00c1 PARA LLENAR ESTE PANEL</small>';
+  main.appendChild(temp);
+
+  /* 3 · tarjeta de season (nivel / sin rango + elo) */
+  var season = document.createElement("div");
+  season.className = "v47-season";
+  season.id = "v47-season";
+  main.appendChild(season);
+
+  /* 4 · rendimiento reciente = el MISMO bloque de stats (IDs intactos) */
+  if (statsSec) {
+    var rhead = document.createElement("div");
+    rhead.className = "v47-rend-head";
+    rhead.innerHTML = "<b>Rendimiento reciente</b><small id=\"v47-rend-sub\">se llena con tus partidas de FACEIT</small>";
+    if (bStats) bStats.insertBefore(rhead, bStats.firstChild);
+    main.appendChild(statsSec);
+  }
+
+  /* 5 · partidos recientes (tabla real o vacío honesto) */
+  var cPar = cajaNueva("PARTIDOS RECIENTES", true);
+  var par = document.createElement("div");
+  par.id = "v47-partidos";
+  par.innerHTML = '<p class="v47-vacio">Tu historial de FACEIT aparece ac\u00e1: \u00faltimas partidas con resultado, K/D/A, HS% y mapa.</p>';
+  cPar.appendChild(par);
+  main.appendChild(cPar);
+
+  /* 6 · destacados (los clips de siempre, ahora en el panel) */
+  if (bClips) {
+    var eK = bClips.querySelector("span.etiqueta");
+    if (eK && eK.firstChild && eK.firstChild.nodeType === 3) eK.firstChild.nodeValue = "DESTACADOS · ";
+    main.appendChild(bClips);
+  }
+
+  marco.appendChild(side);
+  marco.appendChild(main);
+
+  /* ── montaje final ── */
+  while (vent.firstChild) vent.removeChild(vent.firstChild);
+  vent.appendChild(barra);
+  vent.appendChild(cab);
+  vent.appendChild(marco);
+  if (esc) vent.appendChild(esc);
+  var gestion = document.createElement("span");
+  gestion.className = "v47-etq v47-etq--gris v47-seccion-gestion";
+  gestion.textContent = "GESTIÓN DE TU FICHA";
+  vent.appendChild(gestion);
+  vent.appendChild(grilla);
+
+  /* ── pintado de las piezas nuevas ── */
+  function fDeEstado() {
+    var e = window.__VANTS_ESTADO__;
+    return e && e.cuentas && e.cuentas.faceit ? e.cuentas.faceit : null;
+  }
+
+  function pintarDesde() {
+    var f = fDeEstado();
+    if (f && f.desde) {
+      var d = new Date(f.desde);
+      if (!isNaN(d.getTime())) {
+        desdeEl.textContent = "miembro de FACEIT desde " + d.toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" });
+        desdeEl.style.display = "block";
+        return;
+      }
+    }
+    desdeEl.style.display = "none";
+  }
+
+  function pintarSeason(nivel, elo, usuarioFaceit) {
+    var s = document.getElementById("v47-season");
+    if (!s) return;
+    s.innerHTML = "";
+    var circ = document.createElement("span");
+    circ.className = "v47-season__nivel" + (nivel ? "" : " v47-season__nivel--off");
+    circ.textContent = nivel ? String(nivel) : "?";
+    var info = document.createElement("div");
+    info.className = "v47-season__info";
+    var sub = document.createElement("small");
+    sub.textContent = "FACEIT · CS2" + (usuarioFaceit ? " · " + usuarioFaceit : "");
+    var nom = document.createElement("b");
+    nom.textContent = nivel ? "NIVEL " + nivel : "Sin rango";
+    info.appendChild(sub);
+    info.appendChild(nom);
+    s.appendChild(circ);
+    s.appendChild(info);
+    var st2 = document.createElement("div");
+    st2.className = "v47-season__stats";
+    if (elo !== null && elo !== undefined) {
+      var p1 = document.createElement("p");
+      var b1 = document.createElement("b");
+      b1.textContent = String(elo);
+      var s1 = document.createElement("small");
+      s1.textContent = "ELO FACEIT";
+      p1.appendChild(b1); p1.appendChild(s1);
+      st2.appendChild(p1);
+    }
+    if (usuarioFaceit) {
+      var a = document.createElement("a");
+      a.className = "v47-season__link";
+      a.href = "https://www.faceit.com/en/players/" + encodeURIComponent(usuarioFaceit);
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = "estad\u00edsticas \u203a";
+      st2.appendChild(a);
+    }
+    s.appendChild(st2);
+  }
+
+  function pintarTemporada(res) {
+    var t = document.getElementById("v47-temporada");
+    if (!t) return;
+    t.innerHTML = "";
+    var izq = document.createElement("small");
+    izq.textContent = "\u00daLTIMAS PARTIDAS \u00b7 FACEIT CS2";
+    t.appendChild(izq);
+    var der = document.createElement("div");
+    der.className = "v47-things";
+    function cifra(v, etq, verde) {
+      var b = document.createElement("b");
+      b.className = "v47-cifra" + (verde ? " v47-verde" : "");
+      b.textContent = v;
+      var sm = document.createElement("small");
+      sm.textContent = etq;
+      der.appendChild(b);
+      der.appendChild(sm);
+    }
+    cifra(String(res.jugadas), "PARTIDAS", false);
+    if (res.winrate !== null && res.winrate !== undefined) cifra(res.winrate + "%", "GANADO", true);
+    if (res.kd !== null && res.kd !== undefined) cifra(String(res.kd), "K/D MEDIO", false);
+    if (res.hs !== null && res.hs !== undefined) cifra(Math.round(res.hs) + "%", "HS MEDIO", false);
+    t.appendChild(der);
+  }
+
+  function pintarHistorial(jugadas) {
+    var h = document.getElementById("v47-hist");
+    if (!h) return;
+    h.innerHTML = "";
+    var fila = document.createElement("div");
+    fila.className = "v47-hist-fila";
+    var j = document.createElement("span");
+    j.className = "v47-hist-juego";
+    j.textContent = "CS2";
+    var d = document.createElement("div");
+    var b = document.createElement("b");
+    b.textContent = "Counter-Strike 2";
+    var sm = document.createElement("small");
+    sm.textContent = jugadas + " partidas · \u00faltimas registradas";
+    d.appendChild(b); d.appendChild(sm);
+    fila.appendChild(j); fila.appendChild(d);
+    h.appendChild(fila);
+  }
+
+  function pintarHeatmap(partidas) {
+    if (!heat) return;
+    var porDia = {};
+    (partidas || []).forEach(function (p) {
+      if (!p.fecha) return;
+      porDia[p.fecha] = (porDia[p.fecha] || 0) + (p.gano ? 2 : 1);
+    });
+    heat.innerHTML = "";
+    var hoy = new Date();
+    for (var i = 83; i >= 0; i--) {
+      var d = new Date(hoy.getTime() - i * 86400000);
+      var iso = d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+      var v = porDia[iso] || 0;
+      var celda = document.createElement("span");
+      if (v === 1) celda.className = "h1";
+      else if (v === 2) celda.className = "h2";
+      else if (v >= 3) celda.className = "h3";
+      heat.appendChild(celda);
+    }
+  }
+
+  function pintarTabla(partidas) {
+    var cont = document.getElementById("v47-partidos");
+    if (!cont) return;
+    cont.innerHTML = "";
+    var t = document.createElement("table");
+    t.className = "v47-tabla";
+    var thead = document.createElement("thead");
+    thead.innerHTML = "<tr><th>fecha</th><th>resultado</th><th>k/d/a</th><th>hs %</th><th>mapa</th></tr>";
+    var tb = document.createElement("tbody");
+    (partidas || []).slice(0, 8).forEach(function (p) {
+      var tr = document.createElement("tr");
+      var tdF = document.createElement("td");
+      tdF.className = "fecha";
+      tdF.textContent = p.fecha || "\u2014";
+      var tdR = document.createElement("td");
+      var wl = document.createElement("span");
+      wl.className = "wl";
+      var chip = document.createElement("span");
+      chip.className = p.gano ? "chipw" : "chipl";
+      chip.textContent = p.gano ? "W" : "L";
+      var sc = document.createElement("span");
+      sc.textContent = p.score || "\u2014";
+      wl.appendChild(chip); wl.appendChild(sc);
+      tdR.appendChild(wl);
+      var tdK = document.createElement("td");
+      tdK.className = "mono";
+      tdK.textContent = p.kills + " / " + p.muertes + " / " + p.asis;
+      var tdH = document.createElement("td");
+      tdH.className = "mono";
+      tdH.style.color = "#93939d";
+      tdH.textContent = (p.hs === null || p.hs === undefined) ? "\u2014" : Math.round(p.hs) + "%";
+      var tdM = document.createElement("td");
+      tdM.textContent = p.mapa || "\u2014";
+      tr.appendChild(tdF); tr.appendChild(tdR); tr.appendChild(tdK); tr.appendChild(tdH); tr.appendChild(tdM);
+      tb.appendChild(tr);
+    });
+    t.appendChild(thead);
+    t.appendChild(tb);
+    cont.appendChild(t);
+    var nota = document.createElement("p");
+    nota.className = "v47-nota";
+    nota.textContent = "se actualiza solo desde tu cuenta de FACEIT";
+    cont.appendChild(nota);
+  }
+
+  function llenarRendimiento(res) {
+    var sub = document.getElementById("v47-rend-sub");
+    if (sub) sub.textContent = "\u00faltimas " + res.jugadas + " partidas de FACEIT";
+    function set(id, val) {
+      var b = document.getElementById(id);
+      if (b) b.textContent = val;
+    }
+    set("stat-partidos", String(res.jugadas));
+    set("stat-winrate", (res.winrate !== null && res.winrate !== undefined) ? res.winrate + "%" : "\u2014");
+    set("stat-kd", (res.kd !== null && res.kd !== undefined) ? String(res.kd) : "\u2014");
+    var bR = document.getElementById("stat-rating");
+    if (bR) {
+      bR.textContent = (res.kr !== null && res.kr !== undefined) ? String(res.kr) : "\u2014";
+      var sm = bR.parentNode.querySelector("small");
+      if (sm) sm.textContent = "K/R MEDIO";
+    }
+    if (bStats) {
+      var grid = bStats.querySelector(".stats-grid");
+      if (grid) {
+        grid.querySelectorAll(".stat-caja").forEach(function (cajaEl) {
+          var sm2 = cajaEl.querySelector("small");
+          if (sm2 && /HEADSHOT/i.test(sm2.textContent) && res.hs !== null && res.hs !== undefined) {
+            var b2 = cajaEl.querySelector("b");
+            if (b2) b2.textContent = Math.round(res.hs) + "%";
+            var pr = cajaEl.querySelector(".v46-pronto");
+            if (pr) pr.remove();
+          }
+        });
+      }
+    }
+  }
+
+  function vacioHistoria(msg) {
+    var h = document.getElementById("v47-hist");
+    if (h) h.innerHTML = '<p class="v47-vacio">' + msg + "</p>";
+  }
+
+  function vacioTabla(msg) {
+    var cont = document.getElementById("v47-partidos");
+    if (cont) cont.innerHTML = '<p class="v47-vacio">' + msg + "</p>";
+  }
+
+  function vacioTemporada(msg) {
+    var t = document.getElementById("v47-temporada");
+    if (t) t.innerHTML = "<small>" + msg + "</small>";
+  }
+
+  /* ── carga del historial real ── */
+  var cargadoNick = null;
+  function cargarHistoria() {
+    var f = fDeEstado();
+    pintarDesde();
+    if (!(f && f.conectada && f.usuario)) {
+      pintarSeason(f && f.nivel ? f.nivel : null, null, null);
+      vacioHistoria("Conect\u00e1 tu cuenta de FACEIT abajo, en REDES Y CUENTAS: tu nivel, tu historial y tu actividad aparecen ac\u00e1 al instante.");
+      vacioTabla("Tu historial de FACEIT aparece ac\u00e1: \u00faltimas partidas con resultado, K/D/A, HS% y mapa.");
+      vacioTemporada("SIN DATOS TODAV\u00cdA \u00b7 CONECT\u00c1 TU FACEIT Y JUG\u00c1 PARA LLENAR ESTE PANEL");
+      if (heat) heat.innerHTML = "";
+      return;
+    }
+    pintarSeason(f.nivel || null, (f.elo !== null && f.elo !== undefined) ? f.elo : null, f.usuario);
+    if (cargadoNick === f.usuario) return;   /* ya cargado (o en curso) para este nick */
+    cargadoNick = f.usuario;
+    vacioHistoria("Cargando tu historial de FACEIT\u2026");
+    fetch("/api/faceit/historia?nick=" + encodeURIComponent(f.usuario), { headers: { Accept: "application/json" } })
+      .then(function (r) { return r.json().catch(function () { return null; }); })
+      .then(function (j) {
+        if (j && j.ok && j.resumen && j.partidas) {
+          var f2 = fDeEstado() || f;
+          pintarSeason(j.resumen.nivel || (f2.nivel || null), (j.resumen.elo !== null && j.resumen.elo !== undefined) ? j.resumen.elo : ((f2.elo !== null && f2.elo !== undefined) ? f2.elo : null), f2.usuario || f.usuario);
+          pintarTemporada(j.resumen);
+          pintarHistorial(j.resumen.jugadas);
+          llenarRendimiento(j.resumen);
+          pintarTabla(j.partidas);
+          pintarHeatmap(j.partidas);
+        } else {
+          var motivo = j && j.motivo;
+          var msg = motivo === "no_encontrado" ? "FACEIT no encontr\u00f3 ese nick en su API. Desconect\u00e1 y reconect\u00e1 tu cuenta con el nick exacto."
+            : motivo === "faceit_key" ? "FACEIT rechaz\u00f3 la clave del servidor. Avis\u00e1 en el Discord de VANTS para revisarla."
+            : motivo === "sin_api_key" ? "El servidor todav\u00eda no tiene clave de FACEIT configurada: el historial se activa en cuanto se configure."
+            : motivo === "sin_partidas" ? "No hay partidas registradas en tu historial de FACEIT (CS2)."
+            : "FACEIT no respondi\u00f3. Recarg\u00e1 la p\u00e1gina en un rato.";
+          pintarSeason((f.nivel || null), (f.elo !== null && f.elo !== undefined) ? f.elo : null, f.usuario);
+          vacioHistoria(msg);
+          vacioTabla(msg);
+          vacioTemporada("SIN DATOS DE FACEIT POR AHORA");
+          if (heat) heat.innerHTML = "";
+        }
+      })
+      .catch(function () {
+        vacioHistoria("FACEIT no respondi\u00f3. Recarg\u00e1 la p\u00e1gina en un rato.");
+        vacioTabla("FACEIT no respondi\u00f3. Recarg\u00e1 la p\u00e1gina en un rato.");
+      });
+  }
+
+  /* si la cuenta FACEIT conecta o cambia mientras la página está abierta,
+     el panel se refresca solo (mismo observador del S4.4) */
+  var faceitReal47 = document.getElementById("faceit-real");
+  if (faceitReal47 && window.MutationObserver) {
+    new MutationObserver(function () {
+      var f = fDeEstado();
+      var nick = f && f.conectada && f.usuario;
+      if (nick && nick !== cargadoNick) cargarHistoria();
+      else pintarDesde();
+    }).observe(faceitReal47, { attributes: true });
+  }
+
+  pintarDesde();
+  pintarSeason(fDeEstado() && fDeEstado().nivel ? fDeEstado().nivel : null, null, null);
+  cargarHistoria();
 })();
