@@ -6,7 +6,7 @@ búsqueda, tienda y membresías — con login **Auth0**, datos en **Neon Postgre
 automático en **Cloudflare Workers**.
 
 **Web:** https://vants.vants.workers.dev
-**Plataforma de torneos:** https://vants.vants.workers.dev/es/tournaments/valorant/upcoming/
+
 
 ## Estructura
 
