@@ -165,6 +165,56 @@
 .campeon-box b { font-style: italic; font-size: 17px; letter-spacing: .05em; }
 .campeon-box small { display: block; color: var(--gris); margin-top: 5px; font-family: var(--mono); font-size: 10px; letter-spacing: .2em; }
 
+/* Bracket en vivo (S4.8): chip EN VIVO de partidos en_curso, subtítulo de
+   columna para el cuadro inferior, aviso de actualización y chips de
+   equipos inscritos (datos reales de /api/torneos/bracket). */
+.bracket__sub { margin-top: 18px; }
+.match__cinta { padding: 7px 14px 0; }
+.chip-vivo { display: inline-block; font-family: var(--mono); font-size: 9px; font-weight: 800; letter-spacing: .2em; color: #fff; background: var(--rojo); border-radius: 3px; padding: 3px 8px; animation: vants-vive 1.2s ease-in-out infinite; }
+@keyframes vants-vive { 50% { opacity: .4; } }
+.match--vivo { border-color: var(--rojo); box-shadow: 0 0 0 1px rgba(229,57,53,.28); }
+.llaves-aviso { font-family: var(--mono); font-size: 10px; letter-spacing: .18em; color: var(--gris); margin-top: 14px; }
+.llaves-aviso b { color: #3ddc84; }
+.llaves-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.llaves-chip { display: flex; align-items: center; gap: 8px; border: 1px solid var(--borde); background: var(--panel-2); border-radius: 6px; padding: 9px 13px; font-weight: 700; font-size: 12.5px; letter-spacing: .04em; }
+.llaves-chip b { font-family: var(--mono); color: var(--rojo); }
+.llaves-chip small { color: var(--gris); font-family: var(--mono); font-size: 10px; letter-spacing: .1em; }
+.llaves-chip .st { font-family: var(--mono); font-size: 9px; letter-spacing: .14em; padding: 2px 7px; border-radius: 3px; }
+.llaves-chip .st--ok { color: #3ddc84; border: 1px solid rgba(61,220,132,.4); }
+.llaves-chip .st--rev { color: var(--gris); border: 1px solid var(--borde); }
+@media (max-width: 900px) { .llaves-chips { gap: 8px; } }
+
+/* Bracket EN VIVO — estilo árbol de doble eliminación (S4.8.2, referencia
+   del dueño): fila superior CUARTOS->SEMIS->GRAN FINAL con conectores,
+   divisor LLAVES INFERIORES, fila inferior RONDA 1->RONDA 2->FINAL.
+   Tarjetas con nombres centrados, separador punteado y badge BO. */
+.bracketv2__top { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; flex-wrap: wrap; margin-bottom: 6px; }
+.bracketv2__top p { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; color: var(--gris); }
+.bracketv2__top p b { color: var(--rojo); }
+.bracketv2__fila { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; align-items: stretch; margin-top: 22px; }
+.bracketv2__col { display: flex; flex-direction: column; min-width: 0; }
+.bracketv2__col h4 { font-family: var(--mono); font-size: 10px; letter-spacing: .24em; color: var(--gris); margin: 0 0 12px; }
+.bracketv2__matches { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 14px; }
+.bracketv2__divisor { display: flex; align-items: center; gap: 18px; margin-top: 30px; }
+.bracketv2__divisor::before, .bracketv2__divisor::after { content: ''; flex: 1; height: 1px; background: var(--borde); }
+.bracketv2__divisor span { font-family: var(--mono); font-size: 10px; letter-spacing: .22em; color: var(--gris); white-space: nowrap; }
+.matchb { position: relative; border: 1px solid var(--borde); border-radius: 5px; background: var(--panel-2); }
+.bracketv2__col:not(:last-child) .matchb::after { content: ''; position: absolute; top: 50%; right: -29px; width: 29px; height: 1px; background: var(--borde); }
+.matchb__lado { padding: 14px 16px; text-align: center; font-weight: 700; font-size: 13px; letter-spacing: .06em; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.matchb__lado + .matchb__lado { border-top: 1px dashed var(--borde); }
+.matchb__lado.ganador { background: rgba(61,220,132,.08); }
+.matchb__lado .sc { font-family: var(--mono); font-size: 12px; color: #3ddc84; margin-left: 10px; }
+.matchb__lado .bo { font-family: var(--mono); font-size: 9.5px; font-weight: 400; letter-spacing: .16em; color: var(--gris-2); margin-left: 10px; }
+.matchb.match--vivo { border-color: var(--rojo); box-shadow: 0 0 0 1px rgba(229,57,53,.28); }
+.matchb > .match__cinta { padding: 7px 14px 0; }
+.campeon-actual { color: var(--gris-2); font-size: 12px; margin-top: 14px; font-family: var(--mono); letter-spacing: .08em; }
+@media (max-width: 900px) {
+  .bracketv2__fila { grid-template-columns: 1fr; gap: 20px; }
+  .bracketv2__matches { justify-content: flex-start; gap: 12px; }
+  .bracketv2__col:not(:last-child) .matchb::after { display: none; }
+  .bracketv2__divisor span { white-space: normal; text-align: center; }
+}
+
 /* ═══ CLIPS ═══════════════════════════════════════════════════ */
 .clips__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .clip { overflow: hidden; transition: transform .15s ease, border-color .15s ease; }
@@ -688,3 +738,51 @@
 /* mini-clip del perfil con foto real */
 .mini-clip__img--foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .mini-clip--real:hover { border-color: var(--rojo); }
+
+/* ────────────────────────────────────────────────────────────────────
+   S4.8.3: FICHA DE TORNEO (referencia del dueño)
+   Cabecera con trofeo + rejilla de 3 columnas: INFORMACIÓN DEL TORNEO |
+   BRACKETS Y PARTIDAS (aviso honesto + pill) | ACCESOS + CÓMO FUNCIONA.
+   Sin datos demo: lo no definido queda en POR ANUNCIAR / POR DEFINIR.
+   ──────────────────────────────────────────────────────────────────── */
+.ficha-cab__fila { display: flex; align-items: center; gap: 18px; }
+.ficha-cab__icono { display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 12px; border: 1px solid var(--borde-2); background: var(--panel-2); color: #fff; flex: none; }
+.ficha-cab h1 { margin-top: 8px; }
+.ficha-seccion { padding-top: 26px; }
+.ficha-grid { display: grid; grid-template-columns: 300px 1fr 300px; gap: 22px; align-items: start; }
+.ficha-col { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.ficha-card { border: 1px solid var(--borde); background: var(--panel); border-radius: 10px; padding: 20px 22px; }
+.ficha-card__titulo { font-size: 13px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; padding-bottom: 13px; border-bottom: 1px solid var(--borde); margin: 0 0 13px; }
+.ficha-card__top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.ficha-mono { font-family: var(--mono); font-size: 9.5px; letter-spacing: .22em; color: var(--gris-2); white-space: nowrap; }
+.ficha-card__intro { color: var(--gris); font-size: 12.5px; line-height: 1.6; margin: 0 0 4px; }
+.ficha-datos { margin: 0; }
+.ficha-datos > div { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--borde); }
+.ficha-datos dt { color: var(--gris); font-size: 12px; font-weight: 500; }
+.ficha-datos dd { margin: 0; color: #fff; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-align: right; }
+.ficha-datos dd.ficha-rojo, .ficha-rojo { color: var(--rojo); }
+.ficha__cta { margin-top: 16px; letter-spacing: .12em; }
+.ficha__nota { color: var(--gris-2); font-size: 11px; line-height: 1.55; margin-top: 12px; }
+.ficha-vacio { text-align: center; padding: 30px 16px 26px; }
+.ficha-vacio h4 { font-size: 15px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.ficha-vacio p { color: var(--gris); font-size: 12.5px; line-height: 1.6; max-width: 420px; margin: 10px auto 18px; }
+.ficha-pill { display: inline-flex; align-items: center; gap: 9px; border: 1px solid var(--borde-2); border-radius: 999px; padding: 11px 20px; font-size: 11px; font-weight: 800; letter-spacing: .14em; color: #fff; text-decoration: none; transition: border-color .2s, background .2s; }
+.ficha-pill:hover { border-color: var(--rojo); background: rgba(255, 13, 46, .06); }
+.ficha-pill svg { color: var(--gris); }
+.ficha-links { display: flex; flex-direction: column; }
+.ficha-links a { display: flex; align-items: center; gap: 11px; padding: 12px 2px; border-bottom: 1px solid var(--borde); color: #fff; text-decoration: none; font-size: 11.5px; font-weight: 800; letter-spacing: .12em; }
+.ficha-links a:last-child { border-bottom: 0; padding-bottom: 4px; }
+.ficha-links svg { color: var(--gris); flex: none; transition: color .2s; }
+.ficha-links a:hover svg { color: var(--rojo); }
+.ficha-texto { color: var(--gris); font-size: 12.5px; line-height: 1.65; margin: 0; }
+.ficha-link { color: var(--rojo); text-decoration: underline; }
+.ficha-reglas { list-style: none; margin: 0; padding: 0; }
+.ficha-reglas li { position: relative; color: var(--gris); font-size: 12.5px; line-height: 1.6; padding: 10px 0 10px 18px; border-bottom: 1px solid var(--borde); }
+.ficha-reglas li:last-child { border-bottom: 0; padding-bottom: 2px; }
+.ficha-reglas li::before { content: '·'; position: absolute; left: 4px; color: var(--rojo); font-weight: 900; }
+.ficha-em { color: var(--rojo); font-style: italic; }
+@media (max-width: 1080px) {
+  .ficha-grid { grid-template-columns: 1fr; }
+  .ficha-cab__icono { width: 54px; height: 54px; }
+  .ficha-cab__icono svg { width: 24px; height: 24px; }
+}
