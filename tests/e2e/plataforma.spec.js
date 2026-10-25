@@ -23,7 +23,7 @@ const RUTAS = [
   ['/descargar', 'Descargar app para Windows'],
   ['/guia', 'Guía de la arena'],
   ['/historia', 'Historia de la marca'],
-  ['/llaves', 'Llaves · Bracket'],
+  ['/llaves', 'Ficha de torneo · Ascensión S4'],
   ['/membresias', 'Membresías'],
   ['/partidos', 'Partidos'],
   ['/perfil', 'Perfil de jugador'],
@@ -44,7 +44,9 @@ async function entrarSplash(page) {
   if (!clases.includes('splash--oculto')) {
     await splash.click();
   }
-  await expect(splash).toHaveClass(/splash--oculto/, { timeout: 5000 });
+  // Tolerancia: producción recién desplegada (fría) puede tardar en enlazar
+  // el JS del splash; 10 s en lugar de 5 evita falsos rojos (v. run #28/#31).
+  await expect(splash).toHaveClass(/splash--oculto/, { timeout: 10000 });
 }
 
 test.describe('Web S4 · salud y rutas', () => {
@@ -135,7 +137,8 @@ test.describe('Web S4 · interacción (splash, perfil y clips en localStorage)',
     await entrarSplash(page);
     const enlace = page.locator('footer a[href="/torneos"]').first();
     await enlace.click();
-    await expect(page).toHaveTitle(/Torneos/);
+    // Producción fría tras un deploy: el título puede tardar en asentarse.
+    await expect(page).toHaveTitle(/Torneos/, { timeout: 30000 });
     expect(new URL(page.url()).pathname).toBe('/torneos');
   });
 });

@@ -3,7 +3,8 @@ name: "VANTS · pruebas automáticas"
 # Fase 6 · Pruebas automáticas: la suite del matchmaking (51 asserts:
 # auth JWT, validaciones, elegibilidad, duplicados, emparejamiento
 # atómico, reporte, RR, historial) corre en cada push/PR que toque
-# backend o scripts. Rojo = no se despliega con confianza.
+# backend, scripts o servicios (services/**). Rojo = no se despliega
+# con confianza.
 
 on:
   push:
@@ -13,6 +14,8 @@ on:
       - "vants-server/**"
       - "neon-functions/**"
       - "db/**"
+      - "services/**"
+      - "tests/**"
       - ".github/workflows/tests.yml"
   pull_request:
     branches: [main]
@@ -21,6 +24,8 @@ on:
       - "vants-server/**"
       - "neon-functions/**"
       - "db/**"
+      - "services/**"
+      - "tests/**"
       - ".github/workflows/tests.yml"
   workflow_dispatch:
 
