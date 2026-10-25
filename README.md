@@ -1,4 +1,4 @@
-# VANTS GAMES — Arena competitiva · Plataforma de esports
+# VANTS OFICIAL Arena competitiva 🇻🇪 · Plataforma de esports
 
 Plataforma de esports estilo torneos (referencia de UX: strafe.com): calendario de torneos
 por juego y estado, partidas en vivo, ranking, brackets, equipos, jugadores, noticias,
@@ -6,14 +6,13 @@ búsqueda, tienda y membresías — con login **Auth0**, datos en **Neon Postgre
 automático en **Cloudflare Workers**.
 
 **Web:** https://vants.vants.workers.dev
-**Plataforma de torneos:** https://vants.vants.workers.dev/es/tournaments/valorant/upcoming/
+
 
 ## Estructura
 
 ```
 ├── index.html                  ← home (layout strafe: tabs EN CURSO/PRÓXIMOS/ARCHIVO)
 ├── equipos.html                ← equipos de la arena (API /api/teams)
-├── noticias.html, noticia.html ← noticias + ficha de artículo (API /api/articles)
 ├── busqueda.html               ← búsqueda global (API /api/search)
 ├── torneos.html / torneo.html  ← inscripción real + ficha de torneo
 ├── partidos/ranking/jugadores/llaves/clips/membresías/tienda/…

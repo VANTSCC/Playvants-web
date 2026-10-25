@@ -543,6 +543,19 @@
   pintarBanner();
   pintarCuentas();
   pintarFaceitBloque();
+  var btnVincularFaceit = document.getElementById("btn-vincular-faceit");
+  if (btnVincularFaceit) {
+    btnVincularFaceit.addEventListener("click", function () {
+      var grilla = document.querySelector(".v46-grilla");
+      var fila = document.querySelector('.cuenta-fila[data-cuenta="faceit"]');
+      if (grilla) grilla.classList.add("v47-ges--abierta");
+      if (fila) {
+        fila.scrollIntoView({ behavior: "smooth", block: "center" });
+        var input = fila.querySelector("input");
+        if (input) input.focus();
+      }
+    });
+  }
   pintarEstado();
   pintarEscalera();
   pintarSesion();
@@ -1117,7 +1130,8 @@
   chipPlan.textContent = /sin membres/i.test(txtPlan) ? "CUENTA GRATIS" : (txtPlan || "CUENTA GRATIS").toUpperCase();
   if (badges) badges.parentNode.insertBefore(chipPlan, badges.nextSibling);
 
-  /* acciones: COMPARTIR PERFIL (nuevo) + EDITAR FICHA (el botón que ya existía) */
+  /* acciones: COMPARTIR PERFIL — única acción de la tarjeta (S4.7.4: fuera
+     EDITAR FICHA; la gestión de la ficha ya no se abre desde el perfil) */
   var acc = document.createElement("div");
   acc.className = "v46-hero__acciones";
   var comp = document.createElement("button");
@@ -1149,19 +1163,7 @@
       setTimeout(function () { comp.textContent = "COMPARTIR PERFIL"; }, 1800);
     });
   });
-  var btnEditar = identidad.querySelector(".perfil__nombre h2 button");
-  if (!btnEditar) {
-    btnEditar = document.createElement("button");
-    btnEditar.type = "button";
-    btnEditar.className = "btn btn--fino";
-    btnEditar.addEventListener("click", function () {
-      var d = document.getElementById("mis-datos");
-      if (d) d.scrollIntoView({ behavior: "smooth" });
-    });
-  }
-  btnEditar.textContent = "EDITAR FICHA ↓";
   acc.appendChild(comp);
-  acc.appendChild(btnEditar);
 
   /* rango: la MISMA caja de siempre (IDs intactos), al costado del hero */
   var lado = document.createElement("div");
@@ -1520,31 +1522,11 @@
   vent.appendChild(barra);
   vent.appendChild(cab);
   vent.appendChild(marco);
-  var gesBar = document.createElement("button");
-  gesBar.type = "button";
-  gesBar.className = "v47-ges-bar";
-  gesBar.innerHTML = '<b>Gestión de tu ficha</b><small>mis datos \u00b7 equipo \u00b7 banner \u00b7 redes y cuentas \u00b7 membresía \u00b7 cuenta \u00b7 suscripciones \u00b7 estado</small><i>\u25b8</i>';
-  gesBar.addEventListener("click", function () {
-    var ab = grilla.classList.toggle("v47-ges--abierta");
-    gesBar.classList.toggle("v47-ges-bar--abierta", ab);
-  });
-  vent.appendChild(gesBar);
+  /* S4.7.4: la barra GESTIÓN DE TU FICHA y su despliegue quedan fuera —
+     el perfil termina limpio tras el panel de juego. La grilla de gestión
+     sigue montada pero display:none (inaccesible): los nodos y sus IDs
+     permanecen en el DOM para auth/estado, sin puerta de entrada. */
   vent.appendChild(grilla);
-
-  /* EDITAR FICHA (botón de la tarjeta) abre la gestión y baja al formulario */
-  function abrirGestion() {
-    if (!grilla.classList.contains("v47-ges--abierta")) {
-      grilla.classList.add("v47-ges--abierta");
-      gesBar.classList.add("v47-ges-bar--abierta");
-    }
-  }
-  var btnEd = null;
-  pc.querySelectorAll("button").forEach(function (b) { if (!btnEd && /editar/i.test(b.textContent || "")) btnEd = b; });
-  if (btnEd) btnEd.addEventListener("click", function () {
-    abrirGestion();
-    var md = document.getElementById("mis-datos");
-    if (md) setTimeout(function () { md.scrollIntoView({ behavior: "smooth", block: "start" }); }, 60);
-  });
 
   /* ── pintado de las piezas nuevas ── */
   function fDeEstado() {
