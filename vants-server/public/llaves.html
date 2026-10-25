@@ -146,44 +146,70 @@
 </section>
 
 <section class="seccion" style="padding-top:30px">
-  <span class="pill">DOBLE ELIMINACIÓN · BO3 · INSCRIPCIONES ABIERTAS</span>
+  <div class="bracketv2__top">
+    <h3 class="seccion__titulo">BRACKET <em>PRINCIPAL</em></h3>
+    <p>Doble eliminación · <b>BO3</b> · Se publica cuando cierra la inscripción</p>
+  </div>
   <p class="llaves-aviso" id="llaves-aviso" hidden></p>
 
-  <div class="bracket" id="bracket-zona">
-    <div class="bracket__col">
-      <h4>CUADRO SUPERIOR · R1</h4>
-      <div class="match">
-        <div class="match__lado"><span>VTS · VANTS</span><span class="m">—</span></div>
-        <div class="match__lado"><span>POR DEFINIR</span><span class="m">—</span></div>
+  <!-- S4.8.2: estructura de la referencia (árbol doble eliminación). Con datos,
+       llaves_pagina.js reconstruye ESTA MISMA estructura con las filas reales. -->
+  <div id="bracket-zona">
+    <div class="bracketv2">
+      <div class="bracketv2__fila">
+        <div class="bracketv2__col">
+          <h4>CUARTOS DE FINAL</h4>
+          <div class="bracketv2__matches">
+            <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
+            <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
+            <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
+            <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
+          </div>
+        </div>
+        <div class="bracketv2__col">
+          <h4>SEMIFINALES</h4>
+          <div class="bracketv2__matches">
+            <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
+            <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
+          </div>
+        </div>
+        <div class="bracketv2__col">
+          <h4>GRAN FINAL</h4>
+          <div class="bracketv2__matches">
+            <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO5</span></div></div>
+          </div>
+          <div class="campeon-box" style="margin-top:18px">
+            <b>🏆 CAMPEÓN S4</b>
+            <small>ENTRA AL SALÓN DE LA FAMA</small>
+          </div>
+          <p class="campeon-actual">CAMPEÓN ACTUAL: LOUD · CHAMPIONS 2026 (CIRCUITO PRO)</p>
+        </div>
       </div>
-      <div class="match">
-        <div class="match__lado"><span>KRK · KRAKEN FIVE</span><span class="m">—</span></div>
-        <div class="match__lado"><span>POR DEFINIR</span><span class="m">—</span></div>
+
+      <div class="bracketv2__divisor"><span>LLAVES INFERIORES · EL PERDEDOR CRUZA AQUÍ Y PELEA LA REVANCHA</span></div>
+
+      <div class="bracketv2__fila">
+        <div class="bracketv2__col">
+          <h4>INFERIORES · RONDA 1</h4>
+          <div class="bracketv2__matches">
+            <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
+            <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
+          </div>
+        </div>
+        <div class="bracketv2__col">
+          <h4>INFERIORES · RONDA 2</h4>
+          <div class="bracketv2__matches">
+            <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
+            <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
+          </div>
+        </div>
+        <div class="bracketv2__col">
+          <h4>FINAL INFERIOR</h4>
+          <div class="bracketv2__matches">
+            <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
+          </div>
+        </div>
       </div>
-      <div class="match">
-        <div class="match__lado"><span>NYX · TEAM NYX</span><span class="m">—</span></div>
-        <div class="match__lado"><span>POR DEFINIR</span><span class="m">—</span></div>
-      </div>
-      <div class="match">
-        <div class="match__lado"><span>LMX · LOBO MAX</span><span class="m">—</span></div>
-        <div class="match__lado"><span>POR DEFINIR</span><span class="m">—</span></div>
-      </div>
-    </div>
-    <div class="bracket__col">
-      <h4>SEMIFINALES</h4>
-      <div class="match"><div class="match__vacio">ESPERANDO R1</div></div>
-      <div class="match"><div class="match__vacio">ESPERANDO R1</div></div>
-      <h4 style="margin-top:18px">CUADRO INFERIOR</h4>
-      <div class="match"><div class="match__vacio">SE ALIMENTA DE R1</div></div>
-    </div>
-    <div class="bracket__col">
-      <h4>GRAN FINAL</h4>
-      <div class="match"><div class="match__vacio">BO5 · POR DEFINIR</div></div>
-      <div class="campeon-box" style="margin-top:16px">
-        <b>🏆 CAMPEÓN S4</b>
-        <small>ENTRA AL SALÓN DE LA FAMA</small>
-      </div>
-      <p style="color:var(--gris-2);font-size:12px;margin-top:14px;font-family:var(--mono);letter-spacing:.08em">CAMPEÓN ACTUAL: LOUD · CHAMPIONS 2026 (CIRCUITO PRO)</p>
     </div>
   </div>
 </section>

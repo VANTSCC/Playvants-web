@@ -184,6 +184,37 @@
 .llaves-chip .st--rev { color: var(--gris); border: 1px solid var(--borde); }
 @media (max-width: 900px) { .llaves-chips { gap: 8px; } }
 
+/* Bracket EN VIVO — estilo árbol de doble eliminación (S4.8.2, referencia
+   del dueño): fila superior CUARTOS->SEMIS->GRAN FINAL con conectores,
+   divisor LLAVES INFERIORES, fila inferior RONDA 1->RONDA 2->FINAL.
+   Tarjetas con nombres centrados, separador punteado y badge BO. */
+.bracketv2__top { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; flex-wrap: wrap; margin-bottom: 6px; }
+.bracketv2__top p { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; color: var(--gris); }
+.bracketv2__top p b { color: var(--rojo); }
+.bracketv2__fila { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; align-items: stretch; margin-top: 22px; }
+.bracketv2__col { display: flex; flex-direction: column; min-width: 0; }
+.bracketv2__col h4 { font-family: var(--mono); font-size: 10px; letter-spacing: .24em; color: var(--gris); margin: 0 0 12px; }
+.bracketv2__matches { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 14px; }
+.bracketv2__divisor { display: flex; align-items: center; gap: 18px; margin-top: 30px; }
+.bracketv2__divisor::before, .bracketv2__divisor::after { content: ''; flex: 1; height: 1px; background: var(--borde); }
+.bracketv2__divisor span { font-family: var(--mono); font-size: 10px; letter-spacing: .22em; color: var(--gris); white-space: nowrap; }
+.matchb { position: relative; border: 1px solid var(--borde); border-radius: 5px; background: var(--panel-2); }
+.bracketv2__col:not(:last-child) .matchb::after { content: ''; position: absolute; top: 50%; right: -29px; width: 29px; height: 1px; background: var(--borde); }
+.matchb__lado { padding: 14px 16px; text-align: center; font-weight: 700; font-size: 13px; letter-spacing: .06em; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.matchb__lado + .matchb__lado { border-top: 1px dashed var(--borde); }
+.matchb__lado.ganador { background: rgba(61,220,132,.08); }
+.matchb__lado .sc { font-family: var(--mono); font-size: 12px; color: #3ddc84; margin-left: 10px; }
+.matchb__lado .bo { font-family: var(--mono); font-size: 9.5px; font-weight: 400; letter-spacing: .16em; color: var(--gris-2); margin-left: 10px; }
+.matchb.match--vivo { border-color: var(--rojo); box-shadow: 0 0 0 1px rgba(229,57,53,.28); }
+.matchb > .match__cinta { padding: 7px 14px 0; }
+.campeon-actual { color: var(--gris-2); font-size: 12px; margin-top: 14px; font-family: var(--mono); letter-spacing: .08em; }
+@media (max-width: 900px) {
+  .bracketv2__fila { grid-template-columns: 1fr; gap: 20px; }
+  .bracketv2__matches { justify-content: flex-start; gap: 12px; }
+  .bracketv2__col:not(:last-child) .matchb::after { display: none; }
+  .bracketv2__divisor span { white-space: normal; text-align: center; }
+}
+
 /* ═══ CLIPS ═══════════════════════════════════════════════════ */
 .clips__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .clip { overflow: hidden; transition: transform .15s ease, border-color .15s ease; }

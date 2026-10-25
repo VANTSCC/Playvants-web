@@ -46,13 +46,15 @@
     return dos(d.getHours()) + ":" + dos(d.getMinutes()) + ":" + dos(d.getSeconds());
   }
 
-  /* ── Un partido ── */
-  function pintaPartido(f) {
-    var m = el("div", "match");
-    var vivo = f.estado === "en_curso";
-    if (vivo) m.classList.add("match--vivo");
+  /* ── Un partido (estilo referencia: filas centradas, separador punteado,
+     badge BO en la fila baja) ── */
+  function boDe(ronda) { return ronda === "f" ? "BO5" : "BO3"; }
 
+  function pintaPartido(f) {
+    var m = el("div", "matchb");
+    var vivo = f.estado === "en_curso";
     if (vivo) {
+      m.classList.add("match--vivo");
       var cinta = el("div", "match__cinta");
       cinta.appendChild(el("span", "chip-vivo", "EN VIVO"));
       m.appendChild(cinta);
@@ -60,23 +62,27 @@
 
     var ganador = (f.estado === "final" && f.ganador) ? String(f.ganador).trim() : null;
     [["a", f.team_a, f.score_a], ["b", f.team_b, f.score_b]].forEach(function (lado) {
-      var div = el("div", "match__lado");
+      var div = el("div", "matchb__lado");
       if (ganador && nombreOClando(lado[1]) === ganador) div.classList.add("ganador");
-      div.appendChild(el("span", null, nombreOClando(lado[1])));
-      div.appendChild(el("span", "m",
-        (lado[2] === null || lado[2] === undefined) ? "—" : String(lado[2])));
+      div.appendChild(document.createTextNode(nombreOClando(lado[1])));
+      if (lado[2] !== null && lado[2] !== undefined) div.appendChild(el("span", "sc", String(lado[2])));
+      if (lado[0] === "b") div.appendChild(el("span", "bo", "· " + boDe(f.ronda)));
       m.appendChild(div);
     });
     return m;
   }
 
   function vacio(texto) {
-    var m = el("div", "match");
-    m.appendChild(el("div", "match__vacio", texto));
+    var m = el("div", "matchb");
+    m.appendChild(el("div", "matchb__lado", texto || "POR DEFINIR"));
+    m.appendChild(el("div", "matchb__lado", "POR DEFINIR"));
     return m;
   }
 
-  /* ── Bracket completo (mismo layout de 3 columnas del placeholder) ── */
+  /* ── Bracket completo (árbol de doble eliminación, mismo layout de la
+     referencia: 3 columnas arriba + divisor + 3 columnas abajo). Los
+     partidos se reparten con space-around para que las columnas formen
+     el árbol; los huecos quedan en POR DEFINIR. ── */
   function pintaBracket(filas) {
     var porRonda = {};
     (filas || []).forEach(function (f) {
@@ -86,48 +92,50 @@
       porRonda[r].sort(function (a, b) { return (a.slot || 0) - (b.slot || 0); });
     });
 
-    function col(titulo) {
-      var c = el("div", "bracket__col");
+    /* n = cuántas tarjetas fija el formato (8 equipos: q4 · s2 · f1 · l1·2 · l2·2 · lf1) */
+    function colBracket(titulo, rondas) {
+      var c = el("div", "bracketv2__col");
       c.appendChild(el("h4", null, titulo));
+      var wrap = el("div", "bracketv2__matches");
+      rondas.forEach(function (rd) {
+        var lista = porRonda[rd.r] || [];
+        lista.slice(0, rd.n).forEach(function (f) { wrap.appendChild(pintaPartido(f)); });
+        for (var i = lista.length; i < rd.n; i++) wrap.appendChild(vacio());
+      });
+      c.appendChild(wrap);
       return c;
     }
-    function lados(ronda, esperando) {
-      var lista = porRonda[ronda] || [];
-      if (!lista.length) return [vacio(esperando)];
-      return lista.map(pintaPartido);
-    }
 
-    var grid = el("div", "bracket");
+    var root = el("div", "bracketv2");
 
-    /* Columna 1: cuadro superior R1 */
-    var c1 = col("CUADRO SUPERIOR · R1");
-    lados("q", "ESPERANDO 8 CONFIRMADOS").forEach(function (m) { c1.appendChild(m); });
-    grid.appendChild(c1);
-
-    /* Columna 2: semifinales + cuadro inferior completo */
-    var c2 = col("SEMIFINALES");
-    lados("s", "ESPERANDO R1").forEach(function (m) { c2.appendChild(m); });
-    c2.appendChild(el("h4", "bracket__sub", "CUADRO INFERIOR"));
-    lados("l1", "SE ALIMENTA DE R1").forEach(function (m) { c2.appendChild(m); });
-    lados("l2", "ESPERANDO INF. R1").forEach(function (m) { c2.appendChild(m); });
-    lados("lf", "ESPERANDO INF. R2").forEach(function (m) { c2.appendChild(m); });
-    grid.appendChild(c2);
-
-    /* Columna 3: gran final + campeón (se conserva el salón de la fama) */
-    var c3 = col("GRAN FINAL");
-    lados("f", "BO5 · POR DEFINIR").forEach(function (m) { c3.appendChild(m); });
+    /* Fila superior: cuartos -> semis -> gran final (+ campeón) */
+    var fila1 = el("div", "bracketv2__fila");
+    fila1.appendChild(colBracket("CUARTOS DE FINAL", [{ r: "q", n: 4 }]));
+    fila1.appendChild(colBracket("SEMIFINALES", [{ r: "s", n: 2 }]));
+    var colGF = colBracket("GRAN FINAL", [{ r: "f", n: 1 }]);
     var campeon = el("div", "campeon-box");
-    campeon.style.marginTop = "16px";
+    campeon.style.marginTop = "18px";
     campeon.appendChild(el("b", null, "🏆 CAMPEÓN S4"));
     campeon.appendChild(el("small", null, "ENTRA AL SALÓN DE LA FAMA"));
-    c3.appendChild(campeon);
-    var actual = el("p", null, "CAMPEÓN ACTUAL: LOUD · CHAMPIONS 2026 (CIRCUITO PRO)");
-    actual.style.cssText = "color:var(--gris-2);font-size:12px;margin-top:14px;font-family:var(--mono);letter-spacing:.08em";
-    c3.appendChild(actual);
-    grid.appendChild(c3);
+    colGF.appendChild(campeon);
+    colGF.appendChild(el("p", "campeon-actual", "CAMPEÓN ACTUAL: LOUD · CHAMPIONS 2026 (CIRCUITO PRO)"));
+    fila1.appendChild(colGF);
+    root.appendChild(fila1);
+
+    /* Divisor: cuadro inferior */
+    var divi = el("div", "bracketv2__divisor");
+    divi.appendChild(el("span", null, "LLAVES INFERIORES · EL PERDEDOR CRUZA AQUÍ Y PELEA LA REVANCHA"));
+    root.appendChild(divi);
+
+    /* Fila inferior: ronda 1 -> ronda 2 -> final inferior */
+    var fila2 = el("div", "bracketv2__fila");
+    fila2.appendChild(colBracket("INFERIORES · RONDA 1", [{ r: "l1", n: 2 }]));
+    fila2.appendChild(colBracket("INFERIORES · RONDA 2", [{ r: "l2", n: 2 }]));
+    fila2.appendChild(colBracket("FINAL INFERIOR", [{ r: "lf", n: 1 }]));
+    root.appendChild(fila2);
 
     zona.innerHTML = "";
-    zona.appendChild(grid);
+    zona.appendChild(root);
   }
 
   /* ── Equipos inscritos ── */
