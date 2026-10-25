@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Llaves · Bracket — VANTS GAMES</title>
+  <title>Ficha de torneo · Ascensión S4 — VANTS GAMES</title>
   <meta name="description" content="La arena competitiva de VALORANT y Counter-Strike 2 en LATAM: torneos con premio, rangos propios, insignias verificadas y tienda de identidad.">
   <link rel="icon" type="image/svg+xml" href="/static/img/vants-mark.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -131,21 +131,90 @@
 
   <main class="sitio">
     
-<header class="cabecera-pagina">
-  <span class="etiqueta etiqueta--roja">COMPETIR</span>
-  <h1>LLAVES · <em>BRACKET</em></h1>
-  <p>Bracket principal de la Ascensión Series S4. Se genera al cerrar las inscripciones: los cruces salen por sorteo en vivo en Discord. Aquí se actualiza solo: datos reales del torneo, en vivo.</p>
+<header class="cabecera-pagina ficha-cab">
+  <div class="ficha-cab__fila">
+    <span class="ficha-cab__icono" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v6a5 5 0 0 1-10 0Z"/><path d="M7 6H4a1 1 0 0 0-1 1c0 2.2 1.8 4 4 4"/><path d="M17 6h3a1 1 0 0 1 1 1c0 2.2-1.8 4-4 4"/></svg>
+    </span>
+    <div>
+      <span class="etiqueta etiqueta--roja">ASCENSIÓN SERIES S4 · COMPETIR</span>
+      <h1>FICHA DE <em>TORNEO</em></h1>
+    </div>
+  </div>
+  <p>La ficha completa del torneo: información, reglas rápidas y el bracket de doble eliminación. Los cruces se arman al cerrar las inscripciones —sorteo en vivo en Discord— y esta página se actualiza sola: datos reales del torneo, en vivo.</p>
 </header>
 
-<!-- S4.8: EQUIPOS INSCRITOS (datos reales vía /api/torneos/bracket; oculto hasta haber datos) -->
-<section class="seccion" id="llaves-equipos" hidden style="padding-top:34px">
-  <div class="seccion__top">
-    <h2 class="seccion__titulo">EQUIPOS <em>INSCRITOS</em></h2>
-  </div>
-  <div class="llaves-chips" id="llaves-chips"></div>
-</section>
+<!-- S4.8.3: FICHA DE TORNEO (referencia del dueño). Sin datos demo: lo que
+     todavía no se definió queda en POR ANUNCIAR / POR DEFINIR. -->
+<div class="seccion ficha-seccion">
+  <div class="ficha-grid">
 
-<section class="seccion" style="padding-top:30px">
+    <aside class="ficha-card">
+      <h3 class="ficha-card__titulo">INFORMACIÓN DEL TORNEO</h3>
+      <p class="ficha-card__intro">Todo lo que necesitás antes de inscribirte: fechas, formato, bolsa de premios y cupos de la S4.</p>
+      <dl class="ficha-datos">
+        <div><dt>Esport</dt><dd>VALORANT</dd></div>
+        <div><dt>Fecha</dt><dd>POR ANUNCIAR</dd></div>
+        <div><dt>Formato</dt><dd>BO3 · DOBLE ELIMINACIÓN</dd></div>
+        <div><dt>Ubicación</dt><dd>LATAM · ONLINE</dd></div>
+        <div><dt>Bolsa de premios</dt><dd class="ficha-rojo">POR ANUNCIAR</dd></div>
+        <div><dt>Fee de inscripción</dt><dd>GRATIS</dd></div>
+        <div><dt>Cupos</dt><dd>ABIERTOS</dd></div>
+      </dl>
+      <a class="btn btn--rojo btn--bloque ficha__cta" href="/perfil">INSCRIBIR MI EQUIPO</a>
+      <p class="ficha__nota">La inscripción se completa desde tu cuenta VANTS (Google, Discord, GitHub, Kick o correo).</p>
+    </aside>
+
+    <div class="ficha-col">
+      <section class="ficha-card ficha-card--brackets">
+        <div class="ficha-card__top">
+          <h3 class="ficha-card__titulo">BRACKETS Y PARTIDAS</h3>
+          <span class="ficha-mono">SE PUBLICAN AL ARRANCAR</span>
+        </div>
+        <div class="ficha-vacio">
+          <h4>LOS CRUCES SE ARMAN AL CERRAR LA INSCRIPCIÓN</h4>
+          <p>Cuando el torneo arranca, el bracket doble queda en vivo en esta página, serie por serie: marcador real, ganadores y partidas EN VIVO.</p>
+          <a class="ficha-pill" href="#bracket-zona">VER BRACKETS EN VIVO
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>
+          </a>
+        </div>
+      </section>
+
+      <!-- S4.8: EQUIPOS INSCRITOS (datos reales vía /api/torneos/bracket; oculto hasta haber datos) -->
+      <section class="ficha-card" id="llaves-equipos" hidden>
+        <h3 class="ficha-card__titulo">EQUIPOS <em class="ficha-em">INSCRITOS</em></h3>
+        <div class="llaves-chips" id="llaves-chips"></div>
+      </section>
+    </div>
+
+    <aside class="ficha-col">
+      <section class="ficha-card">
+        <h3 class="ficha-card__titulo">ACCESOS</h3>
+        <nav class="ficha-links">
+          <a href="/torneos">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
+            CALENDARIO COMPLETO</a>
+          <a href="#bracket-zona">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4"/><path d="M15.4 6.5l-6.8 4"/></svg>
+            BRACKETS EN VIVO</a>
+          <a href="/ranking">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+            RANKING GLOBAL</a>
+          <a href="/ranking#rangos">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.5 13l1.5 8-5-3-5 3 1.5-8"/></svg>
+            VANTS RANKED · XP</a>
+        </nav>
+      </section>
+      <section class="ficha-card">
+        <h3 class="ficha-card__titulo">CÓMO FUNCIONA</h3>
+        <p class="ficha-texto">Inscribís tu equipo, jugás las series asignadas y cada resultado verificado mueve el <b class="ficha-rojo">VANTS RATING</b> con historial auditable. Las dudas vividas y resueltas están en la <a class="ficha-link" href="/guia">guía de la arena</a>.</p>
+      </section>
+    </aside>
+
+  </div>
+</div>
+
+<section class="seccion" style="padding-top:26px">
   <div class="bracketv2__top">
     <h3 class="seccion__titulo">BRACKET <em>PRINCIPAL</em></h3>
     <p>Doble eliminación · <b>BO3</b> · Se publica cuando cierra la inscripción</p>
@@ -182,7 +251,7 @@
             <b>🏆 CAMPEÓN S4</b>
             <small>ENTRA AL SALÓN DE LA FAMA</small>
           </div>
-          <p class="campeon-actual">CAMPEÓN ACTUAL: LOUD · CHAMPIONS 2026 (CIRCUITO PRO)</p>
+          <p class="campeon-actual">CAMPEÓN ACTUAL: POR DEFINIR</p>
         </div>
       </div>
 
@@ -211,6 +280,19 @@
         </div>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- S4.8.3: REGLAS RÁPIDAS (referencia del dueño) -->
+<section class="seccion" style="padding-top:26px">
+  <div class="ficha-card">
+    <h3 class="ficha-card__titulo">REGLAS RÁPIDAS</h3>
+    <ul class="ficha-reglas">
+      <li>Un equipo por torneo: los jugadores juegan con la cuenta verificada con la que se inscribieron.</li>
+      <li>Anti-cheat obligatorio en cada serie y revisión de demos ante cualquier reclamo.</li>
+      <li>Resultados verificados por el sistema y los capitanes; el rating se mueve solo con partidas válidas.</li>
+      <li>El reglamento completo de cada evento se anuncia en Discord y en el cartel del torneo.</li>
+    </ul>
   </div>
 </section>
 

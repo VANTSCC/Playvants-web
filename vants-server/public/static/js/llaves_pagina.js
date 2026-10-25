@@ -118,7 +118,7 @@
     campeon.appendChild(el("b", null, "🏆 CAMPEÓN S4"));
     campeon.appendChild(el("small", null, "ENTRA AL SALÓN DE LA FAMA"));
     colGF.appendChild(campeon);
-    colGF.appendChild(el("p", "campeon-actual", "CAMPEÓN ACTUAL: LOUD · CHAMPIONS 2026 (CIRCUITO PRO)"));
+    colGF.appendChild(el("p", "campeon-actual", "CAMPEÓN ACTUAL: POR DEFINIR"));
     fila1.appendChild(colGF);
     root.appendChild(fila1);
 
