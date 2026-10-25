@@ -165,6 +165,25 @@
 .campeon-box b { font-style: italic; font-size: 17px; letter-spacing: .05em; }
 .campeon-box small { display: block; color: var(--gris); margin-top: 5px; font-family: var(--mono); font-size: 10px; letter-spacing: .2em; }
 
+/* Bracket en vivo (S4.8): chip EN VIVO de partidos en_curso, subtítulo de
+   columna para el cuadro inferior, aviso de actualización y chips de
+   equipos inscritos (datos reales de /api/torneos/bracket). */
+.bracket__sub { margin-top: 18px; }
+.match__cinta { padding: 7px 14px 0; }
+.chip-vivo { display: inline-block; font-family: var(--mono); font-size: 9px; font-weight: 800; letter-spacing: .2em; color: #fff; background: var(--rojo); border-radius: 3px; padding: 3px 8px; animation: vants-vive 1.2s ease-in-out infinite; }
+@keyframes vants-vive { 50% { opacity: .4; } }
+.match--vivo { border-color: var(--rojo); box-shadow: 0 0 0 1px rgba(229,57,53,.28); }
+.llaves-aviso { font-family: var(--mono); font-size: 10px; letter-spacing: .18em; color: var(--gris); margin-top: 14px; }
+.llaves-aviso b { color: #3ddc84; }
+.llaves-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.llaves-chip { display: flex; align-items: center; gap: 8px; border: 1px solid var(--borde); background: var(--panel-2); border-radius: 6px; padding: 9px 13px; font-weight: 700; font-size: 12.5px; letter-spacing: .04em; }
+.llaves-chip b { font-family: var(--mono); color: var(--rojo); }
+.llaves-chip small { color: var(--gris); font-family: var(--mono); font-size: 10px; letter-spacing: .1em; }
+.llaves-chip .st { font-family: var(--mono); font-size: 9px; letter-spacing: .14em; padding: 2px 7px; border-radius: 3px; }
+.llaves-chip .st--ok { color: #3ddc84; border: 1px solid rgba(61,220,132,.4); }
+.llaves-chip .st--rev { color: var(--gris); border: 1px solid var(--borde); }
+@media (max-width: 900px) { .llaves-chips { gap: 8px; } }
+
 /* ═══ CLIPS ═══════════════════════════════════════════════════ */
 .clips__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .clip { overflow: hidden; transition: transform .15s ease, border-color .15s ease; }

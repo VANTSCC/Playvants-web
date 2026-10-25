@@ -134,13 +134,22 @@
 <header class="cabecera-pagina">
   <span class="etiqueta etiqueta--roja">COMPETIR</span>
   <h1>LLAVES · <em>BRACKET</em></h1>
-  <p>Bracket principal de la Ascensión Series S4. Se genera al cerrar las inscripciones: los cruces salen por sorteo en vivo en Discord.</p>
+  <p>Bracket principal de la Ascensión Series S4. Se genera al cerrar las inscripciones: los cruces salen por sorteo en vivo en Discord. Aquí se actualiza solo: datos reales del torneo, en vivo.</p>
 </header>
+
+<!-- S4.8: EQUIPOS INSCRITOS (datos reales vía /api/torneos/bracket; oculto hasta haber datos) -->
+<section class="seccion" id="llaves-equipos" hidden style="padding-top:34px">
+  <div class="seccion__top">
+    <h2 class="seccion__titulo">EQUIPOS <em>INSCRITOS</em></h2>
+  </div>
+  <div class="llaves-chips" id="llaves-chips"></div>
+</section>
 
 <section class="seccion" style="padding-top:30px">
   <span class="pill">DOBLE ELIMINACIÓN · BO3 · INSCRIPCIONES ABIERTAS</span>
+  <p class="llaves-aviso" id="llaves-aviso" hidden></p>
 
-  <div class="bracket">
+  <div class="bracket" id="bracket-zona">
     <div class="bracket__col">
       <h4>CUADRO SUPERIOR · R1</h4>
       <div class="match">
@@ -218,6 +227,7 @@
 
   <div class="toast" id="toast" role="status"></div>
   <script src="/static/js/app.js"></script>
+  <script src="/static/js/llaves_pagina.js"></script>
   <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
   <script src="/static/js/vants-auth.js"></script>
   
