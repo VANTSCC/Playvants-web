@@ -25,6 +25,7 @@
 
 import CORE from './plataforma-core.js';
 import { debeReportarSentry, sentryEnvelope, validarLote } from './telemetria-core.js';
+import { VantsBus, EVENTS } from '../vants-bus/vants-bus-client.js';
 
 const COLORS = {
   rojo: 0xff0d2e,
@@ -402,6 +403,40 @@ async function infoDeSesion(token) {
     const info = await ui.json();
     return info && info.sub ? info : null;
   } catch (e) { return null; }
+}
+
+// --- 3c) VANTS-BUS · publicación de eventos del Worker hacia el bus.
+// Apagada por completo si faltan VANTS_BUS_URL o VANTS_BUS_SECRET: sin
+// configuración no hay red, ni errores, y el resto del Worker funciona igual.
+// El secreto solo vive del lado del Worker (nunca llega al navegador).
+let _busCli = null;
+function busCliente(env) {
+  if (!env || !env.VANTS_BUS_URL || !env.VANTS_BUS_SECRET) return null;
+  if (!_busCli) {
+    _busCli = new VantsBus({
+      busUrl: env.VANTS_BUS_URL,
+      projectId: 'playvants-web',
+      secret: env.VANTS_BUS_SECRET,
+    });
+  }
+  return _busCli;
+}
+
+/* Publica un evento sin bloquear la respuesta: el envío va por
+ * ctx.waitUntil y un fallo del bus se registra pero nunca rompe
+ * el endpoint que lo originó (el evento comunica algo que ya pasó). */
+function publicarBus(env, ctx, type, data) {
+  try {
+    const cli = busCliente(env);
+    if (!cli || !ctx || typeof ctx.waitUntil !== 'function') return;
+    ctx.waitUntil(
+      cli.publish(type, data).catch((e) => {
+        try {
+          console.error(JSON.stringify({ tipo: 'bus_publicacion_error', type, message: String((e && e.message) || e).slice(0, 200) }));
+        } catch (eLog) {}
+      })
+    );
+  } catch (e) {}
 }
 
 // GET a la Data API con el token del usuario si hay; si no, anónimo
@@ -1455,7 +1490,16 @@ async function fetchWorker(request, env, ctx) {
         return json({ ok: false, error: dup ? 'equipo_ya_inscrito' : 'base_rechazo', detalle: det.slice(0, 300) }, dup ? 409 : 502, ACAO);
       }
       const creada = await ins.json().catch(() => []);
-      return json({ ok: true, equipo: Array.isArray(creada) ? creada[0] : creada }, 200, ACAO);
+      const filaCreada = Array.isArray(creada) ? creada[0] : creada;
+      // VANTS-BUS: la inscripción ya está guardada; flask-agents puede
+      // postearla en Discord y VANTS HUB muestra la notificación.
+      // El envío no bloquea ni rompe la respuesta del endpoint.
+      publicarBus(env, ctx, EVENTS.INSCRIPTION_CREATED, {
+        tournamentId: torneo,
+        teamId: (filaCreada && filaCreada.id) || null,
+        game: juego,
+      });
+      return json({ ok: true, equipo: filaCreada }, 200, ACAO);
     }
 
     // --- 7b1e) TORNEOS: gestión del OWNER (confirmar/rechazar equipos,
@@ -1519,6 +1563,36 @@ async function fetchWorker(request, env, ctx) {
           const parche = { score_a: Number.isFinite(sa) ? sa : null, score_b: Number.isFinite(sb) ? sb : null, estado, ganador: estado === 'final' ? (sa > sb ? m.team_a : m.team_b) : null };
           const r = await fetch(NEON_API + '/tournament_matches?id=eq.' + id, { method: 'PATCH', headers: hAuth, body: JSON.stringify(parche) });
           if (!r.ok) return json({ ok: false, error: 'base_rechazo', detalle: (await r.text().catch(() => '')).slice(0, 300) }, 502, ACAO);
+          if (estado === 'final') {
+            // VANTS-BUS: resultado de bracket cerrado. La tabla guarda ids,
+            // así que se resuelven los NOMBRES de los equipos antes de publicar.
+            // Resolución y envío van en waitUntil: la respuesta no espera.
+            const finalizadoEn = new Date().toISOString();
+            ctx.waitUntil((async () => {
+              try {
+                const ga = await neonGet('/tournament_teams?id=eq.' + m.team_a + '&select=id,name,game', token);
+                const gb = await neonGet('/tournament_teams?id=eq.' + m.team_b + '&select=id,name,game', token);
+                const nom = (filas, tid) => {
+                  const f = (filas.ok && filas.body ? filas.body : []).find((x) => x && x.id === tid);
+                  return (f && f.name) || tid;
+                };
+                const juegoEv = (ga.ok && ga.body && ga.body[0] && ga.body[0].game) || 'valorant';
+                const cli = busCliente(env);
+                if (!cli) return;
+                await cli.publish(EVENTS.MATCH_FINISHED, {
+                  matchId: id,
+                  game: juegoEv,
+                  a: nom(ga, m.team_a),
+                  b: nom(gb, m.team_b),
+                  sa,
+                  sb,
+                  finishedAt: finalizadoEn,
+                }).catch((eBus) => {
+                  try { console.error(JSON.stringify({ tipo: 'bus_publicacion_error', type: 'match.finished', message: String((eBus && eBus.message) || eBus).slice(0, 200) })); } catch (eLog) {}
+                });
+              } catch (e) {}
+            })());
+          }
           return json({ ok: true, accion, ganador: parche.ganador }, 200, ACAO);
         }
         if (accion === 'sembrar') {
@@ -2194,6 +2268,16 @@ async function fetchWorker(request, env, ctx) {
           const gOK = await guardarManifest(ghTok, sha, clips);
           if (!gOK) featCache = { at: 0, body: null }; // fuerza relectura en la próxima visita
           featCache = { at: 0, body: null };
+          // VANTS-BUS: el clip ya está publicado en vants-clips; flask-agents
+          // puede anunciarlo y VANTS HUB mostrar la notificación.
+          publicarBus(env, ctx, EVENTS.CLIP_PUBLISHED, {
+            clipId: tag,
+            titulo,
+            juego: juego.toLowerCase(),
+            nick,
+            video: entrada.video,
+            thumb: entrada.thumb,
+          });
           const resP = json({ ok: true, id: tag, video: entrada.video, thumb: entrada.thumb, manifest: gOK });
           resP.headers.set('Access-Control-Allow-Origin', origin);
           return resP;
