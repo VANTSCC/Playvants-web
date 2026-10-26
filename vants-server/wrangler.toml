@@ -25,6 +25,13 @@ not_found_handling = "404-page"
 [vars]
 VANTS_BOT_URL = "https://br-sweet-shape-b42xhogj-vantsbot.compute.c-6.us-east-2.aws.neon.tech"
 
+# VANTS-BUS: el Worker publica inscription.created (al inscribir un equipo),
+# clip.published (al publicar un clip destacado) y match.finished (al cerrar
+# una partida de bracket). Si falta el secreto, la publicación queda apagada
+# y todo lo demás funciona igual. El secreto va aparte (no en el repo):
+#   npx wrangler secret put VANTS_BUS_SECRET
+VANTS_BUS_URL = "https://vants-bus.vants.workers.dev"
+
 # DOMINIO PROPIO (vantsgg.com) — descomentar cuando la zona vantsgg.com esté
 # activa en la cuenta de Cloudflare (o añadirlo por panel: Workers & Pages ->
 # vants -> Configuración -> Dominios y rutas -> Agregar dominio personalizado):
