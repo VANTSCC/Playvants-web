@@ -37,6 +37,7 @@ concurrency:
 
 jobs:
   sync:
+    if: github.repository == 'VANTSNET/Vantsgames'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

@@ -37,6 +37,7 @@ permissions:
 
 jobs:
   deploy:
+    if: github.repository == 'VANTSNET/Vantsgames'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # environment: production  (configurar en Settings→Environments con revisores)
