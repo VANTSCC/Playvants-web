@@ -25,6 +25,14 @@ not_found_handling = "404-page"
 [vars]
 VANTS_BOT_URL = "https://br-sweet-shape-b42xhogj-vantsbot.compute.c-6.us-east-2.aws.neon.tech"
 
+# MIGRACIÓN Neon -> Supabase (corte controlado): al rellenar estas variables
+# y desplegar, el REST de la base y el proxy/bot pasan a la nueva infra.
+# Mientras estén comentadas, el Worker sigue leyendo de Neon (paralelo).
+# SUPABASE_REST_URL = "https://TU-REF.supabase.co/rest/v1"
+# SUPABASE_ANON_KEY = "clave anon de Supabase (Settings -> API)"
+# PLAT_PROXY = "https://vants-functions.vants.workers.dev/fn/vantsdata/"
+# VANTS_BOT_URL = "https://vants-functions.vants.workers.dev/fn/vantsbot"
+
 # VANTS-BUS: el Worker publica inscription.created (al inscribir un equipo),
 # clip.published (al publicar un clip destacado) y match.finished (al cerrar
 # una partida de bracket). Si falta el secreto, la publicación queda apagada

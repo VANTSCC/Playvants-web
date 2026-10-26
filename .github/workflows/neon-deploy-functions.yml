@@ -1,5 +1,10 @@
 name: "Neon · deploy de funciones (linker + vantsdata + vantsbot)"
 
+# DEPRECATED (migración Neon -> Supabase): las funciones ahora viven en el
+# Worker vants-functions (deploy con cloudflare-deploy-functions.yml). Este
+# workflow solo se mantiene para el paralelo: mientras Neon siga vivo, sus
+# URLs antiguas siguen sirviendo hasta que el web Worker cambie de variables.
+
 # Despliega las Neon Functions con sus variables de entorno:
 #   · linker    — conectores OAuth de cuentas (FACEIT, Twitch, Kick...)
 #   · vantsdata — proxy público de lectura (lecturas anónimas de la web)
