@@ -11,10 +11,9 @@ Repositorio principal de la plataforma de torneos VANTS.
 | --- | --- |
 | `vants-server/` | Worker de Cloudflare (`worker.js`), lógica compartida (`plataforma-core.js`) y frontend en `public/` |
 | `neon-functions/` | Funciones: `vantsdata`, `mm`, `vantsbot`, `linker`, `supervisor`, `stripe-checkout`, `stripe-webhook`, `discord-notify` |
-| `services/agent-service/` | Servicio de agente con LLM (cerebro, herramientas, memoria, sandbox) |
-| `bot/` | Bot de Discord en Python |
+| `bot/` | Bot de Discord en Python (cliente del cuartel de agentes) |
 | `vants-bus/` | Bus de eventos y worker consumidor |
-| `db/migrations/` | Migraciones SQL idempotentes (01 a 34) |
+| `db/migrations/` | Migraciones SQL idempotentes (01 a 34; las del agente, 25 y 26, viven en `VantsBasededatos` y en el cuartel `flask-Agents`) |
 | `scripts/` | Pruebas, sincronización con FACEIT, scraper de vlr.gg |
 | `vlr-results/` | App en Python para resultados |
 | `architecture/`, `product/`, `docs/` | Diseño, requisitos y guías internas |
