@@ -809,7 +809,8 @@
     ".v44-capa{position:fixed;inset:0;z-index:9500;background:rgba(4,4,6,.84);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:18px;animation:v44in .18s ease}" +
     ".v44-caja{width:100%;max-width:432px;background:#0d0d10;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:26px 24px 20px;box-shadow:0 30px 80px rgba(0,0,0,.6);position:relative}" +
     ".v44-marca{display:flex;align-items:center;gap:10px;margin-bottom:16px}" +
-    ".v44-v{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#ff0d2e,#ff5a1f);display:grid;place-items:center;font-weight:900;font-size:17px;color:#fff;box-shadow:0 0 16px rgba(255,13,46,.45)}" +
+    ".v44-v{width:34px;height:34px;border-radius:9px;overflow:hidden;display:grid;place-items:center;box-shadow:0 0 16px rgba(255,13,46,.45)}" +
+    ".v44-v img{width:100%;height:100%;display:block}" +
     ".v44-marca b{font-size:15px;letter-spacing:.02em;color:#fff}" +
     ".v44-paso{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#ff5a6e;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin:0 0 6px}" +
     ".v44-titulo{font-size:24px;line-height:1.08;font-weight:900;text-transform:uppercase;margin:0 0 8px;color:#fff}" +
@@ -900,7 +901,7 @@
   function mostrarGate() {
     if (gateIgnorado()) return;
     var html =
-      '<div class="v44-marca"><span class="v44-v">V</span><b>VANTS GAMES</b></div>' +
+      '<div class="v44-marca"><span class="v44-v"><img src="/static/img/vants-logo-circular.png" alt="V" width="34" height="34"></span><b>VANTS GAMES</b></div>' +
       '<p class="v44-paso">paso 1 de 2 · registro</p>' +
       '<h2 class="v44-titulo">Crea tu cuenta <em>para entrar</em></h2>' +
       '<p class="v44-sub">Para entrar a la arena te registrás con Google, Discord o tu correo con contraseña. Sirve para tu ficha, subir clips y entrar a torneos.</p>' +
@@ -1021,7 +1022,7 @@
       correo: "Entraste con tu correo: acá eliges TU nombre de jugador — nunca el del correo."
     };
     var html =
-      '<div class="v44-marca"><span class="v44-v">V</span><b>VANTS GAMES</b></div>' +
+      '<div class="v44-marca"><span class="v44-v"><img src="/static/img/vants-logo-circular.png" alt="V" width="34" height="34"></span><b>VANTS GAMES</b></div>' +
       '<p class="v44-paso">paso 2 de 2 · solo la primera vez</p>' +
       '<h2 class="v44-titulo">Elige tu nombre <em>de jugador</em></h2>' +
       '<p class="v44-sub">' + (notas[prov.id] || "Acá eliges TU nombre de jugador — nunca el del correo.") + "</p>" +
