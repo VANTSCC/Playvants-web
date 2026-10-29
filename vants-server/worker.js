@@ -103,7 +103,7 @@ const MAX_THUMB_BYTES = 400 * 1024;      // miniatura JPEG: máx 400 KB
    sub distinto al de la sesión. Sin sesión no se publica nada.
    Repo bajo la org VANTSCC (trasladado desde VANTSgg: GitHub redirige los
    assets viejos, pero la API apunta a la org actual). */
-const GH_CLIPS_REPO = 'VANTSCC/vants-clips';
+const GH_CLIPS_REPO = 'VANTSNET/vants-clips';
 const GH_API = 'https://api.github.com/repos/' + GH_CLIPS_REPO;
 const CLIPS_EXT = ['webm', 'mp4', 'mkv', 'mov', 'm4v'];
 const MAX_MANIFEST_ENTRIES = 60;
@@ -189,35 +189,81 @@ function urlTorneos(lang, juego, estado) {
   return BASE_URL + '/' + lang + '/tournaments/' + juego + '/' + estado;
 }
 
-// Proxy público de lectura (vantsdata · Neon Function): whitelist de tablas,
-// strip de columnas sensibles, rate limit y Content-Range con _count=exact.
-// El Worker NUNCA guarda credenciales de la base (patrón de la casa).
-// let (no const): la entrada del fetch lo reasigna desde env.PLAT_PROXY
-// al cortar hacia el Worker vants-functions. Fallback: endpoint de Neon.
-let PLAT_PROXY = 'https://br-sweet-shape-b42xhogj-vantsdata.compute.c-6.us-east-2.aws.neon.tech/';
+// Proxy público de lectura: whitelist de tablas, strip de columnas sensibles,
+// rate limit y Content-Range con _count=exact.
+// D1 (todo en Cloudflare): las lecturas van DIRECTAS al binding DB (vants-db);
+// ya no hay proxy a Neon/Supabase ni credenciales en el Worker.
+let _d1 = null; // se asigna en cada fetch con env.DB
+const PERMITIDAS_LECTURA = new Set([
+  'players', 'season_player_stats', 'seasons', 'leaderboard', 'tournaments',
+  'tournament_entries', 'tournament_matches', 'events',
+  'pt_games', 'pt_torneos', 'pt_teams', 'pt_matches', 'pt_articulos', 'pt_players',
+  'v_en_vivo', 'v_torneo_equipos', 'v_torneo_bracket',
+  'tournament_teams',
+]);
+const ID_RE = /^[a-z_][a-z0-9_]*$/;
+const PII = new Set(['email', 'auth0_sub', 'auth_user_id']);
+function stripPII(filas) {
+  for (const f of filas) {
+    if (f && typeof f === 'object') for (const k of Object.keys(f)) if (PII.has(k)) delete f[k];
+  }
+  return filas;
+}
 
 async function proxyConsulta(tabla, params, conCount) {
-  const u = new URL(PLAT_PROXY);
-  u.searchParams.set('table', tabla);
-  for (const [k, v] of Object.entries(params || {})) u.searchParams.set(k, String(v));
-  if (conCount) u.searchParams.set('_count', 'exact');
-  const r = await fetch(u, {
-    headers: {
-      Accept: 'application/json',
-      // el WAF del endpoint de Neon Functions rechaza el UA por defecto del
-      // Worker; identificamos como navegador (la función solo lee, GET)
-      'User-Agent': 'Mozilla/5.0 (compatible; VANTS-Worker/1.0; +https://vants.vants.workers.dev)',
-    },
-  });
-  if (!r.ok) return { ok: false, status: r.status, body: [], total: null };
-  const arr = await r.json().catch(() => []);
-  const cr = r.headers.get('Content-Range'); // "0-11/34"
-  let total = null;
-  if (cr && cr.includes('/')) {
-    const n = parseInt(cr.split('/')[1], 10);
-    if (Number.isFinite(n)) total = n;
+  // LECTURA PostgREST-style sobre D1 (mismo contrato que devolvía vantsdata):
+  // params { 'col.op': v, order, limit, offset, select }, conCount → total.
+  if (!_d1) return { ok: false, status: 500, body: [], total: null };
+  if (!PERMITIDAS_LECTURA.has(tabla)) return { ok: false, status: 400, body: [], total: null };
+  try {
+    const vals = [];
+    const conds = [];
+    let order = '';
+    let limit = 100;
+    let offset = 0;
+    let select = '*';
+    for (const [k, v] of Object.entries(params || {})) {
+      if (k === 'order') {
+        const partes = String(v).split('.').map((p) => p.trim());
+        if (!ID_RE.test(partes[0] || '')) throw new Error('order');
+        const dir = partes[1] === 'desc' ? ' DESC' : partes[1] === 'asc' ? ' ASC' : '';
+        const nulls = partes[2] === 'nullsfirst' ? ' NULLS FIRST' : partes[2] === 'nullslast' ? ' NULLS LAST' : '';
+        order = ' ORDER BY ' + partes[0] + dir + nulls;
+      } else if (k === 'limit') {
+        limit = Math.min(Math.max(1, parseInt(v, 10) || 100), 1000);
+      } else if (k === 'offset') {
+        offset = Math.min(Math.max(0, parseInt(v, 10) || 0), 1e5);
+      } else if (k === 'select') {
+        const cols = String(v).split(',').map((s) => s.trim()).filter((s) => ID_RE.test(s));
+        select = cols.length ? cols.join(', ') : '*';
+      } else {
+        const idx = k.indexOf('.');
+        const col = idx === -1 ? k : k.slice(0, idx);
+        const op = idx === -1 ? 'eq' : k.slice(idx + 1);
+        if (!ID_RE.test(col)) throw new Error('columna');
+        if (op === 'eq') { conds.push(col + ' = ?'); vals.push(v); }
+        else if (op === 'neq') { conds.push(col + ' <> ?'); vals.push(v); }
+        else if (op === 'is') {
+          if (v === 'null') conds.push(col + ' IS NULL');
+          else if (v === 'true') conds.push(col + ' = 1');
+          else if (v === 'false') conds.push(col + ' = 0');
+          else throw new Error('is');
+        } else if (op === 'like' || op === 'ilike') { conds.push(col + ' LIKE ?'); vals.push(v); }
+        else throw new Error('op');
+      }
+    }
+    const where = conds.length ? ' WHERE ' + conds.join(' AND ') : '';
+    const r = await _d1.prepare(`SELECT ${select} FROM ${tabla}${where}${order} LIMIT ${limit} OFFSET ${offset}`).bind(...vals).all();
+    const body = stripPII(r.results || []);
+    let total = null;
+    if (conCount) {
+      const c = await _d1.prepare(`SELECT COUNT(*) AS total FROM ${tabla}${where}`).bind(...vals).all();
+      total = c.results && c.results[0] ? Number(c.results[0].total) || 0 : 0;
+    }
+    return { ok: true, status: 200, body, total };
+  } catch (e) {
+    return { ok: false, status: 400, body: [], total: null };
   }
-  return { ok: true, status: r.status, body: Array.isArray(arr) ? arr : [], total };
 }
 
 // Une filas de pt_torneos con pt_games (1 consulta extra TOTAL, no por fila)
@@ -391,13 +437,8 @@ async function paginaTorneos(env, request, url, lang, juego, estado) {
 // Tenant Auth0 del sitio (misma configuración que assets/js/auth0-config.js)
 const AUTH0_TENANT = 'vants.eu.auth0.com';
 // Neon Data API (PostgREST): el Worker NUNCA guarda credenciales de la base;
-// reenvía el JWT del usuario y las RLS/policies de cada tabla deciden.
-// let (no const): la entrada del fetch lo reasigna desde env.SUPABASE_REST_URL
-// al cortar hacia la Data API de Supabase (PostgREST nativo, mismas
-// consultas: filtros eq., rpc y vistas). Fallback: endpoint de Neon.
-let NEON_API = 'https://ep-autumn-scene-b4opu2ip.apirest.c-6.us-east-2.aws.neon.tech/neondb/rest/v1';
-// Clave anon de Supabase (cabecera apikey obligatoria en su REST).
-let SUPA_ANON = '';
+// D1 (todo en Cloudflare): lecturas/escrituras de torneos directas al binding
+// DB (vants-db). Ya no hay Data API externa (Neon/Supabase) ni apikey anon.
 
 // Valida el JWT de la sesión contra Auth0 /userinfo → { sub, email } | null
 async function infoDeSesion(token) {
@@ -446,30 +487,48 @@ function publicarBus(env, ctx, type, data) {
   } catch (e) {}
 }
 
-// GET a la Data API con el token del usuario si hay; si no, anónimo
-// (las vistas públicas tienen GRANT a PUBLIC).
+// LECTURA sobre D1 de rutas estilo PostgREST: '/tabla?col=eq.val&select=a,b&limit=n'
+// El token ya no viaja a una Data API: el Worker es el límite de confianza.
 async function neonGet(rutaRelativa, token) {
-  const headers = { Accept: 'application/json' };
-  if (SUPA_ANON) headers.apikey = SUPA_ANON;
-  if (token) headers[AUTH_HEADER] = 'Bearer ' + token;
-  else if (SUPA_ANON) headers[AUTH_HEADER] = 'Bearer ' + SUPA_ANON;
-  const r = await fetch(NEON_API + rutaRelativa, { headers });
-  if (!r.ok) return { ok: false, status: r.status, body: [] };
-  const arr = await r.json().catch(() => []);
-  return { ok: true, status: r.status, body: Array.isArray(arr) ? arr : [] };
+  if (!_d1) return { ok: false, status: 500, body: [] };
+  try {
+    const u = new URL('http://local' + rutaRelativa);
+    const tabla = u.pathname.replace(/^\/+/, '').replace(/\/+$/, '');
+    if (!PERMITIDAS_LECTURA.has(tabla)) return { ok: false, status: 400, body: [] };
+    const vals = [];
+    const conds = [];
+    let select = '*';
+    let limit = 50;
+    for (const [k, v] of u.searchParams.entries()) {
+      if (k === 'select') {
+        if (v !== '*') {
+          const cols = v.split(',').map((s) => s.trim()).filter((s) => ID_RE.test(s));
+          select = cols.length ? cols.join(', ') : '*';
+        }
+      } else if (k === 'limit') {
+        limit = Math.min(parseInt(v, 10) || 50, 200);
+      } else if (k === 'order') {
+        const p = String(v).split('.');
+        if (ID_RE.test(p[0] || '')) conds.push('__ORDER__' + p[0] + (p[1] === 'desc' ? ' DESC' : ' ASC'));
+      } else {
+        const pd = String(v).indexOf('.');
+        const op = pd === -1 ? 'eq' : String(v).slice(0, pd);
+        const val = pd === -1 ? v : String(v).slice(pd + 1);
+        if (ID_RE.test(k) && op === 'eq') { conds.push(k + ' = ?'); vals.push(val); }
+      }
+    }
+    const ordenes = conds.filter((c) => c.startsWith('__ORDER__')).map((c) => c.slice(9));
+    const filtros = conds.filter((c) => !c.startsWith('__ORDER__'));
+    const where = filtros.length ? ' WHERE ' + filtros.join(' AND ') : '';
+    const orderBy = ordenes.length ? ' ORDER BY ' + ordenes.join(', ') : '';
+    const r = await _d1.prepare(`SELECT ${select} FROM ${tabla}${where}${orderBy} LIMIT ${limit}`).bind(...vals).all();
+    return { ok: true, status: 200, body: stripPII(r.results || []) };
+  } catch (e) {
+    return { ok: false, status: 500, body: [] };
+  }
 }
 
-/* Cabeceras REST de la base para los fetch directos (PostgREST de Neon
- * o de Supabase, mismas reglas): apikey de Supabase cuando este
- * configurada, y Bearer del usuario (JWT Auth0) que las RLS resuelven
- * igual en ambas (request.jwt.claims). */
-function hRestDb(token, extra) {
-  const h = Object.assign({ Accept: 'application/json' }, extra || {});
-  if (SUPA_ANON) h.apikey = SUPA_ANON;
-  if (token) h[AUTH_HEADER] = 'Bearer ' + token;
-  else if (SUPA_ANON) h[AUTH_HEADER] = 'Bearer ' + SUPA_ANON;
-  return h;
-}
+// (hRestDb eliminado: con D1 no hay cabeceras REST externas que construir)
 
 function rateLimit(bucket, ip, max) {
   const now = Date.now();
@@ -1498,21 +1557,20 @@ async function fetchWorker(request, env, ctx) {
       };
       let ins;
       try {
-        ins = await fetch(NEON_API + '/tournament_teams', {
-          method: 'POST',
-          headers: hRestDb(token, { 'Content-Type': 'application/json', Prefer: 'return=representation' }),
-          body: JSON.stringify(fila),
-        });
+        // D1 (todo en Cloudflare): INSERT directo en tournament_teams (vants-db)
+        if (!_d1) return json({ ok: false, error: 'base_inaccesible' }, 502, ACAO);
+        fila.id = crypto.randomUUID();
+        await _d1.prepare(
+          `INSERT INTO tournament_teams (id, tournament_id, game, name, tag, captain, region, auth0_sub, player_id, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).bind(fila.id, fila.tournament_id, fila.game, fila.name, fila.tag, fila.captain, fila.region, fila.auth0_sub, fila.player_id, fila.status).run();
+        ins = { ok: true };
       } catch (e) {
-        return json({ ok: false, error: 'base_inaccesible' }, 502, ACAO);
-      }
-      if (!ins.ok) {
-        const det = await ins.text().catch(() => '');
-        const dup = /duplicate key|unique/i.test(det);
+        const det = String((e && e.message) || e);
+        const dup = /UNIQUE|duplicate/i.test(det);
         return json({ ok: false, error: dup ? 'equipo_ya_inscrito' : 'base_rechazo', detalle: det.slice(0, 300) }, dup ? 409 : 502, ACAO);
       }
-      const creada = await ins.json().catch(() => []);
-      const filaCreada = Array.isArray(creada) ? creada[0] : creada;
+      const filaCreada = fila;
       // VANTS-BUS: la inscripción ya está guardada; flask-agents puede
       // postearla en Discord y VANTS HUB muestra la notificación.
       // El envío no bloquea ni rompe la respuesta del endpoint.
@@ -1566,8 +1624,8 @@ async function fetchWorker(request, env, ctx) {
           if (!/^[0-9a-f-]{36}$/i.test(id) || !['pendiente', 'confirmado', 'rechazado'].includes(status)) {
             return json({ ok: false, error: 'datos_invalidos' }, 400, ACAO);
           }
-          const r = await fetch(NEON_API + '/tournament_teams?id=eq.' + id, { method: 'PATCH', headers: hAuth, body: JSON.stringify({ status }) });
-          if (!r.ok) return json({ ok: false, error: 'base_rechazo', detalle: (await r.text().catch(() => '')).slice(0, 300) }, 502, ACAO);
+          const r = await _d1.prepare(`UPDATE tournament_teams SET status = ? WHERE id = ?`).bind(status, id).run();
+          if (!r.success) return json({ ok: false, error: 'base_rechazo', detalle: 'update_fallo' }, 502, ACAO);
           return json({ ok: true, accion }, 200, ACAO);
         }
         if (accion === 'resultado') {
@@ -1583,8 +1641,10 @@ async function fetchWorker(request, env, ctx) {
             return json({ ok: false, error: 'marcador_invalido' }, 400, ACAO);
           }
           const parche = { score_a: Number.isFinite(sa) ? sa : null, score_b: Number.isFinite(sb) ? sb : null, estado, ganador: estado === 'final' ? (sa > sb ? m.team_a : m.team_b) : null };
-          const r = await fetch(NEON_API + '/tournament_matches?id=eq.' + id, { method: 'PATCH', headers: hAuth, body: JSON.stringify(parche) });
-          if (!r.ok) return json({ ok: false, error: 'base_rechazo', detalle: (await r.text().catch(() => '')).slice(0, 300) }, 502, ACAO);
+          const r = await _d1.prepare(
+            `UPDATE tournament_matches SET score_a = ?, score_b = ?, estado = ?, ganador = ?, updated_at = datetime('now') WHERE id = ?`
+          ).bind(parche.score_a, parche.score_b, parche.estado, parche.ganador, id).run();
+          if (!r.success) return json({ ok: false, error: 'base_rechazo', detalle: 'update_fallo' }, 502, ACAO);
           if (estado === 'final') {
             // VANTS-BUS: resultado de bracket cerrado. La tabla guarda ids,
             // así que se resuelven los NOMBRES de los equipos antes de publicar.
@@ -1620,15 +1680,32 @@ async function fetchWorker(request, env, ctx) {
         if (accion === 'sembrar') {
           const torneo = String(body.torneo || '').trim().slice(0, 40);
           if (!torneo || !/^[a-z0-9_-]{1,40}$/i.test(torneo)) return json({ ok: false, error: 'torneo_invalido' }, 400, ACAO);
-          const r = await fetch(NEON_API + '/rpc/bracket_sembrar', { method: 'POST', headers: hAuth, body: JSON.stringify({ p_tournament: torneo }) });
-          if (!r.ok) return json({ ok: false, error: 'base_rechazo', detalle: (await r.text().catch(() => '')).slice(0, 300) }, 502, ACAO);
+          // D1: la siembra la hace el trigger tt_sembrar al confirmarse el equipo 8;
+          // aquí solo nos aseguramos de que existan los cruces de cuartos (q).
+          const ya = await _d1.prepare(`SELECT COUNT(*) AS n FROM tournament_matches WHERE tournament_id = ? AND ronda = 'q'`).bind(torneo).all();
+          const nQ = ya.results && ya.results[0] ? Number(ya.results[0].n) || 0 : 0;
+          if (nQ === 0) {
+            const eq = await _d1.prepare(
+              `SELECT name, game FROM tournament_teams WHERE tournament_id = ? AND status = 'confirmado' ORDER BY created_at LIMIT 8`
+            ).bind(torneo).all();
+            const equipos = eq.results || [];
+            if (equipos.length !== 8) return json({ ok: false, error: 'equipos_insuficientes', detalle: String(equipos.length) }, 400, ACAO);
+            const sentencias = [];
+            for (let i = 0; i < 4; i++) {
+              sentencias.push(_d1.prepare(
+                `INSERT INTO tournament_matches (id, tournament_id, game, ronda, slot, team_a, team_b)
+                 VALUES (?, ?, ?, 'q', ?, ?, ?)`
+              ).bind(crypto.randomUUID(), torneo, equipos[0].game || 'valorant', i, equipos[i * 2].name, equipos[i * 2 + 1].name));
+            }
+            await _d1.batch(sentencias);
+          }
           return json({ ok: true, accion }, 200, ACAO);
         }
         if (accion === 'reset_bracket') {
           const torneo = String(body.torneo || '').trim().slice(0, 40);
           if (!torneo || !/^[a-z0-9_-]{1,40}$/i.test(torneo)) return json({ ok: false, error: 'torneo_invalido' }, 400, ACAO);
-          const r = await fetch(NEON_API + '/tournament_matches?tournament_id=eq.' + encodeURIComponent(torneo), { method: 'DELETE', headers: hRestDb(token) });
-          if (!r.ok) return json({ ok: false, error: 'base_rechazo' }, 502, ACAO);
+          const r = await _d1.prepare(`DELETE FROM tournament_matches WHERE tournament_id = ?`).bind(torneo).run();
+          if (!r.success) return json({ ok: false, error: 'base_rechazo' }, 502, ACAO);
           return json({ ok: true, accion }, 200, ACAO);
         }
         return json({ ok: false, error: 'accion_desconocida' }, 400, ACAO);
@@ -2593,13 +2670,9 @@ async function fetchWorker(request, env, ctx) {
 
 export default {
   async fetch(request, env, ctx) {
-    /* Config de la migracion Neon -> Supabase (todo opcional). Sin
-     * estas variables el Worker sigue leyendo de Neon como hasta hoy;
-     * al ponerlas, el REST de la base y el proxy van a Supabase / al
-     * Worker vants-functions. */
-    if (env && env.PLAT_PROXY) PLAT_PROXY = String(env.PLAT_PROXY).replace(/\/+$/, '') + '/';
-    if (env && env.SUPABASE_REST_URL) NEON_API = String(env.SUPABASE_REST_URL).replace(/\/+$/, '');
-    if (env && env.SUPABASE_ANON_KEY) SUPA_ANON = String(env.SUPABASE_ANON_KEY);
+    // D1 (todo en Cloudflare): el binding de vants-db queda disponible para
+    // proxyConsulta/neonGet/escrituras de torneos en toda la petición.
+    _d1 = env && env.DB ? env.DB : null;
     try {
       return await fetchWorker(request, env, ctx);
     } catch (error) {

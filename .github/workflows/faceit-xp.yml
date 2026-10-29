@@ -4,14 +4,14 @@ name: "FACEIT · procesador de partidas (XP + rango)"
 # en XP + movimiento de rango en la base (faceit_procesar_eventos, migración 10).
 # Corre cada 10 minutos y también a mano (Run workflow).
 #
-# Migración Neon -> Supabase: la cadena ya no se resuelve con la API de Neon
-# (NEON_API_KEY); se usa el secreto DATABASE_URL directamente. Su VALOR decide
-# la base: cadena de Neon durante el paralelo, de Supabase tras el corte.
+# TODO EN CLOUDFLARE: la base es D1 (vants-db). El guardado de eventos FACEIT
+# ya va al binding DB del webhook; el procesador de eventos (XP) migrará a D1
+# en su momento. Hasta entonces este workflow solo corre a mano.
 
 on:
-  schedule:
-    # NOTA: evaluar bajar frecuencia si el coste de runs no justifica */10
-    - cron: "*/10 * * * *"
+  # schedule: apagado — PAUSADO (todo en Cloudflare): la base ya no es Postgres sino D1 (vants-db).
+#  El procesador de eventos FACEIT migrara a D1 (REST) en su momento; el guardado
+#  de eventos ya funciona (vants-faceit-webhook con binding DB).
   workflow_dispatch:
 
 concurrency:

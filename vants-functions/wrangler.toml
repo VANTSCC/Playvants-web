@@ -2,21 +2,23 @@ name = "vants-functions"
 main = "worker.js"
 compatibility_date = "2026-09-22"
 
-# nodejs_compat: las 8 funciones usan 'pg' (TCP a Postgres) y node:crypto.
-# Con este flag el Worker soporta ambos y process.env se llena con las
-# variables y secretos del Worker (así el código portado no cambia nada).
+# nodejs_compat: las funciones usan node:crypto y process.env para los
+# secretos de Discord/FACEIT/STRIPE/Auth0. La base de datos ya NO es Postgres:
+# es D1 por binding (env.DB), el mismo esquema SQLite de vants-db.
 compatibility_flags = ["nodejs_compat"]
+
+# Base de datos: UNA sola, en Cloudflare. Misma D1 que la web (vants) y el
+# bot (vantsbot): vants-db.
+[[d1_databases]]
+binding = "DB"
+database_name = "vants-db"
+database_id = "11e5d82c-307b-44ba-9682-501d8df593d3"
 
 # Observabilidad: logs de peticiones y errores visibles en el dashboard
 # (Workers & Pages -> vants-functions -> Logs)
 [observability]
 enabled = true
 
-# DATABASE_URL NO va aqui: es un secreto. Configurar una vez con:
-#   npx wrangler secret put DATABASE_URL
-# Valor: la cadena de sesion del pooler de Supabase (puerto 5432), la misma
-# que reciben el bot Python y el resto de consumidores tras la migracion.
-#
 # URL publica tras el deploy: https://vants-functions.vants.workers.dev
 # Las funciones quedan en /fn/linker, /fn/vantsdata, /fn/vantsbot, /fn/mm,
 # /fn/stripe-checkout, /fn/stripe-webhook, /fn/discord-notify y /fn/supervisor.

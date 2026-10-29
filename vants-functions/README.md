@@ -1,6 +1,6 @@
 # vants-functions
 
-Las 8 funciones que corrían en el runtime propietario de **Neon Functions**, ahora en **un solo Worker de Cloudflare**. Parte de la migración de la base de datos de Neon a Supabase: al salir de Neon, el runtime de sus funciones desaparece, así que las funciones se reubican aquí.
+Las 8 funciones que corrían en el runtime propietario de **Neon Functions**, ahora en **un solo Worker de Cloudflare** — y con **base de datos Cloudflare D1** (todo en Cloudflare, sin Neon ni Supabase).
 
 ## Qué contiene
 
@@ -16,40 +16,43 @@ Las 8 funciones que corrían en el runtime propietario de **Neon Functions**, ah
 | `/fn/supervisor/` | `supervisor` | Automatización del supervisor |
 | `/salud` | (propio del router) | Diagnóstico: lista de funciones montadas |
 
-## Garantía de copia fiel
+## Base de datos: D1 (binding `DB`)
 
-El código de `functions/` es una **copia literal** de `neon-functions/` (sin tocar). Las funciones solo usaban `pg` y `node:crypto`, nada del SDK de Neon, así que el único cambio real es el envoltorio: este router (`worker.js`) que quita el prefijo `/fn/<nombre>` antes de llamar a cada función, para que cada una siga viendo las rutas que ya conocía.
+La base es **`vants-db`**, la MISMA D1 que usa la web (`vants`) y el bot
+(`vantsbot`). El esquema SQLite completo ya vive ahí (players, mm_*, pt_*,
+torneos, pagos, agent_*, vistas `v_en_vivo`, `v_torneo_equipos`,
+`v_torneo_bracket`, `rr_historial_jugador`, `mm_historial`).
 
-## Variables y secretos
+El puente pg → D1 está en `functions/_d1.js`: expone la interfaz
+`pool.query(sql, params) → {rows}` y traduce el dialecto al vuelo
+(`$n` → `?`, `NOW()` → `datetime('now')`, `::casts` fuera, `ILIKE` → `LIKE`,
+`GREATEST` → `MAX`). Los procedimientos almacenados PL/pgSQL de matchmaking
+(migraciones 21/22/23/24/27) viven ahora como funciones JS dentro de
+`functions/mm/index.ts` con la misma semántica.
 
-Con `nodejs_compat`, Cloudflare llena `process.env` con las variables y secretos del Worker: el código portado lee `process.env` igual que en Neon. Configurar (una vez):
+## Secretos (los que cada función necesita)
 
 ```bash
 cd vants-functions
-npx wrangler secret put DATABASE_URL      # cadena de sesión del pooler de Supabase (5432)
 npx wrangler secret put DISCORD_BOT_TOKEN
 npx wrangler secret put DISCORD_PUBLIC_KEY
-npx wrangler secret put DISCORD_APP_ID    # o DISCORD_ID_APP, como estaba
+npx wrangler secret put DISCORD_APP_ID
 npx wrangler secret put VANTS_BOT_SECRET
 npx wrangler secret put FACEIT_CLIENT_ID
 npx wrangler secret put FACEIT_API_KEY
-npx wrangler secret put SUPERVISOR_DM_ID  # opcional
-# AGENT_DISCORD_IDS: opcional (allowlist de /agente)
+npx wrangler secret put SUPERVISOR_DM_ID   # opcional
 ```
 
-Las de OAuth del linker (TWITCH_*, KICK_*, YOUTUBE_*, TIKTOK_*, X_*, RIOT_*, STEAM_*) y las de Stripe se añaden con el mismo nombre que tenían en los workflows de Neon.
+Las de OAuth del linker (TWITCH_*, KICK_*, YOUTUBE_*, TIKTOK_*, X_*, RIOT_*,
+STEAM_*) y las de Stripe (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET,
+DISCORD_NOTIFY_SECRET) se añaden con el mismo nombre que tenían.
+Ya NO hace falta DATABASE_URL: la base llega por el binding D1 `DB`.
 
-## Deploy
+## Despliegue
 
-Automático con `.github/workflows/cloudflare-deploy-functions.yml` (push a `main` que toque `vants-functions/**`, o manual). Usa el mismo `CLOUDFLARE_API_TOKEN` que el resto de deploys.
+```bash
+cd vants-functions
+npx wrangler deploy
+```
 
-## Qué cambia hacia fuera
-
-| Consumidor | Antes (Neon) | Ahora |
-| --- | --- | --- |
-| Worker web (`vants-server`) | `PLAT_PROXY` → `...-vantsdata.compute...neon.tech/` | `https://vants-functions.vants.workers.dev/fn/vantsdata/` |
-| Worker web (`vants-server`) | `VANTS_BOT_URL` → `...-vantsbot.compute...neon.tech` | `https://vants-functions.vants.workers.dev/fn/vantsbot` |
-| Discord Developer Portal | Interactions URL → dominio de Neon | `https://vants-functions.vants.workers.dev/fn/vantsbot/` |
-| Stripe | Webhook endpoint → dominio de Neon | `https://vants-functions.vants.workers.dev/fn/stripe-webhook/` |
-| Apps OAuth del linker | Redirect URIs → dominio de Neon | `https://vants-functions.vants.workers.dev/fn/linker/...` |
-| `monitor/` | Chequea dominios de Neon | URLs `/fn/...` del Worker nuevo |
+URL pública: `https://vants-functions.vants.workers.dev`

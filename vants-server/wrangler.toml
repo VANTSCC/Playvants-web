@@ -22,16 +22,16 @@ not_found_handling = "404-page"
 # verifica la firma Ed25519 del Developer Portal (/api/discord/events) y
 # reenvía el evento a POST /evento-discord (auth x-vants-bot) para guardarlo
 # en Neon (web_events) y avisar por DM de compras/instalaciones.
-[vars]
-VANTS_BOT_URL = "https://br-sweet-shape-b42xhogj-vantsbot.compute.c-6.us-east-2.aws.neon.tech"
+# D1 (todo en Cloudflare): la base de la plataforma es vants-db, la MISMA D1
+# del bot (vantsbot) y de vants-functions. Binding DB.
+[[d1_databases]]
+binding = "DB"
+database_name = "vants-db"
+database_id = "11e5d82c-307b-44ba-9682-501d8df593d3"
 
-# MIGRACIÓN Neon -> Supabase (corte controlado): al rellenar estas variables
-# y desplegar, el REST de la base y el proxy/bot pasan a la nueva infra.
-# Mientras estén comentadas, el Worker sigue leyendo de Neon (paralelo).
-# SUPABASE_REST_URL = "https://TU-REF.supabase.co/rest/v1"
-# SUPABASE_ANON_KEY = "clave anon de Supabase (Settings -> API)"
-# PLAT_PROXY = "https://vants-functions.vants.workers.dev/fn/vantsdata/"
-# VANTS_BOT_URL = "https://vants-functions.vants.workers.dev/fn/vantsbot"
+[vars]
+# Bot de Discord en Cloudflare (antes: ...-vantsbot...neon.tech, eliminado)
+VANTS_BOT_URL = "https://vantsbot.vants.workers.dev"
 
 # VANTS-BUS: el Worker publica inscription.created (al inscribir un equipo),
 # clip.published (al publicar un clip destacado) y match.finished (al cerrar

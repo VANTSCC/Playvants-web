@@ -8,14 +8,11 @@
 // Precios del catalogo live (se pueden sobreescribir por variable de entorno).
 // ============================================
 
-import { Pool } from 'pg';
+import { crearSql } from '../_d1.js';
 import crypto from 'node:crypto';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 3,
-  idleTimeoutMillis: 30_000,
-});
+// D1: conexión por petición (env.DB), sin pool
+let pool: ReturnType<typeof crearSql>;
 
 const AUTH0_DOMAIN = (process.env.AUTH0_DOMAIN ?? 'vants.eu.auth0.com').replace(/^https?:\/\//, '');
 const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE ?? '';
@@ -188,7 +185,9 @@ async function crearCheckout(sub: string, email: string | null, body: Intento): 
 // ------------------------------------------------------------
 // Handler
 // ------------------------------------------------------------
-export default async function handler(req: Request): Promise<Response> {
+export default async function handler(req: Request, env?: Record<string, unknown>): Promise<Response> {
+  if (env && env.DB) pool = crearSql(env.DB as unknown as D1Database);
+  if (!pool) return json({ error: 'd1_no_configurado: falta el binding DB' }, 500);
   const url = new URL(req.url);
   const ruta = url.pathname.replace(/\/$/, '');
 

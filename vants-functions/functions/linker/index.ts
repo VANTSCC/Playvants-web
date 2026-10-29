@@ -8,14 +8,11 @@
 // Claves por plataforma en las variables de entorno de esta funcion (nunca en git).
 // ============================================
 
-import { Pool } from 'pg';
+import { crearSql } from '../_d1.js';
 import crypto from 'node:crypto';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 3,
-  idleTimeoutMillis: 30_000,
-});
+// D1: conexión por petición (env.DB), sin pool
+let pool: ReturnType<typeof crearSql>;
 
 const AUTH0_DOMAIN = (process.env.AUTH0_DOMAIN ?? 'vants.eu.auth0.com').replace(/^https?:\/\//, '');
 const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE ?? '';
@@ -250,12 +247,12 @@ async function subDeState(state: string) {
 
 async function guardarVinculo(sub: string, plataforma: string, p: Perfil, playerId: string | null) {
   await pool.query(
-    `INSERT INTO vants_links (auth0_sub, player_id, platform, handle, platform_user_id, avatar_url, verified, connected_at)
-     VALUES ($1, $2, $3, $4, $5, $6, true, now())
+    `INSERT INTO vants_links (id, auth0_sub, player_id, platform, handle, platform_user_id, avatar_url, verified, connected_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, true, now())
      ON CONFLICT (auth0_sub, platform) DO UPDATE
        SET handle = EXCLUDED.handle, platform_user_id = EXCLUDED.platform_user_id,
            avatar_url = EXCLUDED.avatar_url, verified = true, connected_at = now()`,
-    [sub, playerId, plataforma, p.handle, p.platform_user_id, p.avatar_url]
+    [crypto.randomUUID(), sub, playerId, plataforma, p.handle, p.platform_user_id, p.avatar_url]
   );
 }
 
@@ -337,7 +334,9 @@ async function steamPerfil(steamid: string): Promise<Perfil> {
 // ------------------------------------------------------------
 // Handler
 // ------------------------------------------------------------
-export default async function handler(req: Request): Promise<Response> {
+export default async function handler(req: Request, env?: Record<string, unknown>): Promise<Response> {
+  if (env && env.DB) pool = crearSql(env.DB as unknown as D1Database);
+  if (!pool) return json({ error: 'd1_no_configurado: falta el binding DB' }, 500);
   const url = new URL(req.url);
   const ruta = url.pathname.replace(/\/$/, '');
 

@@ -17,16 +17,11 @@
  *   /fn/discord-notify/...    -> functions/discord-notify
  *   /fn/supervisor/...        -> functions/supervisor
  *
- * Variables (vars) y secretos: con nodejs_compat, Cloudflare pobla
- * process.env con las variables del Worker, y el código de las funciones lee
- * process.env exactamente igual que lo hacía en Neon (DATABASE_URL,
- * DISCORD_BOT_TOKEN, FACEIT_CLIENT_ID, etc.). DATABASE_URL apunta al pooler
- * de Supabase (sesión, puerto 5432):
- *   npx wrangler secret put DATABASE_URL
- * El resto de secretos se añaden igual que estaban en los workflows de Neon:
- *   DISCORD_BOT_TOKEN, DISCORD_PUBLIC_KEY, DISCORD_APP_ID, VANTS_BOT_SECRET,
- *   AGENT_DISCORD_IDS, SUPERVISOR_DM_ID, FACEIT_CLIENT_ID, FACEIT_API_KEY,
- *   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET y los OAuth del linker.
+ * Variables y secretos: los secretos de Discord/FACEIT/STRIPE/Auth0 se
+ * configuran con `npx wrangler secret put <NOMBRE>` (igual que estaban en los
+ * workflows de Neon). La BASE DE DATOS ya no es Postgres (Neon/Supabase):
+ * es Cloudflare D1 (vants-db) vía binding `DB` — el MISMO esquema SQLite que
+ * ya usan la web (vants) y el bot (vantsbot). Todo en Cloudflare.
  * ========================================================================== */
 
 import linker from './functions/linker/index.ts';
@@ -91,7 +86,7 @@ export default {
     interna.pathname = m[2] || '/';
     const reqInterna = new Request(interna, req);
     try {
-      return await funcion(reqInterna);
+      return await funcion(reqInterna, env);
     } catch (e) {
       return responder({
         ok: false,

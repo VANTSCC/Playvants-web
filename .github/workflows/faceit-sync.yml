@@ -14,8 +14,8 @@
 name: "FACEIT · sync de torneos reales a pt_*"
 
 on:
-  schedule:
-    - cron: '17 5 * * *'   # diario 05:17 UTC (fuera de las horas pico del repo)
+  # schedule: apagado — PAUSADO (todo en Cloudflare): la base ya no es Postgres sino D1 (vants-db).
+#  La sincronizacion del catalogo pt_* volv when el escritor D1 este listo.
   workflow_dispatch:
     inputs:
       juegos:

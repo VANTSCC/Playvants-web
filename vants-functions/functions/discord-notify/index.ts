@@ -4,14 +4,11 @@
 // Adaptada de Supabase Edge Function a Neon Function
 // ============================================
 
-import { Pool } from 'pg';
+import { crearSql } from '../_d1.js';
 import { timingSafeEqual } from 'node:crypto';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 3,
-  idleTimeoutMillis: 30_000,
-});
+// D1: conexión por petición (env.DB), sin pool
+let pool: ReturnType<typeof crearSql>;
 
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN ?? '';
 const SITE = (process.env.VANTS_SITE_URL ?? 'https://feispla.github.io/Vants').replace(/\/$/, '');
@@ -172,7 +169,9 @@ function authorized(req: Request): boolean {
   }
 }
 
-export default async function handler(req: Request): Promise<Response> {
+export default async function handler(req: Request, env?: Record<string, unknown>): Promise<Response> {
+  if (env && env.DB) pool = crearSql(env.DB as unknown as D1Database);
+  if (!pool) return json({ error: 'd1_no_configurado: falta el binding DB' }, 500);
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (!authorized(req)) return json({ error: 'unauthorized' }, 401);
 

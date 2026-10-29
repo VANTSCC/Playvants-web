@@ -27,7 +27,7 @@
 // Misma lógica/SQL que bot/commands/agente.py + bot/agent_bridge.py.
 // ============================================
 
-import { Pool } from 'pg';
+import { crearSql } from '../_d1.js';
 import { timingSafeEqual, createPublicKey, verify as cryptoVerify, createHash } from 'node:crypto';
 
 const API = 'https://discord.com/api/v10';
@@ -444,12 +444,16 @@ function salud(dep: Dependencias): Response {
 // ── Factory inyectable (convención de la casa, como matchmaking-service) ──
 export function construir(sobre: Partial<Dependencias> = {}) {
   const env = sobre.env ?? process.env;
-  const pool = sobre.pool ?? new Pool({ connectionString: env.DATABASE_URL, max: 3, idleTimeoutMillis: 30_000 });
+  // D1: el binding llega por peticion (handler(req, env)); el router lo pasa.
+  // Para tests se puede inyectar sobre.pool (interfaz crearSql).
   const f: typeof fetch = sobre.fetch ?? fetch;
   const saltarFirma = sobre.saltarFirma ?? false;
-  const dep: Dependencias = { env, pool, fetch: f, saltarFirma };
+  let dep: Dependencias = { env, pool: sobre.pool as never, fetch: f, saltarFirma };
 
-  return async function handler(req: Request): Promise<Response> {
+  return async function handler(req: Request, envReq?: Record<string, unknown>): Promise<Response> {
+    const db = (envReq && envReq.DB) || (env as Record<string, unknown>).DB;
+    if (db) dep = { ...dep, pool: crearSql(db as unknown as D1Database) as never };
+    if (!dep.pool) return json({ ok: false, error: { message: 'd1_no_configurado: falta el binding DB' } }, 500);
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
     let ruta = '/';
     try {

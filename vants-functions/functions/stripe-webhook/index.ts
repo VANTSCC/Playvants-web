@@ -8,14 +8,11 @@
 // Sin STRIPE_WEBHOOK_SECRET cargado la funcion RECHAZA todo (fail closed).
 // ============================================
 
-import { Pool } from 'pg';
+import { crearSql } from '../_d1.js';
 import crypto from 'node:crypto';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 3,
-  idleTimeoutMillis: 30_000,
-});
+// D1: conexión por petición (env.DB), sin pool
+let pool: ReturnType<typeof crearSql>;
 
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? '';
 
@@ -114,10 +111,10 @@ async function handleCheckoutSession(session: any): Promise<void> {
   // Compra registrada (idempotente por session id: los reintentos no duplican)
   try {
     await pool.query(
-      `INSERT INTO purchases (player_id, auth0_sub, product, tier, amount_cents, currency, payment_provider, payment_status, external_id, period, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, 'stripe', 'paid', $7, $8, $9)
+      `INSERT INTO purchases (id, player_id, auth0_sub, product, tier, amount_cents, currency, payment_provider, payment_status, external_id, period, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'stripe', 'paid', $8, $9, $10)
        ON CONFLICT (external_id) DO NOTHING`,
-      [playerId, clientRef, `plan_${plan}`, plan, session.amount_total ?? 0, session.currency?.toUpperCase() ?? 'EUR', session.id, period, now.toISOString()]
+      [crypto.randomUUID(), playerId, clientRef, `plan_${plan}`, plan, session.amount_total ?? 0, session.currency?.toUpperCase() ?? 'EUR', session.id, period, now.toISOString()]
     );
   } catch (e) {
     console.error('purchases insert fallo:', String((e as Error).message ?? e));
@@ -126,8 +123,8 @@ async function handleCheckoutSession(session: any): Promise<void> {
   // Entitlement activo (upsert: reactivar o extender si ya existia)
   try {
     await pool.query(
-      `INSERT INTO entitlements (player_id, auth0_sub, entitlement_type, tier, source, is_active, expires_at, external_id, period, created_at, updated_at)
-       VALUES ($1, $2, 'plan', $3, 'purchase', true, $4, $5, $6, $7, $7)
+      `INSERT INTO entitlements (id, player_id, auth0_sub, entitlement_type, tier, source, is_active, expires_at, external_id, period, created_at, updated_at)
+       VALUES ($1, $2, $3, 'plan', $4, 'purchase', true, $5, $6, $7, $8, $8)
        ON CONFLICT (player_id, entitlement_type, tier) DO UPDATE
          SET is_active = true,
              auth0_sub = EXCLUDED.auth0_sub,
@@ -136,9 +133,9 @@ async function handleCheckoutSession(session: any): Promise<void> {
              expires_at = CASE
                WHEN entitlements.expires_at IS NULL THEN EXCLUDED.expires_at
                WHEN EXCLUDED.expires_at IS NULL THEN entitlements.expires_at
-               ELSE GREATEST(entitlements.expires_at, EXCLUDED.expires_at) END,
-             updated_at = now()`,
-      [playerId, clientRef, plan, expiresAt, subscriptionId ?? session.id, period, now.toISOString()]
+               ELSE MAX(entitlements.expires_at, EXCLUDED.expires_at) END,
+             updated_at = datetime('now')`,
+      [crypto.randomUUID(), playerId, clientRef, plan, expiresAt, subscriptionId ?? session.id, period, now.toISOString()]
     );
   } catch (e) {
     console.error('entitlements upsert fallo:', String((e as Error).message ?? e));
@@ -152,15 +149,25 @@ async function handleInvoicePaid(invoice: any): Promise<void> {
   if (!subscriptionId) return; // facturas de pago unico no renuevan entitlement
   const dias = invoice.lines?.data?.[0]?.price?.recurring?.interval === 'year' ? 365 : 30;
   try {
+    // D1/SQLite: las fechas son TEXT ISO; el vencimiento se extiende en JS
+    const actual = await pool.query(
+      `SELECT expires_at FROM entitlements WHERE external_id = $1 AND is_active = true LIMIT 1`,
+      [subscriptionId]
+    );
+    const fila = actual.rows?.[0];
+    if (!fila) { console.error('Renovacion sin entitlement para', subscriptionId); return; }
+    const base = fila.expires_at ? new Date(fila.expires_at) : new Date();
+    const desde = base.getTime() > Date.now() ? base : new Date();
+    const nuevo = new Date(desde.getTime() + dias * 24 * 60 * 60 * 1000).toISOString();
     const { rowCount } = await pool.query(
       `UPDATE entitlements
-         SET expires_at = GREATEST(COALESCE(expires_at, now()), now()) + make_interval(days => $2),
+         SET expires_at = $2,
              is_active = true,
-             updated_at = now()
+             updated_at = datetime('now')
        WHERE external_id = $1 AND is_active = true`,
-      [subscriptionId, dias]
+      [subscriptionId, nuevo]
     );
-    if (!rowCount) console.error('Renovacion sin entitlement para', subscriptionId);
+    if (!rowCount) console.error('Renovacion sin efecto para', subscriptionId);
   } catch (e) {
     console.error('invoice.paid fallo:', String((e as Error).message ?? e));
   }
@@ -177,7 +184,9 @@ async function handleSubscriptionDeleted(subscription: any): Promise<void> {
   }
 }
 
-export default async function handler(req: Request): Promise<Response> {
+export default async function handler(req: Request, env?: Record<string, unknown>): Promise<Response> {
+  if (env && env.DB) pool = crearSql(env.DB as unknown as D1Database);
+  if (!pool) return json({ error: 'd1_no_configurado: falta el binding DB' }, 500);
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
 

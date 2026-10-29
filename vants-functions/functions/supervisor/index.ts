@@ -13,13 +13,10 @@
 // Fase 2 del diseño: dedupe con KV store, firma HMAC y cola persistente.
 // ============================================
 
-import { Pool } from 'pg';
+import { crearSql } from '../_d1.js';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 3,
-  idleTimeoutMillis: 30_000,
-});
+// D1: conexión por petición (env.DB), sin pool
+let pool: ReturnType<typeof crearSql>;
 
 const ALLOWED_ORIGINS = ['https://feispla.github.io'];
 const MARKER = 'web';
@@ -110,7 +107,9 @@ function valida(r: Raw): { ok: true; row: unknown[] } | { ok: false } {
 }
 
 /* ── handler ───────────────────────────────────────────────────────────── */
-export default async function handler(req: Request): Promise<Response> {
+export default async function handler(req: Request, env?: Record<string, unknown>): Promise<Response> {
+  if (env && env.DB) pool = crearSql(env.DB as unknown as D1Database);
+  if (!pool) return json({ error: 'd1_no_configurado: falta el binding DB' }, 500);
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
 
   if (req.method === 'GET') {

@@ -18,14 +18,10 @@
 //   · Solo el FK-map de abajo habilita embeds (no hay resolución dinámica)
 // ============================================
 
-import { Pool } from 'pg';
+import { crearSql } from '../_d1.js';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 3,
-  idleTimeoutMillis: 30_000,
-});
-
+// D1: la conexión se toma del binding en cada petición (env.DB), no hay pool.
+let pool: ReturnType<typeof crearSql>;
 const VERSION = 'vantsdata-1';
 const MAX_LIMIT = 1000;
 const DEFAULT_LIMIT = 100;
@@ -148,7 +144,7 @@ class SqlBuilder {
   private vals: unknown[] = [];
   param(v: unknown): string {
     this.vals.push(v);
-    return `$${this.vals.length}`;
+    return '?'; // D1/SQLite: placeholder posicional
   }
   get values(): unknown[] { return this.vals; }
 }
@@ -175,7 +171,7 @@ const OPS: Record<string, Op> = {
     const items = v.slice(1, -1).split(',').map((x) => x.trim()).filter((x) => x.length > 0);
     if (!items.length) return 'FALSE';
     if (items.length > 100) throw new Error('in demasiado grande');
-    return `${c} = ANY(ARRAY[${items.map((x) => b.param(x)).join(',')}])`;
+    return `${c} IN (${items.map((x) => b.param(x)).join(',')})`;
   },
 };
 
@@ -228,7 +224,9 @@ function stripSensible<T>(data: T): T {
 }
 
 /* ── handler ───────────────────────────────────────────────────────────── */
-export default async function handler(req: Request): Promise<Response> {
+export default async function handler(req: Request, env?: Record<string, unknown>): Promise<Response> {
+  if (env && env.DB) pool = crearSql(env.DB as unknown as D1Database);
+  if (!pool) return json({ error: 'd1_no_configurado: falta el binding DB' }, 500);
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
 
@@ -260,8 +258,10 @@ export default async function handler(req: Request): Promise<Response> {
       if (cols.length) partes.push(cols.join(', '));
       for (const e of embeds) {
         const fkRel = EMBED_FK[`${tabla}.${e.alias}`];
+        // SQLite: json_group_array + json_object en lugar de json_agg de Postgres
+        const pares = e.cols.map((c) => `'${c}', x.${c}`).join(', ');
         partes.push(
-          `(SELECT COALESCE(json_agg(x.r), '[]'::json) FROM (SELECT ${e.cols.join(', ')} FROM ${e.tabla} WHERE ${e.tabla}.id = ${tabla}.${fkRel.fk}) x(r)) AS ${e.alias}`
+          `(SELECT json_group_array(json_object(${pares})) FROM ${e.tabla} x WHERE x.id = ${tabla}.${fkRel.fk}) AS ${e.alias}`
         );
       }
       if (partes.length) selectSql = partes.join(', ');
