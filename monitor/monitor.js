@@ -13,7 +13,9 @@ const tls = require('tls');
 const DIR = __dirname;
 let cfg = {
   site: 'https://vants.vants.workers.dev/',
-  proxy: 'https://br-sweet-shape-b42xhogj-vantsdata.compute.c-6.us-east-2.aws.neon.tech/',
+  // Tras la migracion Neon -> Supabase, el proxy de lectura vive en el Worker
+  // vants-functions (antes: ...-vantsdata.compute...neon.tech/).
+  proxy: 'https://vants-functions.vants.workers.dev/fn/vantsdata/',
   webhookUrl: '',
   slowMs: 4000,
   certWarnDays: 14,
@@ -35,7 +37,7 @@ const CRIT = [
   { id: 'clips-pag', label: 'Clips (página)', url: cfg.site + 'clips' },
   { id: 'css', label: 'vants.css (S4)', url: cfg.site + 'static/css/vants.css' },
   { id: 'appjs', label: 'app.js (S4)', url: cfg.site + 'static/js/app.js' },
-  { id: 'proxy', label: 'Neon vantsdata (API)', url: cfg.proxy, markers: ['"ok":true'] },
+  { id: 'proxy', label: 'vantsdata (API de lectura)', url: cfg.proxy, markers: ['"ok":true'] },
 ];
 const EXTERN = [
   { id: 'auth0', label: 'Auth0 CDN', url: 'https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js' },
@@ -169,7 +171,7 @@ function mejoras(crit, extern, certs) {
     const mej = mejoras(crit, extern, certs);
     await discord('📊 VANTS — informe de estado', `Estado global: **${status}** · ${okCount}/${crit.length + extern.length} comprobaciones OK`, COLORS.info, [
       { name: 'Web', value: `${web.status} · ${web.ms}ms · ${Math.round((web.size || 0) / 1024)}KB · ${web.headers['content-encoding'] || 'sin comprimir'}`, inline: true },
-      { name: 'API Neon', value: `${crit.find((c) => c.id === 'proxy').ms}ms`, inline: true },
+      { name: 'API de lectura', value: `${crit.find((c) => c.id === 'proxy').ms}ms`, inline: true },
       { name: 'SSL', value: hosts.map((h) => `${h}: ${certs[h] == null ? '?' : certs[h] + 'd'}`).join('\n'), inline: false },
       { name: 'Mejoras propuestas', value: mej.map((m, i) => `${i + 1}. ${m}`).join('\n').slice(0, 1000) || '—' },
     ]);

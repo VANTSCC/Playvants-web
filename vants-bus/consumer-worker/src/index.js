@@ -4,18 +4,24 @@
  * Worker INDEPENDIENTE: no toca el código de playvants-web ni su
  * despliegue. Corre por cron (cada minuto), consume el bus con la
  * identidad playvants-web (cursor persistente EN el bus, tabla
- * vants_consumers) y copia los eventos a vants_feed en Neon, donde
- * la web ya puede leerlos con su conexión existente.
+ * vants_consumers) y copia los eventos a vants_feed en la base de datos,
+ * donde la web ya puede leerlos con su conexión existente.
+ *
+ * Migración Neon -> Supabase: el driver ya no es el HTTP de Neon
+ * (@neondatabase/serverless) sino postgres (postgres.js) por TCP, que
+ * habla con cualquier PostgreSQL. El valor de DATABASE_URL decide la base:
+ * cadena del pooler de Neon durante el paralelo, cadena del pooler de
+ * sesión de Supabase (puerto 5432) tras el corte.
  *
  * Secrets:
- *   DATABASE_URL        cadena Neon (rol authenticator)
+ *   DATABASE_URL        cadena de la base (pooler de sesión)
  *   VANTS_BUS_SECRET    secreto HMAC de playvants-web
  * Vars:
  *   VANTS_BUS_URL       https://vants-bus.vants.workers.dev
  *   FEED_RETENTION_DAYS retención del feed (7 por defecto)
  * ============================================================ */
 
-import { neon } from '@neondatabase/serverless';
+import postgres from 'postgres';
 
 let _busUrl = '';
 const MAX_PAGINAS = 10;
@@ -49,8 +55,23 @@ async function leerBus(secret, query) {
   return JSON.parse(text);
 }
 
+function dbClient(env) {
+  // prepare: false evita sentencias preparadas con poolers (Supavisor/PgBouncer).
+  return postgres(env.DATABASE_URL, { max: 3, prepare: false });
+}
+
 async function consumirUnaVuelta(env) {
-  const sql = neon(env.DATABASE_URL);
+  const sql = dbClient(env);
+  try {
+    return await copiarEventos(env, sql);
+  } finally {
+    // postgres.js mantiene conexiones abiertas: cerrarlas al terminar la
+    // vuelta para que el isolate no las arrastre hasta el próximo cron.
+    await sql.end({ timeout: 1 }).catch(() => {});
+  }
+}
+
+async function copiarEventos(env, sql) {
   let total = 0;
   let paginas = 0;
 
@@ -60,7 +81,7 @@ async function consumirUnaVuelta(env) {
   // Primera vuelta: feed vacío → histórico completo (llenar el feed).
   let since = '';
   try {
-    const filas = await sql.query(`SELECT max(id) AS maxid FROM vants_feed`);
+    const filas = await sql.unsafe(`SELECT max(id) AS maxid FROM vants_feed`);
     since = (filas && filas[0] && filas[0].maxid) || '';
   } catch (e) { /* tabla aún no creada → histórico */ }
 
@@ -70,7 +91,7 @@ async function consumirUnaVuelta(env) {
 
     const eventos = res.events || [];
     for (const ev of eventos) {
-      await sql.query(
+      await sql.unsafe(
         `INSERT INTO vants_feed (id, type, source, ts, data)
          VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (id) DO NOTHING`,
@@ -85,7 +106,7 @@ async function consumirUnaVuelta(env) {
 
   // Retención del feed
   const dias = Number(env.FEED_RETENTION_DAYS || 7);
-  await sql.query(`DELETE FROM vants_feed WHERE consumed_at < now() - make_interval(days => $1)`, [dias]);
+  await sql.unsafe(`DELETE FROM vants_feed WHERE consumed_at < now() - make_interval(days => $1)`, [dias]);
 
   return total;
 }
@@ -113,12 +134,14 @@ export default {
       const ok = Boolean(env.DATABASE_URL && env.VANTS_BUS_SECRET);
       let ultimo = null;
       if (ok) {
+        const sqlh = dbClient(env);
         try {
-          const filas = await neon(env.DATABASE_URL).query(
+          const filas = await sqlh.unsafe(
             `SELECT id, type, source, ts FROM vants_feed ORDER BY consumed_at DESC LIMIT 1`
           );
           ultimo = filas && filas[0] ? filas[0] : null;
         } catch (e) { ultimo = { error: e.message }; }
+        finally { await sqlh.end({ timeout: 1 }).catch(() => {}); }
       }
       return new Response(JSON.stringify({ ok, service: 'vants-consumer-playvants', ultimo }), {
         headers: { 'Content-Type': 'application/json' },

@@ -1,0 +1,13 @@
+{
+  "name": "vants-functions",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Las 8 funciones que antes corrian en Neon Functions, ahora en un Worker de Cloudflare (migracion Neon -> Supabase)",
+  "dependencies": {
+    "pg": "^8.13.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.0"
+  }
+}
