@@ -1,5 +1,11 @@
 name: "Neon · migraciones de la base real"
 
+# DEPRECATED (migración Neon -> Supabase): mientras dure el paralelo este
+# workflow sigue aplicando migraciones en Neon. Tras el corte, las migraciones
+# se aplican con migrar-supabase.yml (psql directo contra DATABASE_URL) y este
+# workflow se apaga (ver VantsBasededatos). No borrar todavía: es la vía de
+# rollback mientras Neon siga vivo.
+
 # Aplica las migraciones SQL idempotentes de db/migrations/ contra la rama
 # br-sweet-shape-b42xhogj del proyecto Neon square-surf-41242074 (base neondb).
 #

@@ -1,0 +1,62 @@
+name: "Cloudflare · deploy del Worker de funciones (vants-functions)"
+
+# Despliega las 8 funciones que antes corrían en Neon Functions. Es el
+# reemplazo directo de neon-deploy-functions.yml tras la migración de la
+# base de datos a Supabase: mismo código, mismo runtime de envs (process.env),
+# mismo token de Cloudflare que el resto de deploys.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "vants-functions/**"
+      - ".github/workflows/cloudflare-deploy-functions.yml"
+  workflow_dispatch:
+
+# Fase 6 · despliegues controlados: un deploy a la vez, el resto en cola
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+# Mínimo privilegio: el deploy no toca el repo
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+
+      - name: Instalar dependencias (npm ci)
+        working-directory: vants-functions
+        run: npm ci
+
+      - name: Deploy del Worker a Cloudflare
+        working-directory: vants-functions
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || '8f2424e95fec4860e19257226f209fbc' }}
+        run: npx wrangler deploy
+
+      # Los secretos del Worker se gestionan una vez con wrangler secret put
+      # (ver vants-functions/README.md). Aquí solo se despliega el código;
+      # si un secreto falta, la función que lo usa lo avisará en su respuesta.
+
+      - name: Verificación (salud del router y diagnóstico de vantsdata)
+        run: |
+          sleep 5
+          BASE="https://vants-functions.vants.workers.dev"
+          echo "--- GET /salud (lista de funciones montadas) ---"
+          curl -s --max-time 20 "$BASE/salud" | head -c 400; echo
+          echo "--- GET /fn/vantsdata/ (diagnóstico público) ---"
+          curl -s --max-time 30 "$BASE/fn/vantsdata/" | head -c 300; echo
+          echo "--- GET /fn/mm/salud (matchmaking serverless) ---"
+          curl -s --max-time 30 "$BASE/fn/mm/salud" | head -c 300; echo
