@@ -446,13 +446,13 @@
   });
 
   /* ── RANGO: escalera con las 9 insignias oficiales ── */
-  function pintarEscalera() {
+  function pintarEscalera(idActual) {
     var cont = document.getElementById("rango-escalera");
     if (!cont) return;
     cont.innerHTML = "";
     RANGOS.forEach(function (r, i) {
       var paso = document.createElement("div");
-      paso.className = "rango-escalera__paso" + (i === RANGOS.length - 1 ? " rango-escalera__paso--fin" : "");
+      paso.className = "rango-escalera__paso" + (i === RANGOS.length - 1 ? " rango-escalera__paso--fin" : "") + (idActual && idActual === r.id ? " rango-escalera__paso--actual" : "");
       var img = document.createElement("img");
       img.src = "/static/img/rangos/rango-" + r.id + ".png";
       img.alt = "Rango " + r.nombre;
@@ -467,6 +467,54 @@
       paso.appendChild(s);
       cont.appendChild(paso);
     });
+  }
+
+  /* ── RANGO REAL del agente (D1 · mismo motor de XP que el bot) ──
+     /api/account/progreso devuelve el XP de la cuenta, el rango VANTS
+     (misma escala CENIZA→SUPREMO que RANGOS_VANTS del bot), el % de la
+     barra y el rango competitivo de Valorant. Pinta la caja de rango
+     (IDs intactos para el rediseño v46) y resalta el peldaño actual. */
+  function pintarProgreso(j) {
+    if (!j || !j.ok) return;
+    var r = j.rango || {};
+    var img = document.getElementById("rango-insignia");
+    var nom = document.getElementById("rango-nombre");
+    var sub = document.getElementById("rango-sub");
+    var barra = document.getElementById("barra-rango");
+    var xpCaja = document.getElementById("rango-xp");
+    if (img && r.id) {
+      img.src = "/static/img/rangos/rango-" + r.id + ".png";
+      img.alt = "Insignia " + (r.nombre || "");
+    }
+    if (nom) {
+      nom.textContent = r.nombre || "SIN RANGO";
+      nom.style.color = r.color || "var(--gris-2)";
+    }
+    if (sub) {
+      var tSub = (j.siguiente && j.siguiente.nombre)
+        ? "FALTAN " + Number(j.siguiente.falta || 0).toLocaleString("es") + " XP PARA " + j.siguiente.nombre
+        : "RANGO MÁXIMO ALCANZADO";
+      if (j.valorant && j.valorant.tier) {
+        tSub = "VALORANT: " + String(j.valorant.tier).toUpperCase()
+          + (j.valorant.rr !== null && j.valorant.rr !== undefined ? " · " + j.valorant.rr + " RR" : "")
+          + " · " + tSub;
+      }
+      sub.textContent = tSub;
+      sub.style.color = r.color || "";
+    }
+    if (barra) barra.style.width = Math.max(0, Math.min(100, r.progreso || 0)) + "%";
+    if (xpCaja) xpCaja.textContent = Number(j.xp || 0).toLocaleString("es");
+    pintarEscalera(r.id);
+  }
+  function cargarProgreso() {
+    if (!window.VantAuth0 || !window.VantAuth0.getToken) return;
+    window.VantAuth0.getToken().then(function (tok) {
+      if (!tok) return;
+      return fetch("/api/account/progreso", { headers: { Accept: "application/json", Authorization: "Bearer " + tok } })
+        .then(function (r) { return r.json().catch(function () { return null; }); })
+        .then(function (j) { if (j && j.ok) pintarProgreso(j); })
+        .catch(function () { /* silencioso: la caja queda en SIN RANGO */ });
+    }).catch(function () { /* sin token: nada */ });
   }
 
   /* ── CUENTA: sesión real (Auth0) ── */
@@ -571,6 +619,8 @@
         api.guardar(estado);
         pintarNick(estado.nick || u.nick);
         api.pintarAvatar(estado);
+        /* panel del agente: XP + rango VANTS + insignia + barra (D1 real) */
+        cargarProgreso();
         /* redes + nickname guardados EN LA CUENTA (sirve tras cambiar de
            dispositivo y confirma el nombre si cambió hace poco) */
         window.VantAuth0.getToken().then(function (tok) {

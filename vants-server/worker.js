@@ -1101,7 +1101,7 @@ async function fetchWorker(request, env, ctx) {
     // --- 2) Pre-flight CORS solo para la API propia
     if (method === 'OPTIONS') {
       const origin = request.headers.get('origin') || '';
-      const isGetApi = url.pathname === '/api/valorant/esports' || url.pathname === '/api/teams' || url.pathname === '/api/teams-live' || url.pathname === '/api/gpr' || url.pathname === '/api/clips/featured' || url.pathname === '/api/torneos/bracket' || url.pathname === '/api/en-vivo' || url.pathname === '/api/faceit/usuario' || url.pathname === '/api/faceit/historia' || url.pathname === '/api/account/perfil' || url.pathname === '/api/games' || url.pathname === '/api/tournaments' || url.pathname === '/api/matches' || url.pathname === '/api/players' || url.pathname === '/api/articles' || url.pathname === '/api/search' || /^\/api\/tournaments\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/articles\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/teams\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/players\/[a-z0-9-]+$/.test(url.pathname);
+      const isGetApi = url.pathname === '/api/valorant/esports' || url.pathname === '/api/teams' || url.pathname === '/api/teams-live' || url.pathname === '/api/gpr' || url.pathname === '/api/clips/featured' || url.pathname === '/api/torneos/bracket' || url.pathname === '/api/en-vivo' || url.pathname === '/api/faceit/usuario' || url.pathname === '/api/faceit/historia' || url.pathname === '/api/account/perfil' || url.pathname === '/api/account/progreso' || url.pathname === '/api/games' || url.pathname === '/api/tournaments' || url.pathname === '/api/matches' || url.pathname === '/api/players' || url.pathname === '/api/articles' || url.pathname === '/api/search' || /^\/api\/tournaments\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/articles\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/teams\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/players\/[a-z0-9-]+$/.test(url.pathname);
       const isPostApi = url.pathname === '/api/discord/notify' || url.pathname === '/api/account/email-verify' || url.pathname === '/api/account/password-reset' || url.pathname === '/api/account/perfil' || url.pathname === '/api/clips/featured' || url.pathname === '/api/torneos/inscribir' || url.pathname === '/api/torneos/gestionar' || url.pathname === '/api/telemetria';
       if ((isPostApi || isGetApi) && SITE_ORIGINS.has(origin)) {
         return harden(new Response(null, { status: 204 }), {
@@ -2121,6 +2121,104 @@ async function fetchWorker(request, env, ctx) {
       return json(salidaH, salidaH.ok ? 200 : 502, { 'Access-Control-Allow-Origin': originH || '*', 'Cache-Control': 'public, max-age=120' });
     }
 
+    // --- 7b1) Cuenta: PROGRESO DEL AGENTE (rango, insignia y barra de XP).
+    // GET (con sesión): lee la fila del jugador en D1 (players) por auth0_sub
+    // de la sesión — con puente al formato del bot para sesiones de Discord
+    // ('discord|123' → auth_user_id 'discord:123') — y devuelve XP total,
+    // rango VANTS (MISMA escala que RANGOS_VANTS del bot en src/rangos.js),
+    // % de la barra hacia el siguiente rango y el rango competitivo de
+    // Valorant que guardó el bot en players.stats.valorant.
+    if (url.pathname === '/api/account/progreso') {
+      const originPg = request.headers.get('origin') || '';
+      if (!SITE_ORIGINS.has(originPg)) {
+        return json({ ok: false, error: 'Origen no permitido' }, 403, { 'Access-Control-Allow-Origin': originPg || '*' });
+      }
+      if (method !== 'GET') {
+        return json({ ok: false, error: 'Método no permitido' }, 405, { Allow: 'GET, OPTIONS', 'Access-Control-Allow-Origin': originPg || '*' });
+      }
+      const aPg = rateLimit(rlAccount, ip, LIMIT_ACCOUNT);
+      if (!aPg.ok) {
+        return json({ ok: false, error: 'Demasiadas peticiones' }, 429, { 'Retry-After': String(aPg.retry), 'Access-Control-Allow-Origin': originPg || '*' });
+      }
+      const sesPg = await verifySesionJwt(request);
+      if (!sesPg || !sesPg.sub) {
+        return json({ ok: false, error: 'sin_sesion' }, 401, { 'Access-Control-Allow-Origin': originPg || '*' });
+      }
+      if (!_d1) {
+        return json({ ok: false, error: 'db_no_configurada' }, 503, { 'Access-Control-Allow-Origin': originPg || '*' });
+      }
+      try {
+        const subPg = String(sesPg.sub);
+        const rPg = await _d1.prepare(
+          `SELECT display_name, username, xp, rating, trend, verified, stats
+             FROM players
+            WHERE auth0_sub = ?1
+               OR auth_user_id = ?1
+               OR auth_user_id = REPLACE(?1, '|', ':')
+            ORDER BY xp DESC LIMIT 1`
+        ).bind(subPg).all();
+        const filaPg = (rPg && rPg.results && rPg.results[0]) || null;
+        const xpPg = filaPg && Number.isFinite(Number(filaPg.xp)) ? Math.max(0, Math.floor(Number(filaPg.xp))) : 0;
+        // Escala de rangos: MISMA que RANGOS_VANTS del bot (src/rangos.js del
+        // vantsbot). Los colores/IDs coinciden con la constante RANGOS del
+        // frontend (perfil_pagina.js) y con las imágenes /static/img/rangos/.
+        const RANGOS_PG = [
+          { id: 'ceniza',   nombre: 'CENIZA',   desde: 0,    color: '#b8bfc7' },
+          { id: 'hierro',   nombre: 'HIERRO',   desde: 1000, color: '#8b93a1' },
+          { id: 'bronce',   nombre: 'BRONCE',   desde: 2000, color: '#b0793f' },
+          { id: 'plata',    nombre: 'PLATA',    desde: 3000, color: '#c3ccd9' },
+          { id: 'oro',      nombre: 'ORO',      desde: 4000, color: '#e3b341' },
+          { id: 'platino',  nombre: 'PLATINO',  desde: 5000, color: '#35c8d8' },
+          { id: 'diamante', nombre: 'DIAMANTE', desde: 6000, color: '#a45de8' },
+          { id: 'inmortal', nombre: 'INMORTAL', desde: 7000, color: '#2fbf8f' },
+          { id: 'supremo',  nombre: 'SUPREMO',  desde: 8000, color: '#3f8cff' }
+        ];
+        let idxPg = 0;
+        for (let i = 0; i < RANGOS_PG.length; i++) if (xpPg >= RANGOS_PG[i].desde) idxPg = i;
+        const actualPg = RANGOS_PG[idxPg];
+        const sigPg = RANGOS_PG[idxPg + 1] || null;
+        const tramoPg = sigPg ? (sigPg.desde - actualPg.desde) : Math.max(1, xpPg - actualPg.desde);
+        const enTramoPg = xpPg - actualPg.desde;
+        const progresoPg = sigPg ? Math.max(0, Math.min(100, Math.round((enTramoPg / tramoPg) * 100))) : 100;
+        // Rango competitivo de Valorant (lo sincroniza el bot, opción C HDEV)
+        let valoPg = null;
+        try {
+          const stPg = filaPg && filaPg.stats ? JSON.parse(filaPg.stats) : null;
+          if (stPg && stPg.valorant && stPg.valorant.tier) {
+            valoPg = {
+              tier: String(stPg.valorant.tier).slice(0, 40),
+              rr: Number.isFinite(Number(stPg.valorant.rr)) ? Math.max(0, Math.min(100, Math.floor(Number(stPg.valorant.rr)))) : null,
+              icono: String(stPg.valorant.icono || '').slice(0, 300) || null,
+              actualizado: String(stPg.valorant.actualizado || '').slice(0, 30) || null
+            };
+          }
+        } catch (e) { /* stats corruptos: se ignora, no tira el panel */ }
+        return json({
+          ok: true,
+          sin_cuenta: !filaPg,
+          jugador: {
+            display_name: (filaPg && (filaPg.display_name || filaPg.username)) || null,
+            username: (filaPg && filaPg.username) || null,
+            verified: !!(filaPg && Number(filaPg.verified))
+          },
+          xp: xpPg,
+          rango: {
+            id: actualPg.id,
+            nombre: actualPg.nombre,
+            color: actualPg.color,
+            insignia: '/static/img/rangos/rango-' + actualPg.id + '.png',
+            desde: actualPg.desde,
+            hasta: sigPg ? sigPg.desde : null,
+            progreso: progresoPg
+          },
+          siguiente: sigPg ? { id: sigPg.id, nombre: sigPg.nombre, falta: sigPg.desde - xpPg } : null,
+          valorant: valoPg,
+          rating: filaPg && Number.isFinite(Number(filaPg.rating)) ? Number(filaPg.rating) : null
+        }, 200, { 'Access-Control-Allow-Origin': originPg || '*' });
+      } catch (errPg) {
+        return json({ ok: false, error: 'progreso_no_disponible' }, 502, { 'Access-Control-Allow-Origin': originPg || '*' });
+      }
+    }
     // --- 7b2e) Cuenta: NOMBRE DE LA CUENTA + REDES CONECTADAS (Auth0 Mgmt).
     // GET (con sesión): devuelve nickname y user_metadata.redes del usuario.
     // POST (con sesión): cambia el nickname (el nombre público de la cuenta;

@@ -501,6 +501,10 @@
 .rango-escalera__paso b { display: block; font-family: var(--mono); font-size: 8px; letter-spacing: .08em; color: var(--blanco); margin-top: 6px; }
 .rango-escalera__paso small { display: block; font-family: var(--mono); font-size: 8px; color: var(--gris); margin-top: 2px; }
 .rango-escalera__paso--fin { border-color: rgba(63,140,255,.55); box-shadow: 0 0 14px -6px rgba(63,140,255,.6); }
+/* Peldaño ACTUAL del agente: acento rojo de marca (lo marca perfil_pagina.js
+   cuando /api/account/progreso devuelve el rango real de la cuenta). */
+.rango-escalera__paso--actual { border-color: rgba(255,13,46,.65); box-shadow: 0 0 16px -6px rgba(255,13,46,.7); transform: translateY(-2px); }
+.rango-escalera__paso--actual img { filter: drop-shadow(0 0 10px rgba(255,13,46,.45)); }
 @media (max-width: 700px) {
   .rango-escalera { grid-template-columns: repeat(3, 1fr); }
 }
