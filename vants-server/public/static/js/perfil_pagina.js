@@ -1577,6 +1577,10 @@
      sigue montada pero display:none (inaccesible): los nodos y sus IDs
      permanecen en el DOM para auth/estado, sin puerta de entrada. */
   vent.appendChild(grilla);
+  /* S4.8: el rango VANTS (esc, desmontado aquí arriba) vuelve al RESUMEN;
+     el hero también se guarda — la caja del rango (.rango-caja) quedó
+     dentro de él y S4.8 la re-coloca en su panel */
+  window.__VANTS47__ = { esc: esc, hero: hero };
 
   /* ── pintado de las piezas nuevas ── */
   function fDeEstado() {
@@ -1801,7 +1805,7 @@
     pintarDesde();
     if (!(f && f.conectada && f.usuario)) {
       pintarSeason(f && f.nivel ? f.nivel : null, null, null);
-      vacioHistoria("Conect\u00e1 tu cuenta de FACEIT abajo, en REDES Y CUENTAS: tu nivel, tu historial y tu actividad aparecen ac\u00e1 al instante.");
+      vacioHistoria("Conect\u00e1 tu cuenta de FACEIT en la pesta\u00f1a REDES Y CUENTAS: tu nivel, tu historial y tu actividad aparecen ac\u00e1 al instante.");
       vacioTabla("Tu historial de FACEIT aparece ac\u00e1: \u00faltimas partidas con resultado, K/D/A, HS% y mapa.");
       vacioTemporada("SIN DATOS TODAV\u00cdA \u00b7 CONECT\u00c1 TU FACEIT Y JUG\u00c1 PARA LLENAR ESTE PANEL");
       if (heat) heat.innerHTML = "";
@@ -1860,4 +1864,182 @@
   pintarDesde();
   pintarSeason(fDeEstado() && fDeEstado().nivel ? fDeEstado().nivel : null, null, null);
   cargarHistoria();
+})();
+
+/* ════════════════════════════════════════════════════════════════════
+   S4.8 · PERFIL UNIFICADO — TODO EN UN SOLO LUGAR (pedido del dueño)
+   El S4.7.4 dejó la gestión (datos, equipo, banner, redes, membresía,
+   cuenta/salir, inscripciones) montada pero INACCESIBLE (display:none)
+   y descartó el rango VANTS: el jugador no podía editar nada ni cerrar
+   sesión desde su perfil. Vuelve TODO, organizado como FACEIT: una
+   barra de pestañas en el panel derecho —
+     RESUMEN · DESTACADOS · REDES Y CUENTAS · MI FICHA · CUENTA
+   · RESUMEN: temporada, season FACEIT, RANGO VANTS (vuelve con la
+     escalera y el peldaño actual), rendimiento reciente y partidos.
+   · DESTACADOS: los clips de siempre.
+   · REDES Y CUENTAS: Discord/Twitch/YouTube/Riot/FACEIT con conectar.
+   · MI FICHA: mis datos + estado en vivo | mi equipo + banner (2 col).
+   · CUENTA: cuenta vinculada (con CERRAR SESIÓN) + inscripciones |
+     membresía (2 col).
+   + botón EDITAR FICHA en la tarjeta lateral → salta a MI FICHA.
+   TODO se MUEVE, nada se re-crea: mismos nodos, mismos IDs, mismos
+   listeners (datos/redes/FACEIT/clips/cuenta siguen funcionando igual;
+   pintarProgreso vuelve a encontrar la caja de rango ahora remontada).
+   ════════════════════════════════════════════════════════════════════ */
+(function () {
+  "use strict";
+  var vent = document.getElementById("ventana-perfil");
+  if (!vent || document.getElementById("vants-48-listo")) return;
+  var marca = document.createElement("meta");
+  marca.id = "vants-48-listo";
+  document.head.appendChild(marca);
+
+  var main = vent.querySelector(".v47-main");
+  if (!main) return;
+
+  /* ── estilos propios del S4.8 (scope .v47 .v48-) ── */
+  var st = document.createElement("style");
+  st.id = "vants-48-css";
+  st.textContent =
+    ".v47 .v48-tab{cursor:pointer;border-top-color:var(--borde);color:#a1a1aa;transition:color .14s ease,border-color .14s ease,background .14s ease}" +
+    ".v47 .v48-tab:hover{color:#edede7;border-color:rgba(255,13,46,.45)}" +
+    ".v47 .v48-tab--activa{background:rgba(255,13,46,.14);border-color:#ff0d2e;border-top-color:#ff0d2e;color:#fff}" +
+    ".v47 .v48-tabs{overflow-x:auto;scrollbar-width:none}" +
+    ".v47 .v48-tabs::-webkit-scrollbar{display:none}" +
+    ".v47 .v48-panel{display:grid;gap:14px;min-width:0}" +
+    ".v47 .v48-panel[hidden]{display:none}" +
+    ".v47 .v48-ficha{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}" +
+    ".v47 .v48-ficha .v48-col{display:grid;gap:14px;min-width:0}" +
+    ".v47 .v48-panel .v46-escalera{padding:0}" +
+    ".v47 .v48-panel .perfil__bloque .etiqueta{color:#ff5a6e}" +
+    "@media (max-width:900px){.v47 .v48-ficha{grid-template-columns:1fr}}";
+  document.head.appendChild(st);
+
+  /* ── piezas existentes (mismos nodos, capturados ANTES del remontaje) ── */
+  function bloqueDe(id) {
+    var n = document.getElementById(id);
+    return n ? n.closest(".perfil__bloque") : null;
+  }
+  var temp = document.getElementById("v47-temporada");
+  var season = document.getElementById("v47-season");
+  var statsSec = vent.querySelector(".v46-stats");
+  var par47 = document.getElementById("v47-partidos");
+  var cPar = par47 ? par47.closest(".v47-caja") : null;
+  var bClips = bloqueDe("clips-perfil");
+  var bCuentas = bloqueDe("cuentas-lista");
+  var bDatos = bloqueDe("mis-datos");
+  var bEstado = bloqueDe("estado-chips");
+  var bEquipo = bloqueDe("guardar-equipo");
+  var bBanner = bloqueDe("banner-chips");
+  var bMembresia = bloqueDe("membresia-plan");
+  var bCuenta = bloqueDe("cuenta-lineas");
+  var vacioInsc = document.querySelector(".inscripciones-vacio");
+  var bInscrip = vacioInsc ? vacioInsc.closest(".perfil__bloque") : null;
+  /* el rango VANTS: S4.7 lo desmontó (nodo fuera del documento) — el stash lo devuelve */
+  var esc = window.__VANTS47__ ? window.__VANTS47__.esc : null;
+  var bRango = esc ? esc.querySelector(".perfil__bloque") : null;
+  /* la caja grande del rango (insignia + barra XP) quedó dentro del hero
+     descartado por S4.7 — se re-coloca en su bloque, tras la etiqueta */
+  var hero47 = window.__VANTS47__ ? window.__VANTS47__.hero : null;
+  var rangoCaja47 = hero47 ? hero47.querySelector(".rango-caja") : null;
+  if (bRango && rangoCaja47) {
+    var etqRango = bRango.querySelector("span.etiqueta");
+    if (etqRango) {
+      etqRango.textContent = "VANTS RANKED · TU RANGO Y LA ESCALERA";
+      if (etqRango.nextSibling) bRango.insertBefore(rangoCaja47, etqRango.nextSibling);
+      else bRango.appendChild(rangoCaja47);
+    }
+  }
+
+  /* ── paneles ── */
+  function panel(id) {
+    var d = document.createElement("div");
+    d.className = "v48-panel";
+    d.id = id;
+    return d;
+  }
+  var pResumen = panel("v48-panel-resumen");
+  [temp, season, bRango, statsSec, cPar].forEach(function (n) { if (n) pResumen.appendChild(n); });
+  var pDest = panel("v48-panel-destacados");
+  if (bClips) pDest.appendChild(bClips);
+  var pRedes = panel("v48-panel-redes");
+  if (bCuentas) pRedes.appendChild(bCuentas);
+  var pFicha = panel("v48-panel-ficha");
+  if (bDatos || bEquipo || bBanner || bEstado) {
+    var ficha = document.createElement("div");
+    ficha.className = "v48-ficha";
+    var colA = document.createElement("div");
+    colA.className = "v48-col";
+    var colB = document.createElement("div");
+    colB.className = "v48-col";
+    [bDatos, bEstado].forEach(function (n) { if (n) colA.appendChild(n); });
+    [bEquipo, bBanner].forEach(function (n) { if (n) colB.appendChild(n); });
+    ficha.appendChild(colA);
+    ficha.appendChild(colB);
+    pFicha.appendChild(ficha);
+  }
+  var pCuenta = panel("v48-panel-cuenta");
+  if (bCuenta || bMembresia || bInscrip) {
+    var filaC = document.createElement("div");
+    filaC.className = "v48-ficha";
+    var colC = document.createElement("div");
+    colC.className = "v48-col";
+    var colD = document.createElement("div");
+    colD.className = "v48-col";
+    [bCuenta, bInscrip].forEach(function (n) { if (n) colC.appendChild(n); });
+    if (bMembresia) colD.appendChild(bMembresia);
+    filaC.appendChild(colC);
+    filaC.appendChild(colD);
+    pCuenta.appendChild(filaC);
+  }
+
+  /* ── barra de pestañas (estilo FACEIT) ── */
+  var tabs = document.createElement("div");
+  tabs.className = "v47-tabs v48-tabs";
+  tabs.innerHTML =
+    '<span class="v47-juego"><i>\u25b8</i>CS2</span>' +
+    '<button type="button" class="v47-tab v48-tab" data-tab="resumen">RESUMEN</button>' +
+    '<button type="button" class="v47-tab v48-tab" data-tab="destacados">DESTACADOS</button>' +
+    '<button type="button" class="v47-tab v48-tab" data-tab="redes">REDES Y CUENTAS</button>' +
+    '<button type="button" class="v47-tab v48-tab" data-tab="ficha">MI FICHA</button>' +
+    '<button type="button" class="v47-tab v48-tab" data-tab="cuenta">CUENTA</button>';
+  function activar(nombre) {
+    var mapa = { resumen: pResumen, destacados: pDest, redes: pRedes, ficha: pFicha, cuenta: pCuenta };
+    Object.keys(mapa).forEach(function (k) { if (mapa[k]) mapa[k].hidden = k !== nombre; });
+    tabs.querySelectorAll("[data-tab]").forEach(function (b) {
+      b.classList.toggle("v48-tab--activa", b.getAttribute("data-tab") === nombre);
+    });
+  }
+  tabs.addEventListener("click", function (e) {
+    var b = e.target && e.target.closest ? e.target.closest("[data-tab]") : null;
+    if (b) activar(b.getAttribute("data-tab"));
+  });
+
+  /* ── remontaje del panel derecho ── */
+  while (main.firstChild) main.removeChild(main.firstChild);
+  main.appendChild(tabs);
+  main.appendChild(pResumen);
+  main.appendChild(pDest);
+  main.appendChild(pRedes);
+  main.appendChild(pFicha);
+  main.appendChild(pCuenta);
+  /* la grilla vieja quedó vacía: fuera del DOM */
+  var grillaVieja = vent.querySelector(".v46-grilla");
+  if (grillaVieja) grillaVieja.remove();
+
+  /* ── EDITAR FICHA vuelve: segundo botón de la tarjeta lateral → MI FICHA ── */
+  var acc = vent.querySelector(".v47-perfil-card .v46-hero__acciones");
+  if (acc) {
+    var ed = document.createElement("button");
+    ed.type = "button";
+    ed.className = "btn btn--fino";
+    ed.textContent = "EDITAR FICHA";
+    ed.addEventListener("click", function () {
+      activar("ficha");
+      if (main.scrollIntoView) main.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    acc.appendChild(ed);
+  }
+
+  activar("resumen");
 })();
