@@ -1,8 +1,5 @@
 {
   "webhookUrl": "",
-  "site": "https://feispla.github.io/Vants/",
-  "proxy": "https://vants-functions.vants.workers.dev/fn/vantsdata/",
   "slowMs": 4000,
-  "certWarnDays": 14,
   "timeoutMs": 15000
 }

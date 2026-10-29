@@ -23,8 +23,6 @@ jobs:
           node-version: 20
 
       - name: Ejecutar monitor
-        env:
-          VANTS_DISCORD_WEBHOOK: ${{ secrets.VANTS_DISCORD_WEBHOOK }}
         run: |
           set +e
           node monitor/monitor.js 2>&1 | tee monitor-output.log
@@ -40,11 +38,11 @@ jobs:
           gh label create monitor-caida --description "Caída detectada por el monitor VANTS" --color "d73a4a" >/dev/null 2>&1 || true
           issue=$(gh issue list --state open --label monitor-caida --json number --jq '.[0].number // empty')
           tail=$(tail -n 60 monitor-output.log)
-          body=$(printf 'El monitor detectó una caída. [Ejecución](%s).\n\n```text\n%s\n```' "$RUN_URL" "$tail")
+          body=$(printf 'El monitor detectó una caída en %s. [Ejecución](%s).\n\n```text\n%s\n```' "${GITHUB_REPOSITORY#*/}" "$RUN_URL" "$tail")
           if [ -n "$issue" ]; then
             gh issue comment "$issue" --body "$body"
           else
-            gh issue create --title "[monitor] VANTS caído" --label monitor-caida --body "$body"
+            gh issue create --title "[monitor] ${GITHUB_REPOSITORY#*/} caído" --label monitor-caida --body "$body"
           fi
 
       - name: Cerrar incidentes recuperados
@@ -56,6 +54,6 @@ jobs:
           issues=$(gh issue list --state open --label monitor-caida --json number --jq '.[].number')
           while IFS= read -r issue; do
             [ -z "$issue" ] && continue
-            gh issue comment "$issue" --body "✅ VANTS recuperado. [Ejecución](${RUN_URL})."
+            gh issue comment "$issue" --body "✅ Servicio recuperado. [Ejecución](${RUN_URL})."
             gh issue close "$issue"
           done <<< "$issues"
