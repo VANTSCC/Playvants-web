@@ -4,24 +4,22 @@
  * Worker INDEPENDIENTE: no toca el código de playvants-web ni su
  * despliegue. Corre por cron (cada minuto), consume el bus con la
  * identidad playvants-web (cursor persistente EN el bus, tabla
- * vants_consumers) y copia los eventos a vants_feed en la base de datos,
- * donde la web ya puede leerlos con su conexión existente.
+ * vants_consumers) y copia los eventos a vants_feed en la base de
+ * datos, donde la web ya puede leerlos con su conexión existente.
  *
- * Migración Neon -> Supabase: el driver ya no es el HTTP de Neon
- * (@neondatabase/serverless) sino postgres (postgres.js) por TCP, que
- * habla con cualquier PostgreSQL. El valor de DATABASE_URL decide la base:
- * cadena del pooler de Neon durante el paralelo, cadena del pooler de
- * sesión de Supabase (puerto 5432) tras el corte.
+ * Todo en Cloudflare: la base es la D1 vants-db por binding `DB`
+ * (la MISMA base de la web, el bot, el bus y el cuartel del agente).
+ * Fuera el driver postgres.js por TCP y el secret DATABASE_URL: D1
+ * no necesita conexión (binding interno, cero latencia de red).
  *
+ * Binding:
+ *   DB                  D1 vants-db (binding interno)
  * Secrets:
- *   DATABASE_URL        cadena de la base (pooler de sesión)
  *   VANTS_BUS_SECRET    secreto HMAC de playvants-web
  * Vars:
  *   VANTS_BUS_URL       https://vants-bus.vants.workers.dev
  *   FEED_RETENTION_DAYS retención del feed (7 por defecto)
  * ============================================================ */
-
-import postgres from 'postgres';
 
 let _busUrl = '';
 const MAX_PAGINAS = 10;
@@ -55,34 +53,20 @@ async function leerBus(secret, query) {
   return JSON.parse(text);
 }
 
-function dbClient(env) {
-  // prepare: false evita sentencias preparadas con poolers (Supavisor/PgBouncer).
-  return postgres(env.DATABASE_URL, { max: 3, prepare: false });
-}
-
-async function consumirUnaVuelta(env) {
-  const sql = dbClient(env);
-  try {
-    return await copiarEventos(env, sql);
-  } finally {
-    // postgres.js mantiene conexiones abiertas: cerrarlas al terminar la
-    // vuelta para que el isolate no las arrastre hasta el próximo cron.
-    await sql.end({ timeout: 1 }).catch(() => {});
-  }
-}
-
-async function copiarEventos(env, sql) {
+async function copiarEventos(env) {
+  const db = env.DB;
+  if (!db) throw new Error('falta el binding D1 (env.DB)');
   let total = 0;
   let paginas = 0;
 
   // El cursor se DERIVA del propio feed (max(id)): si un INSERT falla,
   // la próxima vuelta relee los mismos eventos (INSERT ... ON CONFLICT
-  // DO NOTHING lo hace idempotente). Cero pérdida aunque Neon falle.
+  // DO NOTHING lo hace idempotente). Cero pérdida aunque algo falle.
   // Primera vuelta: feed vacío → histórico completo (llenar el feed).
   let since = '';
   try {
-    const filas = await sql.unsafe(`SELECT max(id) AS maxid FROM vants_feed`);
-    since = (filas && filas[0] && filas[0].maxid) || '';
+    const fila = await db.prepare(`SELECT max(id) AS maxid FROM vants_feed`).first();
+    since = (fila && fila.maxid) || '';
   } catch (e) { /* tabla aún no creada → histórico */ }
 
   while (paginas < MAX_PAGINAS) {
@@ -90,13 +74,15 @@ async function copiarEventos(env, sql) {
     const res = await leerBus(env.VANTS_BUS_SECRET, { since, limit: 200 });
 
     const eventos = res.events || [];
-    for (const ev of eventos) {
-      await sql.unsafe(
-        `INSERT INTO vants_feed (id, type, source, ts, data)
-         VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (id) DO NOTHING`,
-        [ev.id, ev.type, ev.source, ev.ts, JSON.stringify(ev.data ?? {})]
-      );
+    if (eventos.length) {
+      // batch D1: toda la página en una sola llamada, atómica
+      await db.batch(eventos.map((ev) =>
+        db.prepare(
+          `INSERT INTO vants_feed (id, type, source, ts, data)
+           VALUES (?, ?, ?, ?, ?)
+           ON CONFLICT (id) DO NOTHING`
+        ).bind(ev.id, ev.type, ev.source, ev.ts, JSON.stringify(ev.data ?? {}))
+      ));
     }
     total += eventos.length;
 
@@ -104,24 +90,25 @@ async function copiarEventos(env, sql) {
     since = res.cursor || since;
   }
 
-  // Retención del feed
+  // Retención del feed (7 días por defecto); el corte lo calcula SQLite
+  // con datetime('now') para comparar SIEMPRE en el formato de la columna.
   const dias = Number(env.FEED_RETENTION_DAYS || 7);
-  await sql.unsafe(`DELETE FROM vants_feed WHERE consumed_at < now() - make_interval(days => $1)`, [dias]);
+  await db.prepare(`DELETE FROM vants_feed WHERE consumed_at < datetime('now', '-' || ? || ' days')`).bind(String(dias)).run();
 
   return total;
 }
 
 export default {
   async scheduled(event, env, ctx) {
-    if (!env.DATABASE_URL || !env.VANTS_BUS_SECRET) {
-      console.error('vants-consumer: faltan secrets (DATABASE_URL / VANTS_BUS_SECRET)');
+    if (!env.DB || !env.VANTS_BUS_SECRET) {
+      console.error('vants-consumer: falta el binding DB (D1) o el secret VANTS_BUS_SECRET');
       return;
     }
     _busUrl = (env.VANTS_BUS_URL || '').replace(/\/+$/, '');
     if (!_busUrl) { console.error('vants-consumer: falta VANTS_BUS_URL'); return; }
     console.log('vants-consumer: vuelta de cron iniciada');
     try {
-      const total = await consumirUnaVuelta(env);
+      const total = await copiarEventos(env);
       console.log(`vants-consumer: ${total} eventos al feed`);
     } catch (e) {
       console.error('vants-consumer:', e && e.message);
@@ -131,19 +118,16 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === '/health') {
-      const ok = Boolean(env.DATABASE_URL && env.VANTS_BUS_SECRET);
+      const ok = Boolean(env.DB && env.VANTS_BUS_SECRET);
       let ultimo = null;
       if (ok) {
-        const sqlh = dbClient(env);
         try {
-          const filas = await sqlh.unsafe(
+          ultimo = await env.DB.prepare(
             `SELECT id, type, source, ts FROM vants_feed ORDER BY consumed_at DESC LIMIT 1`
-          );
-          ultimo = filas && filas[0] ? filas[0] : null;
+          ).first() || null;
         } catch (e) { ultimo = { error: e.message }; }
-        finally { await sqlh.end({ timeout: 1 }).catch(() => {}); }
       }
-      return new Response(JSON.stringify({ ok, service: 'vants-consumer-playvants', ultimo }), {
+      return new Response(JSON.stringify({ ok, service: 'vants-consumer-playvants', db: 'Cloudflare D1', ultimo }), {
         headers: { 'Content-Type': 'application/json' },
       });
     }

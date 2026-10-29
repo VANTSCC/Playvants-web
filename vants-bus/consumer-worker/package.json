@@ -2,7 +2,5 @@
   "name": "vants-consumer-playvants",
   "private": true,
   "type": "module",
-  "dependencies": {
-    "postgres": "^3.4.7"
-  }
+  "dependencies": {}
 }

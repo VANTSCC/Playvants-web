@@ -3,16 +3,24 @@ main = "src/index.js"
 compatibility_date = "2025-01-15"
 account_id = "8f2424e95fec4860e19257226f209fbc"
 
-# nodejs_compat: el driver postgres (postgres.js) abre TCP a la base de datos
-# (pooler de Neon durante el paralelo, pooler de sesión de Supabase tras el corte).
+# Todo en Cloudflare: la base es la D1 vants-db por binding interno.
+# Ya no hay driver postgres por TCP (postgres.js fuera), así que no hace
+# falta nodejs_compat: el código usa solo APIs Web (fetch, crypto.subtle).
 compatibility_flags = ["nodejs_compat"]
+
+# Base de datos: UNA sola, en Cloudflare. Misma D1 que la web (vants), el
+# bot (vantsbot), el bus (vants-bus), el webhook FACEIT y el cuartel del
+# agente: vants-db.
+[[d1_databases]]
+binding = "DB"
+database_name = "vants-db"
+database_id = "11e5d82c-307b-44ba-9682-501d8df593d3"
 
 [vars]
 VANTS_BUS_URL = "https://vants-bus.vants.workers.dev"
 FEED_RETENTION_DAYS = "7"
 
-# Tiempo real: la cuota de Neon ya no limita la frecuencia (era la razón del
-# */15). El feed lo consume la web con 1 minuto de desfase máximo.
+# Tiempo real: el feed lo consume la web con 1 minuto de desfase máximo.
 [triggers]
 crons = ["* * * * *"]
 
