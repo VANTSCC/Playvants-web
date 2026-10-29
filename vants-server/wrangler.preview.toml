@@ -1,0 +1,27 @@
+# Réplica del worker de producción `vants` para el PREVIEW de la web GAMES.
+# URL: https://vantsnet-preview.vants.workers.dev — NO toca producción `vants`.
+# Misma web, mismas reglas de seguridad y mismo espejo D1 de LECTURA
+# (el worker solo hace SELECT; la escritura del circuito vive en el bot).
+name = "vantsnet-preview"
+main = "worker.js"
+compatibility_date = "2026-09-22"
+
+[observability]
+enabled = true
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+not_found_handling = "404-page"
+
+[vars]
+VANTS_BOT_URL = "https://br-sweet-shape-b42xhogj-vantsbot.compute.c-6.us-east-2.aws.neon.tech"
+VANTS_BUS_URL = "https://vants-bus.vants.workers.dev"
+
+# Espejo de LECTURA igual que producción: /api/games, /api/tournaments,
+# /api/teams, /api/players, /api/articles y /api/search leen aquí primero.
+[[d1_databases]]
+binding = "DB"
+database_name = "vants-db"
+database_id = "11e5d82c-307b-44ba-9682-501d8df593d3"

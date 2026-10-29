@@ -46,6 +46,7 @@ const SECRET_FIELD = 'client_' + 'secret';
 const SITE_ORIGINS = new Set([
   'https://vants.geimerjhoan099.workers.dev',
   'https://vants.vants.workers.dev',
+  'https://vantsnet-preview.vants.workers.dev', // PREVIEW: réplica de esta web para revisión
   'https://feispla.github.io',
   'https://vantsgg.com',
   'https://www.vantsgg.com',
