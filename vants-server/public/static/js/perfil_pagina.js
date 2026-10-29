@@ -21,7 +21,17 @@
   var estado = api.leer();
   window.__VANTS_ESTADO__ = estado;   /* S4.4: una sola fuente de verdad para toda la página */
 
-  /* ── RANGOS VANTS (9 insignias oficiales) ── */
+  /* ── RANGOS VANTS (9 insignias oficiales) ──
+     S4.9 (pedido del dueño): el primer peldaño (CENIZA, 0–999 XP) se MUESTRA
+     como "SIN RANGO" con un signo ? — es la banda de entrada al circuito.
+     Internamente sigue siendo ceniza (misma escala que RANGOS_VANTS del bot,
+     mismo rol de Discord); el cambio es SOLO de presentación en la web. */
+  var RANGO_SV_ICONO = "/static/img/rangos/sin-rango.svg";
+  function nombreRangoVisible(r) {
+    if (!r || !r.id) return { nombre: "SIN RANGO", color: "#b8bfc7", icono: RANGO_SV_ICONO };
+    if (r.id === "ceniza") return { nombre: "SIN RANGO", color: "#b8bfc7", icono: RANGO_SV_ICONO };
+    return { nombre: r.nombre, color: r.color, icono: "/static/img/rangos/rango-" + r.id + ".png" };
+  }
   var RANGOS = [
     { id: "ceniza",   nombre: "CENIZA",   xp: 0,    color: "#b8bfc7" },
     { id: "hierro",   nombre: "HIERRO",   xp: 1000, color: "#8b93a1" },
@@ -453,13 +463,14 @@
     RANGOS.forEach(function (r, i) {
       var paso = document.createElement("div");
       paso.className = "rango-escalera__paso" + (i === RANGOS.length - 1 ? " rango-escalera__paso--fin" : "") + (idActual && idActual === r.id ? " rango-escalera__paso--actual" : "");
+      var vis = nombreRangoVisible(r);   /* S4.9: ceniza se muestra SIN RANGO ? */
       var img = document.createElement("img");
-      img.src = "/static/img/rangos/rango-" + r.id + ".png";
-      img.alt = "Rango " + r.nombre;
+      img.src = vis.icono;
+      img.alt = vis.nombre;
       img.loading = "lazy";
       var b = document.createElement("b");
-      b.textContent = r.nombre;
-      b.style.color = r.color;
+      b.textContent = vis.nombre;
+      b.style.color = vis.color;
       var s = document.createElement("small");
       s.textContent = r.xp ? (r.xp / 1000) + "K XP" : "INICIO";
       paso.appendChild(img);
@@ -477,44 +488,156 @@
   function pintarProgreso(j) {
     if (!j || !j.ok) return;
     var r = j.rango || {};
+    var vis = nombreRangoVisible(r);   /* S4.9: ceniza → SIN RANGO ? */
     var img = document.getElementById("rango-insignia");
     var nom = document.getElementById("rango-nombre");
     var sub = document.getElementById("rango-sub");
     var barra = document.getElementById("barra-rango");
     var xpCaja = document.getElementById("rango-xp");
-    if (img && r.id) {
-      img.src = "/static/img/rangos/rango-" + r.id + ".png";
-      img.alt = "Insignia " + (r.nombre || "");
+    if (img) {
+      img.src = vis.icono;
+      img.alt = "Insignia " + vis.nombre;
     }
     if (nom) {
-      nom.textContent = r.nombre || "SIN RANGO";
-      nom.style.color = r.color || "var(--gris-2)";
+      nom.textContent = vis.nombre;
+      nom.style.color = vis.color;
     }
     if (sub) {
-      var tSub = (j.siguiente && j.siguiente.nombre)
-        ? "FALTAN " + Number(j.siguiente.falta || 0).toLocaleString("es") + " XP PARA " + j.siguiente.nombre
-        : "RANGO MÁXIMO ALCANZADO";
+      var tSub;
+      if (j.sin_cuenta) {
+        /* S4.9: antes caía en "RANGO MÁXIMO ALCANZADO" — mentira. Si la
+           sesión no tiene fila en D1 todavía, se lo decimos claro. */
+        tSub = "ENLAZÁ TU CUENTA EN REDES Y CUENTAS PARA ENTRAR AL RANKING";
+      } else {
+        tSub = (j.siguiente && j.siguiente.nombre)
+          ? "FALTAN " + Number(j.siguiente.falta || 0).toLocaleString("es") + " XP PARA " + j.siguiente.nombre
+          : "RANGO MÁXIMO ALCANZADO";
+      }
       if (j.valorant && j.valorant.tier) {
         tSub = "VALORANT: " + String(j.valorant.tier).toUpperCase()
           + (j.valorant.rr !== null && j.valorant.rr !== undefined ? " · " + j.valorant.rr + " RR" : "")
           + " · " + tSub;
       }
       sub.textContent = tSub;
-      sub.style.color = r.color || "";
+      sub.style.color = vis.color;
     }
     if (barra) barra.style.width = Math.max(0, Math.min(100, r.progreso || 0)) + "%";
     if (xpCaja) xpCaja.textContent = Number(j.xp || 0).toLocaleString("es");
-    pintarEscalera(r.id);
+    pintarEscalera(j.sin_cuenta ? null : r.id);
+    pintarValorant(j);
   }
-  function cargarProgreso() {
+
+  /* ── S4.9 · TARJETA VALORANT del RESUMEN (pedido del dueño: "no tengo el
+     rango de valorant") ── mismo diseño que la tarjeta FACEIT (v47-season).
+     Fuente 1: stats.valorant de la fila D1 (la sincroniza el bot cada 10 min).
+     Fuente 2 (fallback en vivo): /api/valorant/rango con el Riot ID conectado
+     en REDES Y CUENTAS (HDEV, la misma API del bot). Sin Riot: honesto. */
+  function haceRatoTxt(iso) {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "AL DÍA";
+    var min = Math.max(0, Math.round((Date.now() - d.getTime()) / 60000));
+    if (min < 1) return "AHORA";
+    if (min < 60) return "HACE " + min + " MIN";
+    var h = Math.round(min / 60);
+    if (h < 24) return "HACE " + h + " H";
+    return "HACE " + Math.round(h / 24) + " D";
+  }
+  function pintarValorant(j) {
+    var caja = document.getElementById("v48-valorant");
+    if (!caja) return;
+    var v = (j && j.valorant && j.valorant.tier) ? j.valorant : null;
+    caja.innerHTML = "";
+    var circ = document.createElement("span");
+    circ.className = "v47-season__nivel v48-valorant__nivel";
+    if (v && v.icono) {
+      var im = document.createElement("img");
+      im.src = v.icono;
+      im.alt = "Rango Valorant";
+      im.loading = "lazy";
+      circ.appendChild(im);
+    } else {
+      circ.classList.add("v47-season__nivel--off");
+      circ.textContent = "?";
+    }
+    caja.appendChild(circ);
+    var info = document.createElement("div");
+    info.className = "v47-season__info";
+    var sub = document.createElement("small");
+    sub.textContent = "VALORANT · COMPETITIVO" + (v && v.region ? " · " + String(v.region).toUpperCase() : "");
+    var nom = document.createElement("b");
+    if (v) {
+      nom.textContent = String(v.tier).toUpperCase() + (v.rr !== null && v.rr !== undefined ? " · " + v.rr + " RR" : "");
+    } else {
+      nom.textContent = "SIN CLASIFICAR";
+      nom.style.color = "var(--gris-2)";
+    }
+    info.appendChild(sub);
+    info.appendChild(nom);
+    caja.appendChild(info);
+    var st2 = document.createElement("div");
+    st2.className = "v47-season__stats";
+    if (v) {
+      var pA = document.createElement("p");
+      var bA = document.createElement("b");
+      bA.textContent = v.actualizado ? haceRatoTxt(v.actualizado) : "AL DÍA";
+      var sA = document.createElement("small");
+      sA.textContent = "SINCRONIZADO";
+      pA.appendChild(bA); pA.appendChild(sA);
+      st2.appendChild(pA);
+    } else if (estado.sesion) {
+      var ri = estado.cuentas && estado.cuentas.riot;
+      if (ri && ri.conectada && ri.usuario && String(ri.usuario).indexOf("#") > 0) {
+        /* Riot ya conectado → rango en vivo por HDEV (una vez por carga) */
+        if (!pintarValorant._pidiendo) {
+          pintarValorant._pidiendo = true;
+          window.VantAuth0.getToken().then(function (tok) {
+            if (!tok) { pintarValorant._pidiendo = false; return; }
+            return fetch("/api/valorant/rango?riot=" + encodeURIComponent(ri.usuario), {
+              headers: { Accept: "application/json", Authorization: "Bearer " + tok }
+            })
+              .then(function (r) { return r.json().catch(function () { return null; }); })
+              .then(function (jv) {
+                pintarValorant._pidiendo = false;
+                if (jv && jv.ok) pintarValorant({ valorant: jv });
+              })
+              .catch(function () { pintarValorant._pidiendo = false; });
+          }).catch(function () { pintarValorant._pidiendo = false; });
+        }
+      } else {
+        var aC = document.createElement("a");
+        aC.className = "v47-season__link";
+        aC.href = "#conectar-riot";
+        aC.textContent = "conectá tu Riot \u203a";
+        aC.addEventListener("click", function (e) {
+          e.preventDefault();
+          var tabR = document.querySelector('.v48-tab[data-tab="redes"]');
+          if (tabR) tabR.click();
+          var filaR = document.querySelector('.cuenta-fila[data-cuenta="riot"]');
+          if (filaR && filaR.scrollIntoView) filaR.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+        st2.appendChild(aC);
+      }
+    }
+    caja.appendChild(st2);
+  }
+  function cargarProgreso(reintento) {
     if (!window.VantAuth0 || !window.VantAuth0.getToken) return;
     window.VantAuth0.getToken().then(function (tok) {
       if (!tok) return;
       return fetch("/api/account/progreso", { headers: { Accept: "application/json", Authorization: "Bearer " + tok } })
         .then(function (r) { return r.json().catch(function () { return null; }); })
-        .then(function (j) { if (j && j.ok) pintarProgreso(j); })
-        .catch(function () { /* silencioso: la caja queda en SIN RANGO */ });
-    }).catch(function () { /* sin token: nada */ });
+        .then(function (j) {
+          if (j && j.ok) { pintarProgreso(j); return; }
+          /* S4.9: un reintento — a veces el token sigue refrescando cuando
+             la página arranca y la primera llamada llega sin autorización */
+          if (!reintento) setTimeout(function () { cargarProgreso(true); }, 1500);
+        })
+        .catch(function () {
+          if (!reintento) setTimeout(function () { cargarProgreso(true); }, 1500);
+        });
+    }).catch(function () {
+      if (!reintento) setTimeout(function () { cargarProgreso(true); }, 1500);
+    });
   }
 
   /* ── CUENTA: sesión real (Auth0) ── */
@@ -1540,6 +1663,15 @@
   season.id = "v47-season";
   main.appendChild(season);
 
+  /* 3b · S4.9: tarjeta VALORANT (mismo diseño; la llena pintarValorant
+     con el rango competitivo real — D1 del bot o HDEV en vivo) */
+  var valoCard = document.createElement("div");
+  valoCard.className = "v47-season v48-valorant";
+  valoCard.id = "v48-valorant";
+  valoCard.innerHTML = '<span class="v47-season__nivel v47-season__nivel--off">?</span>' +
+    '<div class="v47-season__info"><small>VALORANT · COMPETITIVO</small><b style="color:var(--gris-2)">SIN CLASIFICAR</b></div>';
+  main.appendChild(valoCard);
+
   /* 4 · rendimiento reciente = el MISMO bloque de stats (IDs intactos) */
   if (statsSec) {
     var rhead = document.createElement("div");
@@ -1912,6 +2044,7 @@
     ".v47 .v48-ficha .v48-col{display:grid;gap:14px;min-width:0}" +
     ".v47 .v48-panel .v46-escalera{padding:0}" +
     ".v47 .v48-panel .perfil__bloque .etiqueta{color:#ff5a6e}" +
+    ".v47 .v48-valorant__nivel img{width:30px;height:30px;object-fit:contain;filter:drop-shadow(0 0 6px rgba(255,13,46,.35))}" +
     "@media (max-width:900px){.v47 .v48-ficha{grid-template-columns:1fr}}";
   document.head.appendChild(st);
 
@@ -1959,7 +2092,11 @@
     return d;
   }
   var pResumen = panel("v48-panel-resumen");
-  [temp, season, bRango, statsSec, cPar].forEach(function (n) { if (n) pResumen.appendChild(n); });
+  /* S4.9: la tarjeta VALORANT se creó en el IIFE S4.7 (otro scope) — aquí se
+     localiza por ID; referenciar la variable directa tiraba un ReferenceError
+     y mataba TODO el remontaje de pestañas (detectado en el preview). */
+  var valoCard48 = document.getElementById("v48-valorant");
+  [temp, season, valoCard48, bRango, statsSec, cPar].forEach(function (n) { if (n) pResumen.appendChild(n); });
   var pDest = panel("v48-panel-destacados");
   if (bClips) pDest.appendChild(bClips);
   var pRedes = panel("v48-panel-redes");

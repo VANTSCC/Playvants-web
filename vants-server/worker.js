@@ -144,6 +144,11 @@ const rlAccount = new Map();
 const rlFaceit = new Map();
 // Caché de nicks de FACEIT (nivel módulo: sobrevive entre peticiones aisladas)
 const faceitCacheMod = new Map();
+// S4.9: caché de MMR de Valorant (HDEV) por Riot ID para /api/valorant/rango
+// (el bot consulta lo mismo cada 10 min; aquí 5 min por handle y solo para
+// sesiones web cuya fila D1 todavía no tiene stats.valorant)
+const valoCacheMod = new Map();
+const REGIONES_VALORANT = ['latam', 'na', 'br', 'eu', 'ap', 'kr'];
 const rlTorneo = new Map();
 const rlLectura = new Map(); // API pública de la plataforma de torneos (lectura)
 const LIMIT_LECTURA = 60;    // peticiones por minuto por IP a los endpoints públicos nuevos
@@ -1101,7 +1106,7 @@ async function fetchWorker(request, env, ctx) {
     // --- 2) Pre-flight CORS solo para la API propia
     if (method === 'OPTIONS') {
       const origin = request.headers.get('origin') || '';
-      const isGetApi = url.pathname === '/api/valorant/esports' || url.pathname === '/api/teams' || url.pathname === '/api/teams-live' || url.pathname === '/api/gpr' || url.pathname === '/api/clips/featured' || url.pathname === '/api/torneos/bracket' || url.pathname === '/api/en-vivo' || url.pathname === '/api/faceit/usuario' || url.pathname === '/api/faceit/historia' || url.pathname === '/api/account/perfil' || url.pathname === '/api/account/progreso' || url.pathname === '/api/games' || url.pathname === '/api/tournaments' || url.pathname === '/api/matches' || url.pathname === '/api/players' || url.pathname === '/api/articles' || url.pathname === '/api/search' || /^\/api\/tournaments\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/articles\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/teams\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/players\/[a-z0-9-]+$/.test(url.pathname);
+      const isGetApi = url.pathname === '/api/valorant/esports' || url.pathname === '/api/valorant/rango' || url.pathname === '/api/teams' || url.pathname === '/api/teams-live' || url.pathname === '/api/gpr' || url.pathname === '/api/clips/featured' || url.pathname === '/api/torneos/bracket' || url.pathname === '/api/en-vivo' || url.pathname === '/api/faceit/usuario' || url.pathname === '/api/faceit/historia' || url.pathname === '/api/account/perfil' || url.pathname === '/api/account/progreso' || url.pathname === '/api/games' || url.pathname === '/api/tournaments' || url.pathname === '/api/matches' || url.pathname === '/api/players' || url.pathname === '/api/articles' || url.pathname === '/api/search' || /^\/api\/tournaments\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/articles\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/teams\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/players\/[a-z0-9-]+$/.test(url.pathname);
       const isPostApi = url.pathname === '/api/discord/notify' || url.pathname === '/api/account/email-verify' || url.pathname === '/api/account/password-reset' || url.pathname === '/api/account/perfil' || url.pathname === '/api/clips/featured' || url.pathname === '/api/torneos/inscribir' || url.pathname === '/api/torneos/gestionar' || url.pathname === '/api/telemetria';
       if ((isPostApi || isGetApi) && SITE_ORIGINS.has(origin)) {
         return harden(new Response(null, { status: 204 }), {
@@ -2185,10 +2190,16 @@ async function fetchWorker(request, env, ctx) {
         try {
           const stPg = filaPg && filaPg.stats ? JSON.parse(filaPg.stats) : null;
           if (stPg && stPg.valorant && stPg.valorant.tier) {
+            // S4.9: tier_id e icono — el bot a veces guarda icono vacío, así
+            // que el icono cae al CDN oficial (media.valorant-api.com) por id.
+            const tidPg = Number(stPg.valorant.tier_id);
+            const tidOkPg = Number.isFinite(tidPg) && tidPg > 0;
             valoPg = {
               tier: String(stPg.valorant.tier).slice(0, 40),
               rr: Number.isFinite(Number(stPg.valorant.rr)) ? Math.max(0, Math.min(100, Math.floor(Number(stPg.valorant.rr)))) : null,
-              icono: String(stPg.valorant.icono || '').slice(0, 300) || null,
+              tier_id: tidOkPg ? Math.floor(tidPg) : null,
+              icono: String(stPg.valorant.icono || '').slice(0, 300)
+                || (tidOkPg ? 'https://media.valorant-api.com/competitivetiers/03621f52-342b-cf4e-4f86-9350a49c6d04/' + Math.floor(tidPg) + '/smallicon.png' : null),
               actualizado: String(stPg.valorant.actualizado || '').slice(0, 30) || null
             };
           }
@@ -2219,6 +2230,79 @@ async function fetchWorker(request, env, ctx) {
         return json({ ok: false, error: 'progreso_no_disponible' }, 502, { 'Access-Control-Allow-Origin': originPg || '*' });
       }
     }
+    // --- 7b2f) RANGO VALORANT EN VIVO (S4.9, pedido del dueño: "no tengo el
+    // rango de valorant"). GET (con sesión) + Riot ID en ?riot=Nombre#TAG:
+    // consulta el MMR actual con la MISMA API que usa el bot (HDEV v3/mmr,
+    // mismas regiones y mismo orden) y devuelve tier/tier_id/RR/icono.
+    // Se usa cuando la fila D1 de la sesión no tiene stats.valorant (p.ej.
+    // sesión de Google que nunca pasó por el bot). Cache 5 min por handle.
+    if (url.pathname === '/api/valorant/rango') {
+      const originVr = request.headers.get('origin') || '';
+      if (!SITE_ORIGINS.has(originVr)) {
+        return json({ ok: false, error: 'Origen no permitido' }, 403, { 'Access-Control-Allow-Origin': originVr || '*' });
+      }
+      if (method !== 'GET') {
+        return json({ ok: false, error: 'Método no permitido' }, 405, { Allow: 'GET, OPTIONS', 'Access-Control-Allow-Origin': originVr || '*' });
+      }
+      const aVr = rateLimit(rlAccount, ip, LIMIT_ACCOUNT);
+      if (!aVr.ok) {
+        return json({ ok: false, error: 'Demasiadas peticiones' }, 429, { 'Retry-After': String(aVr.retry), 'Access-Control-Allow-Origin': originVr || '*' });
+      }
+      const sesVr = await verifySesionJwt(request);
+      if (!sesVr || !sesVr.sub) {
+        return json({ ok: false, error: 'sin_sesion' }, 401, { 'Access-Control-Allow-Origin': originVr || '*' });
+      }
+      const handleVr = String((url.searchParams && url.searchParams.get('riot')) || '').trim().slice(0, 40);
+      const partesVr = handleVr.split('#');
+      if (partesVr.length !== 2 || !partesVr[0].trim() || !partesVr[1].trim()) {
+        return json({ ok: false, error: 'riot_invalido', detalle: 'Formato Nombre#TAG' }, 400, { 'Access-Control-Allow-Origin': originVr || '*' });
+      }
+      const keyVr = String((env && env.HENRIKDEV_API_KEY) || '').trim();
+      if (!keyVr) {
+        return json({ ok: false, error: 'hdev_no_config' }, 503, { 'Access-Control-Allow-Origin': originVr || '*' });
+      }
+      const claveVr = handleVr.toLowerCase();
+      const ahoraVr = Date.now();
+      if (valoCacheMod.has(claveVr) && ahoraVr - valoCacheMod.get(claveVr).at < 300000) {
+        const cVr = valoCacheMod.get(claveVr);
+        return json(cVr.body, 200, { 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': originVr || '*' });
+      }
+      let salidaVr = { ok: false, motivo: 'sin_datos' };
+      try {
+        const nomVr = encodeURIComponent(partesVr[0].trim());
+        const tagVr = encodeURIComponent(partesVr[1].trim());
+        for (const regVr of REGIONES_VALORANT) {
+          const rVr = await fetch('https://api.henrikdev.xyz/valorant/v3/mmr/' + regVr + '/pc/' + nomVr + '/' + tagVr, {
+            headers: { Authorization: keyVr }, signal: AbortSignal.timeout(8000),
+          }).catch(() => null);
+          if (!rVr) continue;
+          if (rVr.status === 429) { salidaVr = { ok: false, motivo: 'rate_limit_hdev' }; break; }
+          if (rVr.status === 404) { salidaVr = { ok: false, motivo: 'sin_datos' }; continue; }
+          if (!rVr.ok) { salidaVr = { ok: false, motivo: 'hdev_http_' + rVr.status }; continue; }
+          const jVr = await rVr.json().catch(() => null);
+          const curVr = jVr && jVr.data && jVr.data.current;
+          if (!curVr || !curVr.tier) { salidaVr = { ok: false, motivo: 'sin_datos' }; continue; }
+          const tidVr = Number(curVr.tier.id) || 0;
+          salidaVr = {
+            ok: true,
+            tier: String(curVr.tier.name || '').slice(0, 40),
+            tier_id: tidVr,
+            rr: Number.isFinite(Number(curVr.rr)) ? Math.max(0, Math.min(100, Math.floor(Number(curVr.rr)))) : null,
+            icono: String((jVr.data && jVr.data.images && jVr.data.images.small) || '')
+              || (tidVr > 0 ? 'https://media.valorant-api.com/competitivetiers/03621f52-342b-cf4e-4f86-9350a49c6d04/' + tidVr + '/smallicon.png' : ''),
+            region: regVr,
+            elo: Number(curVr.elo) || null
+          };
+          break;
+        }
+      } catch (eVr) {
+        salidaVr = { ok: false, motivo: 'hdev_no_responde' };
+      }
+      if (valoCacheMod.size > 400) valoCacheMod.clear();
+      valoCacheMod.set(claveVr, { at: ahoraVr, body: salidaVr });
+      return json(salidaVr, 200, { 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': originVr || '*' });
+    }
+
     // --- 7b2e) Cuenta: NOMBRE DE LA CUENTA + REDES CONECTADAS (Auth0 Mgmt).
     // GET (con sesión): devuelve nickname y user_metadata.redes del usuario.
     // POST (con sesión): cambia el nickname (el nombre público de la cuenta;
