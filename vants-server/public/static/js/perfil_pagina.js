@@ -1258,7 +1258,7 @@
   var identidad = q(".perfil__identidad");
   var bEquipo = null, bBanner = null, bCuentas = null, bInsignias = null, bStats = null,
       bRango = null, bFaceit = null, bMembresia = null, bEstado = null, bInscrip = null,
-      bCuenta = null, bClips = null;
+      bCuenta = null, bClips = null, bColeccion = null;
   var bDatos = document.getElementById("mis-datos");
   var badges = document.getElementById("perfil-badges");
   var badgesNota = null;
@@ -1278,6 +1278,7 @@
     if (t.indexOf("INSCRIPCIONES") !== -1) { bInscrip = b; return; }
     if (t === "CUENTA") { bCuenta = b; return; }
     if (t.indexOf("CLIPS") !== -1) { bClips = b; return; }
+    if (t.indexOf("VANTS BADGE COLLECTION") === 0) { bColeccion = b; return; }
   });
   if (!bDatos || !identidad || !banner) return;
 
@@ -1408,7 +1409,7 @@
   fila2.className = "v46-fila2";
   if (bMembresia) fila2.appendChild(bMembresia);
   if (bCuenta) fila2.appendChild(bCuenta);
-  [bClips, bEquipo, bBanner, fila2, bInscrip].forEach(function (b) { if (b) colB.appendChild(b); });
+  [bClips, bEquipo, bBanner, bColeccion, fila2, bInscrip].forEach(function (b) { if (b) colB.appendChild(b); });
   grilla.appendChild(colA);
   grilla.appendChild(colB);
 
@@ -1579,6 +1580,7 @@
   var bStats = statsSec ? statsSec.querySelector(".perfil__bloque") : null;
   var bFaceit = vent.querySelector("#faceit-real") ? vent.querySelector("#faceit-real").closest(".perfil__bloque") : null;
   var bClips = document.getElementById("clips-perfil") ? document.getElementById("clips-perfil").closest(".perfil__bloque") : null;
+  var bColeccion = document.getElementById("badge-coleccion") || null; /* VANTS BADGE COLLECTION (motor de logros) */
 
   function cajaNueva(etq, gris) {
     var d = document.createElement("div");
@@ -1697,6 +1699,10 @@
     if (eK && eK.firstChild && eK.firstChild.nodeType === 3) eK.firstChild.nodeValue = "DESTACADOS · ";
     main.appendChild(bClips);
   }
+
+  /* 7 · VANTS BADGE COLLECTION — el motor de logros vive en el panel de juego.
+     El bloque se MUEVE con sus IDs intactos (perfil_logros.js lo rellena). */
+  if (bColeccion) main.appendChild(bColeccion);
 
   marco.appendChild(side);
   marco.appendChild(main);

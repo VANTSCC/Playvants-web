@@ -140,6 +140,7 @@
           <span class="sello" id="sello-jugador" style="width:26px;height:26px;font-size:12px">V</span>
         </h2>
         <p class="perfil__sub"><b id="sub-handle">@jugador</b> · <span id="sub-pais">—</span> · <span id="sub-region">—</span><span id="sub-miembro"></span></p>
+        <div class="destacadas-fila" id="destacadas-fila" aria-label="Insignias destacadas" hidden></div>
       </div>
     </div>
 
@@ -249,6 +250,18 @@
       </div>
       <div class="rango-escalera" id="rango-escalera"></div>
       <p class="perfil__nota-nuevo">9 rangos, de SIN RANGO a SUPREMO. Ganá series en VANTS RANKED para subir.</p>
+    </div>
+
+    <!-- VANTS BADGE COLLECTION (motor de logros) -->
+    <div class="perfil__bloque" id="badge-coleccion">
+      <span class="etiqueta">VANTS BADGE COLLECTION</span>
+      <div class="badges-panel">
+        <div class="badges-estado" id="badges-estado">CARGANDO COLECCIÓN…</div>
+        <div class="badges-grid" id="badges-grid" hidden></div>
+        <div class="badges-progreso" id="badges-progreso" hidden></div>
+        <p class="perfil__nota-nuevo" id="badges-nota" hidden>Tocá una insignia conseguida para destacar o quitar (máximo 3). Las insignias se conceden solas cuando cumplís un requisito verificado — nunca a mano desde el navegador.</p>
+        <p class="perfil__nota-nuevo" id="badges-sinsesion" hidden>Entrá con tu cuenta VANTS para ver tu colección de insignias: se desbloquean solas cuando cumplís un requisito verificado (torneos, temporada, membresía).</p>
+      </div>
     </div>
 
     <!-- FACEIT -->
@@ -370,6 +383,19 @@
 <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
 <script src="/static/js/vants-auth.js"></script>
 <script src="/static/js/perfil_pagina.js"></script>
+<script src="/static/js/perfil_logros.js"></script>
+
+<!-- Animación de desbloqueo de insignia (motor de logros) -->
+<div class="badge-unlock" id="badge-unlock" hidden role="dialog" aria-modal="true" aria-label="Insignia desbloqueada">
+  <div class="badge-unlock__caja">
+    <span class="badge-unlock__titulo">ACHIEVEMENT UNLOCKED!</span>
+    <img class="badge-unlock__img" id="unlock-img" alt="">
+    <b class="badge-unlock__nombre" id="unlock-nombre">—</b>
+    <small class="badge-unlock__req" id="unlock-req">—</small>
+    <small class="badge-unlock__fecha" id="unlock-fecha">—</small>
+    <button class="btn btn--rojo" type="button" id="unlock-cerrar">COLECTAR</button>
+  </div>
+</div>
 
   <!-- Vercel Web Analytics (activo en producción de Vercel) -->
   

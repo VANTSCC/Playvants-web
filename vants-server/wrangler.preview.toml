@@ -25,3 +25,27 @@ VANTS_BUS_URL = "https://vants-bus.vants.workers.dev"
 binding = "DB"
 database_name = "vants-db"
 database_id = "11e5d82c-307b-44ba-9682-501d8df593d3"
+
+# ============================================================================
+# VANTS ACHIEVEMENTS & BADGE ENGINE — SOLO PREVIEW (producción no se toca)
+# Base D1 exclusiva del dominio de logros: catálogo, reglas, concesiones,
+# outbox/inbox, entitlements y auditoría. vants-db (espejo) solo se LEE.
+[[d1_databases]]
+binding = "ACH_DB"
+database_name = "vants-preview-db"
+database_id = "df295262-1da7-4483-addb-132310013ffc"
+
+# Pump del Transactional Outbox cada minuto (patrón Outbox/Inbox; Queues
+# requiere plan de pago — decisión documentada en docs/achievements/DECISIONS.md).
+[triggers]
+crons = ["* * * * *"]
+
+# R2 para los recursos gráficos de insignias. El bucket vants-badge-assets-preview
+# EXISTE y ya contiene las 97 claves versionadas (badges/v1/<code>/*.png|webp),
+# pero el BINDING queda descomentado PENDIENTE de un permiso del token API
+# (subir objetos a R2 funciona; vincular el bucket al Worker devuelve 10085
+# "bucket not found" — activarlo desde el panel o con un token con permiso
+# R2:Edit a nivel de cuenta y descomentar las 3 líneas).
+# [[r2_buckets]]
+# binding = "BADGE_ASSETS"
+# bucket_name = "vants-badge-assets-preview"

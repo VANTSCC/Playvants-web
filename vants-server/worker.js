@@ -26,6 +26,11 @@
 import CORE from './plataforma-core.js';
 import { debeReportarSentry, sentryEnvelope, validarLote } from './telemetria-core.js';
 import { VantsBus, EVENTS } from '../vants-bus/vants-bus-client.js';
+// VANTS ACHIEVEMENTS & BADGE ENGINE: motor de logros (API + outbox/pump).
+// Degradación honesta: sin el binding ACH_DB (p. ej. producción) responde
+// 503 logros_no_config y TODO lo demás sigue funcionando igual.
+import LOGROS from './logros-motor.js';
+import { idEvento as idEventoLogro } from './logros-core.js';
 
 const COLORS = {
   rojo: 0xff0d2e,
@@ -152,6 +157,8 @@ const valoCacheMod = new Map();
 const REGIONES_VALORANT = ['latam', 'na', 'br', 'eu', 'ap', 'kr'];
 const rlTorneo = new Map();
 const rlLectura = new Map(); // API pública de la plataforma de torneos (lectura)
+const rlLogros = new Map();  // API del motor de logros (pública + autenticada + admin)
+const LIMIT_LOGROS = 40;     // peticiones por minuto por IP a /api/badges, /api/me/badges, /api/admin/achievements/*
 const LIMIT_LECTURA = 60;    // peticiones por minuto por IP a los endpoints públicos nuevos
 // Caché de /api/en-vivo (a nivel de módulo: sobrevive entre peticiones)
 let enVivoCache = { at: 0, body: null };
@@ -1099,7 +1106,7 @@ async function fetchWorker(request, env, ctx) {
 
     // --- 1) Métodos permitidos (sitio de lectura + POST para la API)
     const method = request.method.toUpperCase();
-    const allowedMethods = ['GET', 'HEAD', 'POST', 'OPTIONS', 'DELETE'];
+    const allowedMethods = ['GET', 'HEAD', 'POST', 'OPTIONS', 'DELETE', 'PATCH'];
     if (!allowedMethods.includes(method)) {
       return txt(405, 'Método no permitido', { Allow: 'GET, HEAD, POST, OPTIONS, DELETE' });
     }
@@ -1118,6 +1125,34 @@ async function fetchWorker(request, env, ctx) {
         });
       }
       return new Response(null, { status: 204 });
+    }
+
+    // --- VANTS ACHIEVEMENTS & BADGE ENGINE (/api/badges, /api/me/badges*,
+    // /api/players/:id/badges, /api/achievements/*, /api/admin/achievements/*).
+    // El motor gestiona sus propios rate-limits, orígenes y sesión; devuelve
+    // null si la ruta no es suya y el worker continúa normalmente.
+    if (url.pathname.includes('/badges') || url.pathname.startsWith('/api/achievements') || url.pathname.startsWith('/api/admin/achievements') || url.pathname === '/api/me/achievements') {
+      const rLogros = await LOGROS.manejar(request, env, ctx, {
+        json,
+        rateLimit,
+        bucket: rlLogros,
+        LIMIT: LIMIT_LOGROS,
+        ip,
+        origenOk: (o) => SITE_ORIGINS.has(o),
+        sesionDe: async (req) => {
+          const t = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
+          return t ? await infoDeSesion(t) : null;
+        },
+        esOwner: async (sub, req) => {
+          try {
+            const t = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
+            const pr = await neonGet('/players?auth0_sub=eq.' + encodeURIComponent(sub) + '&select=role&limit=1', t);
+            return !!(pr.ok && pr.body[0] && pr.body[0].role === 'owner');
+          } catch (e) { return false; }
+        },
+        publicarBus: (type, data) => publicarBus(env, ctx, type, data),
+      });
+      if (rLogros) return rLogros;
     }
 
     if (url.pathname === '/api/vercel/webhook') {
@@ -1652,10 +1687,23 @@ async function fetchWorker(request, env, ctx) {
           ).bind(parche.score_a, parche.score_b, parche.estado, parche.ganador, id).run();
           if (!r.success) return json({ ok: false, error: 'base_rechazo', detalle: 'update_fallo' }, 502, ACAO);
           if (estado === 'final') {
+            const finalizadoEn = new Date().toISOString();
+            // MOTOR DE LOGROS: el hecho ya confirmado encauza el evento
+            // match.finished al Outbox del engine (Transactional Outbox).
+            // El pump (cron + reconcile) lo procesa con evidencia re-leída del
+            // espejo; si falla la escritura, el hecho sigue siendo verdad y el
+            // reconcile lo redescubre (idempotente por event_id).
+            if (env && env.ACH_DB) {
+              try {
+                const evIdLogro = await idEventoLogro('match.finished', [id]);
+                await LOGROS.encolar(env.ACH_DB, { type: 'match.finished', eventId: evIdLogro, payload: { matchId: id, finishedAt: finalizadoEn } });
+              } catch (eLogro) {
+                try { console.error(JSON.stringify({ tipo: 'logros_outbox_error', match: id, message: String((eLogro && eLogro.message) || eLogro).slice(0, 200) })); } catch (eLog) {}
+              }
+            }
             // VANTS-BUS: resultado de bracket cerrado. La tabla guarda ids,
             // así que se resuelven los NOMBRES de los equipos antes de publicar.
             // Resolución y envío van en waitUntil: la respuesta no espera.
-            const finalizadoEn = new Date().toISOString();
             ctx.waitUntil((async () => {
               try {
                 const ga = await neonGet('/tournament_teams?id=eq.' + m.team_a + '&select=id,name,game', token);
@@ -2852,6 +2900,21 @@ async function fetchWorker(request, env, ctx) {
 }
 
 export default {
+  /* VANTS ACHIEVEMENTS & BADGE ENGINE: pump programado del Outbox (cron de
+   * wrangler.preview.toml). Procesa eventos pendientes con backoff, mueve a
+   * DLQ funcional lo agotado y publica achievement.granted/revoked al bus.
+   * Sin ACH_DB es un no-op silencioso (producción queda intacta). */
+  async scheduled(controller, env, ctx) {
+    try {
+      const r = await LOGROS.pumpOutbox(env, ctx, (type, data) => publicarBus(env, ctx, type, data));
+      if (r && (r.procesados || r.errores)) {
+        try { console.log(JSON.stringify({ tipo: 'logros_pump', ...r })); } catch (e) {}
+      }
+    } catch (e) {
+      try { console.error(JSON.stringify({ tipo: 'logros_pump_error', message: String((e && e.message) || e).slice(0, 200) })); } catch (eLog) {}
+    }
+  },
+
   async fetch(request, env, ctx) {
     // D1 (todo en Cloudflare): el binding de vants-db queda disponible para
     // proxyConsulta/neonGet/escrituras de torneos en toda la petición.

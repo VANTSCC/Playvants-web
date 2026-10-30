@@ -851,3 +851,100 @@
   .ficha-cab__icono { width: 54px; height: 54px; }
   .ficha-cab__icono svg { width: 24px; height: 24px; }
 }
+
+/* ============================================================================
+   VANTS ACHIEVEMENTS & BADGE ENGINE · VANTS BADGE COLLECTION (perfil)
+   Tarjetas oscuras, bordes discretos, PNG nítidos, tamaño reservado
+   (object-fit: contain) para que un recurso roto no desplace el diseño.
+   Distribución: desktop 4 columnas · tablet 3 · móvil 2 (sin scroll X).
+   ============================================================================ */
+.destacadas-fila { display: inline-flex; gap: 8px; margin-top: 10px; }
+.destacada-slot {
+  width: 48px; height: 48px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px dashed var(--borde); border-radius: 8px; background: rgba(10, 11, 15, .65);
+}
+.destacada-slot--lleno { border-style: solid; border-color: rgba(255, 255, 255, .14); }
+.destacada-slot img { width: 44px; height: 44px; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0, 0, 0, .5)); }
+
+.badges-panel { display: block; }
+.badges-estado { font-family: var(--mono); font-size: 11px; letter-spacing: .18em; color: var(--gris); padding: 14px 2px; }
+.badges-grid {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px; margin-top: 4px;
+}
+.badge-card {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 16px 8px 12px; border: 1px solid var(--borde); border-radius: 8px;
+  background: #0a0b0f; cursor: pointer; overflow: visible; font: inherit; color: inherit;
+  transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+.badge-card:hover { border-color: color-mix(in srgb, var(--badge-color, #666) 55%, transparent); transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0, 0, 0, .45); }
+.badge-card__img { width: 84px; height: 84px; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0, 0, 0, .55)); }
+.badge-card__nombre { font-family: var(--mono); font-size: 9px; letter-spacing: .14em; color: #e7ebf2; text-align: center; }
+.badge-card--locked { cursor: default; }
+.badge-card--locked .badge-card__img { filter: grayscale(1) brightness(.52) drop-shadow(0 4px 12px rgba(0, 0, 0, .55)); }
+.badge-card--locked .badge-card__nombre { color: var(--gris-2); }
+.badge-card--destacada { border-color: rgba(245, 192, 68, .55); }
+.badge-card__estrella {
+  position: absolute; top: 6px; right: 6px; font-size: 10px; font-weight: 900;
+  color: #f5c044; background: rgba(10, 11, 15, .85); border: 1px solid rgba(245, 192, 68, .4);
+  border-radius: 6px; padding: 2px 5px; font-family: var(--mono);
+}
+.badge-fallback {
+  width: 84px; height: 84px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid #333; border-radius: 10px; font-weight: 900; font-size: 30px; color: #666;
+  background: #0d0e12;
+}
+/* Tooltip informativo (hover y focus, sin JS extra) */
+.badge-card__tip {
+  position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  width: 210px; padding: 10px 12px; border: 1px solid var(--borde); border-radius: 8px;
+  background: #0d0e12f2; text-align: left; opacity: 0; pointer-events: none;
+  transition: opacity .15s ease; z-index: 30; box-shadow: 0 12px 30px rgba(0, 0, 0, .6);
+}
+.badge-card__tip b { display: block; font-size: 12px; letter-spacing: .06em; color: #fff; margin-bottom: 4px; }
+.badge-card__tip i { display: block; font-style: normal; font-family: var(--mono); font-size: 9.5px; letter-spacing: .06em; color: var(--gris); line-height: 1.5; }
+.badge-card:hover .badge-card__tip, .badge-card:focus-visible .badge-card__tip { opacity: 1; }
+.badges-progreso { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.progreso-fila { display: grid; grid-template-columns: 1fr 2fr auto; align-items: center; gap: 10px; font-family: var(--mono); font-size: 10px; color: var(--gris); }
+.progreso-fila b { color: #e7ebf2; letter-spacing: .08em; }
+.progreso-fila .barra { display: block; height: 6px; border-radius: 4px; background: #15171d; overflow: hidden; }
+.progreso-fila .barra i { display: block; height: 100%; background: linear-gradient(90deg, #ff0d2e, #f5c044); }
+
+/* Animación de desbloqueo (estilo achievement premium: marco dorado, brillo) */
+.badge-unlock {
+  position: fixed; inset: 0; z-index: 900; display: flex; align-items: center; justify-content: center;
+  background: rgba(4, 5, 8, .82); backdrop-filter: blur(4px); padding: 20px;
+}
+.badge-unlock[hidden] { display: none; } /* el display:flex no pisa el atributo hidden */
+.badge-unlock__caja {
+  display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;
+  padding: 34px 40px 28px; border-radius: 14px; max-width: 360px;
+  background: linear-gradient(180deg, #12141a, #0a0b0f);
+  border: 1px solid rgba(245, 192, 68, .55);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .6), 0 0 46px rgba(245, 192, 68, .18), 0 30px 70px rgba(0, 0, 0, .65);
+  animation: badgeUnlockIn .42s cubic-bezier(.2, .9, .25, 1.2);
+}
+.badge-unlock__titulo { font-family: var(--mono); font-size: 11px; letter-spacing: .3em; color: #f5c044; font-weight: 900; }
+.badge-unlock__img { width: 148px; height: 148px; object-fit: contain; filter: drop-shadow(0 10px 26px rgba(0, 0, 0, .6)); animation: badgeGlow 2.4s ease-in-out infinite; }
+.badge-unlock__nombre { font-size: 24px; font-weight: 900; font-style: italic; letter-spacing: .04em; color: #fff; }
+.badge-unlock__req { color: var(--gris); font-size: 12px; line-height: 1.5; }
+.badge-unlock__fecha { font-family: var(--mono); font-size: 9.5px; letter-spacing: .18em; color: var(--gris-2); }
+.badge-unlock__caja .btn { margin-top: 8px; min-width: 180px; }
+@keyframes badgeUnlockIn { from { opacity: 0; transform: scale(.82) translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes badgeGlow { 0%, 100% { filter: drop-shadow(0 10px 26px rgba(0, 0, 0, .6)); } 50% { filter: drop-shadow(0 10px 26px rgba(0, 0, 0, .6)) drop-shadow(0 0 18px rgba(245, 192, 68, .35)); } }
+@media (prefers-reduced-motion: reduce) {
+  .badge-unlock__caja { animation: none; }
+  .badge-unlock__img { animation: none; }
+  .badge-card, .badge-card__tip { transition: none; }
+}
+/* Tablet: 3 columnas */
+@media (max-width: 980px) { .badges-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* Móvil: 2 columnas, imágenes centradas, textos compactos */
+@media (max-width: 640px) {
+  .badges-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .badge-card__img { width: 72px; height: 72px; }
+  .badge-unlock__caja { padding: 26px 22px 22px; }
+  .destacada-slot { width: 40px; height: 40px; }
+  .destacada-slot img { width: 36px; height: 36px; }
+}
