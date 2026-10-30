@@ -114,7 +114,7 @@
 
   <main class="sitio">
     
-<header class="cabecera-pagina ficha-cab">
+<header class="cabecera-pagina ficha-cab ficha-cab--arte">
   <div class="ficha-cab__fila">
     <span class="ficha-cab__icono" aria-hidden="true">
       <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v6a5 5 0 0 1-10 0Z"/><path d="M7 6H4a1 1 0 0 0-1 1c0 2.2 1.8 4 4 4"/><path d="M17 6h3a1 1 0 0 1 1 1c0 2.2-1.8 4-4 4"/></svg>
@@ -144,7 +144,22 @@
         <div><dt>Fee de inscripción</dt><dd>GRATIS</dd></div>
         <div><dt>Cupos</dt><dd>ABIERTOS</dd></div>
       </dl>
-      <a class="btn btn--rojo btn--bloque ficha__cta" href="/perfil">INSCRIBIR MI EQUIPO</a>
+      <!-- S4.9: RESTRICCIONES (referencia del dueno) -->
+      <div class="ficha-bloque">
+        <p class="ficha-bloque__tit"><svg viewBox="0 0 24 24" width="14" height="14" fill="#ff0d2e"><path d="M21.41 11.58l-9-9A2 2 0 0 0 11 2H4a2 2 0 0 0-2 2v7a2 2 0 0 0 .59 1.42l9 9a2 2 0 0 0 2.82 0l7-7a2 2 0 0 0 0-2.84zM7.5 8A1.5 1.5 0 1 1 9 6.5 1.5 1.5 0 0 1 7.5 8z"/></svg>RESTRICCIONES</p>
+        <div class="ficha-bloque__fila">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18"/><path d="M12 3a15 15 0 0 0 0 18"/></svg>
+          <span>Solo para jugadores de: <b>Latinoamérica.</b></span>
+        </div>
+      </div>
+      <a class="btn btn--rojo btn--bloque ficha__cta" href="/perfil" data-requiere-cuenta>INSCRIBIR MI EQUIPO</a>
+      <div id="requisitos-inscripcion"></div>
+      <!-- S4.9: PARTICIPANTES (referencia del dueno) -->
+      <div class="ficha-bloque ficha-bloque--participantes">
+        <p class="ficha-bloque__tit"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>PARTICIPANTES</p>
+        <div class="ficha-bloque__fila">CUPOS ABIERTOS · LA LISTA DE EQUIPOS SE PUBLICA AL CERRAR LA INSCRIPCIÓN — SORTEO EN VIVO EN DISCORD</div>
+        <a class="ficha-bloque__link" href="#bracket-zona">VER BRACKETS EN VIVO <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg></a>
+      </div>
       <p class="ficha__nota">La inscripción se completa desde tu cuenta VANTS (Google, Discord, GitHub, Kick o correo).</p>
     </aside>
 
@@ -321,6 +336,7 @@
   <script src="/static/js/llaves_pagina.js"></script>
   <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
   <script src="/static/js/vants-auth.js"></script>
+  <script src="/static/js/requisitos-torneo.js"></script>
   
   <!-- Vercel Web Analytics (activo en producción de Vercel) -->
   
