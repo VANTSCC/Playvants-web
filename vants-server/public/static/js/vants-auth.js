@@ -49,6 +49,18 @@
     } catch (_e) { /* sessionStorage bloqueado: el login igual funciona */ }
   }
 
+  /* Aviso visible usando el #toast global que ya tienen todas las páginas */
+  function aviso(mensaje, esError) {
+    try {
+      var el = document.getElementById("toast");
+      if (!el) return;
+      el.textContent = mensaje;
+      el.classList.toggle("toast--error", !!esError);
+      el.classList.add("toast--visible");
+      setTimeout(function () { el.classList.remove("toast--visible"); }, 6500);
+    } catch (_e) { /* noop */ }
+  }
+
   function volverTrasLogin() {
     var destino = null;
     try {
@@ -83,12 +95,25 @@
 
     /* ¿vuelve del login? cierra el flujo una sola vez y regresa a su página */
     if (esCallback()) {
+      /* ¿Auth0 devolvió un error (?error=...&error_description=...)? Antes el
+         fallo pasaba EN SILENCIO: el usuario tocaba ENTRAR, Auth0 devolvía el
+         navegador a esta misma página (limpiando el ?error=) y parecía que
+         "no pasaba nada". Ahora el fallo se avisa en el toast y el detalle
+         técnico queda en la consola para diagnosticar. */
+      var vinoError = window.location.search.indexOf("error=") !== -1;
       var procesado = false;
+      var detalleError = "";
       try {
         await cliente.handleRedirectCallback();
         procesado = true;
-      } catch (_e) { /* code usado o de otra app: seguir */ }
+      } catch (e) {
+        detalleError = (e && (e.error_description || e.message)) || "";
+      }
       window.history.replaceState({}, "", window.location.origin + window.location.pathname);
+      if (vinoError && !procesado) {
+        console.error("Auth0 rechazó el inicio de sesión:", detalleError || "(sin detalle)");
+        aviso("NO SE PUDO INICIAR SESIÓN · PROBÁ DE NUEVO EN UNOS MINUTOS", true);
+      }
       if (procesado && volverTrasLogin()) {
         return new Promise(function () {}); /* redirigiendo: corta aquí */
       }
