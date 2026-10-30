@@ -674,9 +674,11 @@
 
   document.getElementById("btn-salir").addEventListener("click", function () {
     try { localStorage.removeItem("vants_perfil_v1"); } catch (_e) { /* noop */ }
-    /* Volver a /perfil (no a la portada): la carga fresca muestra el muro
-       ENTRAR y ningún resto del perfil de la sesión que acaba de cerrarse. */
-    if (window.VantAuth0) { window.VantAuth0.salir("/perfil"); return; }
+    /* Volver a la raíz: Auth0 valida el returnTo COMPLETO (ruta incluida)
+       contra "Allowed Logout URLs" y solo la raíz está permitida; con
+       /perfil el logout caía en "Oops! something went wrong". La portada
+       arranca limpia con ENTRAR, sin restos de la sesión cerrada. */
+    if (window.VantAuth0) { window.VantAuth0.salir(); return; }
     api.toast("FICHA REINICIADA");
     setTimeout(function () { location.reload(); }, 900);
   });

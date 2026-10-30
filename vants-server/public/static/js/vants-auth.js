@@ -187,11 +187,32 @@
     cliente.loginWithRedirect({ authorizationParams: params });
   }
 
-  function salir(volver) {
+  /* SALIR: cerrar la sesión en Auth0 y volver SIEMPRE a la raíz del sitio.
+     Por qué antes quedaba la sesión viva (bug 2026-10-30, "cerré sesión y
+     sigue apareciendo el perfil"):
+     1) Auth0 valida el returnTo contra "Allowed Logout URLs" comparando la
+        URL COMPLETA, ruta incluida. Con returnTo=/perfil y solo la raíz
+        permitida, el logout caía en "Oops! something went wrong" (HTTP 400)
+        y la sesión de Auth0 seguía viva.
+     2) Se iba al /v2/logout a mano SIN pasar por el SDK: el SDK guarda los
+        tokens (refresh incluido) en localStorage (cacheLocation
+        "localstorage" + useRefreshTokens) y ahí quedaban. Al volver a la
+        web, el SDK se re-autenticaba EN SILENCIO con ese refresh token y el
+        perfil reaparecía con la cuenta recién cerrada.
+     cliente.logout() borra ese cache local y DESPUÉS redirige al /v2/logout
+     con returnTo a la raíz (la única URL ya permitida en el dashboard). */
+  function salir() {
+    try { localStorage.removeItem("vants_perfil_v1"); } catch (_e) { /* noop */ }
+    try {
+      if (cliente && typeof cliente.logout === "function") {
+        cliente.logout({ logoutParams: { returnTo: window.location.origin + "/" } });
+        return;
+      }
+    } catch (_e) { /* SDK caído: logout manual abajo */ }
     try {
       window.location.href = "https://" + DOMINIO + "/v2/logout?client_id=" + CLIENTE +
-        "&returnTo=" + encodeURIComponent(window.location.origin + (volver || "/"));
-    } catch (_e) { window.location.href = volver || "/"; }
+        "&returnTo=" + encodeURIComponent(window.location.origin + "/");
+    } catch (_e) { window.location.href = "/"; }
   }
 
   /* Si el navegador restaura esta página desde la caché de adelante-atrás
