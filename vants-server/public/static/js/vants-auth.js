@@ -132,24 +132,50 @@
       usuario = null;
     }
     /* Agentes AgentID (AgentMail): sin sesión Auth0, ¿hay cookie de agente?
-       La sesión la pone /api/agentid/callback (token firmado HttpOnly). */
+       La sesión la pone /api/agentid/callback (token firmado HttpOnly).
+       Se consulta UNA vez por pestaña (cache en sessionStorage, 30 min) para
+       no añadir una petición por cada página que visita el visitante. */
     if (!usuario) {
+      var CLAVE_AGENTE = "vants_agente_cache_v1";
+      var agCache = null;
       try {
-        var ra = await fetch("/api/agentid/sesion", { headers: { Accept: "application/json" } });
-        if (ra.ok) {
-          var ja = await ra.json();
-          if (ja && ja.ok) {
-            usuario = {
-              sub: ja.sub,
-              nick: ja.nick || String(ja.inbox || "").split("@")[0] || "AGENTE",
-              correo: ja.inbox || "",
-              verificado: true,
-              agente: true,
-              dueno: ja.dueno === true,
-            };
+        agCache = JSON.parse(sessionStorage.getItem(CLAVE_AGENTE) || "null");
+        if (agCache && agCache.exp && Date.now() > agCache.exp) agCache = null;
+      } catch (_e) { agCache = null; }
+      if (agCache && agCache.ok) {
+        usuario = {
+          sub: agCache.sub,
+          nick: agCache.nick,
+          correo: agCache.inbox || "",
+          verificado: true,
+          agente: true,
+          dueno: agCache.dueno === true,
+        };
+      } else {
+        try {
+          var ra = await fetch("/api/agentid/sesion", { headers: { Accept: "application/json" } });
+          if (ra.ok) {
+            var ja = await ra.json();
+            if (ja && ja.ok) {
+              usuario = {
+                sub: ja.sub,
+                nick: ja.nick || String(ja.inbox || "").split("@")[0] || "AGENTE",
+                correo: ja.inbox || "",
+                verificado: true,
+                agente: true,
+                dueno: ja.dueno === true,
+              };
+              try {
+                sessionStorage.setItem(CLAVE_AGENTE, JSON.stringify({
+                  ok: true, sub: usuario.sub, nick: usuario.nick,
+                  inbox: usuario.correo, dueno: usuario.dueno,
+                  exp: Date.now() + 1800000,
+                }));
+              } catch (_e) { /* sessionStorage bloqueado: se consulta de nuevo */ }
+            }
           }
-        }
-      } catch (_e) { /* sin agente ni red: seguir sin sesión */ }
+        } catch (_e) { /* sin agente ni red: seguir sin sesión */ }
+      }
     }
     pintarNav();
     return usuario;
@@ -250,6 +276,7 @@
     /* Agentes AgentID: la sesión es cookie propia del worker — la borra
        /api/agentid/salir (no hay SDK de Auth0 que cerrar) */
     if (usuario && usuario.agente) {
+      try { sessionStorage.removeItem("vants_agente_cache_v1"); } catch (_e) { /* noop */ }
       try { window.location.href = "/api/agentid/salir?volver=%2F"; } catch (_e) { window.location.href = "/"; }
       return;
     }
