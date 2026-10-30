@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADMIN · ACHIEVEMENTS — VANTS GAMES</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="/static/css/vants.css">
+  <link rel="stylesheet" href="/static/css/paginas.css">
+  <style>
+    /* Estilos propios del panel (reutiliza variables de vants.css) */
+    .adm { max-width: 1180px; margin: 0 auto; padding: 26px 18px 70px; }
+    .adm h1 { font-size: 30px; font-weight: 900; font-style: italic; letter-spacing: .04em; margin: 8px 0 2px; }
+    .adm h1 i { color: var(--rojo); }
+    .adm__sub { font-family: var(--mono); font-size: 10px; letter-spacing: .2em; color: var(--gris); margin-bottom: 22px; }
+    .adm__bloque { border: 1px solid var(--borde); border-radius: 10px; background: #0a0b0f; padding: 20px; margin-bottom: 20px; }
+    .adm__bloque > h2 { font-size: 15px; font-weight: 900; letter-spacing: .12em; margin-bottom: 14px; color: #fff; }
+    .adm__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+    .adm-badge { display: flex; gap: 12px; align-items: center; border: 1px solid var(--borde); border-radius: 8px; padding: 10px; background: #0d0e12; }
+    .adm-badge img { width: 56px; height: 56px; object-fit: contain; }
+    .adm-badge--off img { filter: grayscale(1) brightness(.6); }
+    .adm-badge b { font-size: 12px; letter-spacing: .08em; display: block; }
+    .adm-badge small { font-family: var(--mono); font-size: 8.5px; color: var(--gris); display: block; line-height: 1.6; }
+    .adm-badge input[type="text"] { width: 100%; margin-top: 4px; }
+    .adm-fila { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-bottom: 12px; }
+    .adm-fila label { display: block; font-family: var(--mono); font-size: 9px; letter-spacing: .14em; color: var(--gris); margin-bottom: 4px; }
+    .adm-fila input, .adm-fila select, .adm-fila textarea {
+      background: #0d0e12; border: 1px solid var(--borde); border-radius: 6px; color: #fff;
+      padding: 9px 10px; font-family: var(--mono); font-size: 11px; min-width: 180px;
+    }
+    .adm-fila textarea { width: 100%; min-height: 64px; }
+    table.adm-tabla { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 10px; }
+    .adm-tabla th { text-align: left; color: var(--gris); letter-spacing: .12em; padding: 8px 6px; border-bottom: 1px solid var(--borde); font-weight: 700; }
+    .adm-tabla td { padding: 7px 6px; border-bottom: 1px solid #12141a; color: #cfd6e2; word-break: break-all; }
+    .adm-kpis { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+    .adm-kpi { flex: 1 1 130px; border: 1px solid var(--borde); border-radius: 8px; padding: 12px; background: #0d0e12; text-align: center; }
+    .adm-kpi b { display: block; font-size: 22px; font-weight: 900; font-style: italic; }
+    .adm-kpi small { font-family: var(--mono); font-size: 8.5px; letter-spacing: .16em; color: var(--gris); }
+    .adm-kpi--rojo b { color: #ff5a6e; } .adm-kpi--oro b { color: #f5c044; } .adm-kpi--ok b { color: #43d17c; }
+    .adm-msj { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; padding: 10px 12px; border-radius: 6px; margin: 10px 0; display: none; }
+    .adm-msj--ok { display: block; background: rgba(67, 209, 124, .12); color: #43d17c; border: 1px solid rgba(67, 209, 124, .35); }
+    .adm-msj--err { display: block; background: rgba(255, 13, 46, .10); color: #ff5a6e; border: 1px solid rgba(255, 13, 46, .35); }
+    .adm-aviso { border: 1px solid rgba(255, 13, 46, .4); background: rgba(255, 13, 46, .08); color: #ffd9de; border-radius: 10px; padding: 22px; font-size: 13px; line-height: 1.7; display: none; }
+    .recursos-fila img { width: 34px; height: 34px; object-fit: contain; vertical-align: middle; }
+    .recursos-fila--falta td { color: #ff5a6e !important; }
+  </style>
+</head>
+<body>
+  <main class="adm">
+    <div class="adm-aviso" id="aviso-sin-acceso">
+      <b>ADMINISTRATION → ACHIEVEMENTS</b><br>
+      Este panel solo está disponible para la cuenta OWNER de VANTS.
+      Entrá con la sesión correcta desde <a href="/perfil" style="color:#fff">/perfil</a>.
+    </div>
+    <div id="panel" hidden>
+      <h1>ADMIN<i>ISTRATION</i> → ACHIEVEMENTS</h1>
+      <p class="adm__sub">VANTS ACHIEVEMENTS &amp; BADGE ENGINE · PREVIEW · toda operación queda auditada</p>
+
+      <div class="adm-msj" id="msj"></div>
+
+      <!-- PROCESAMIENTO -->
+      <section class="adm__bloque">
+        <h2>PROCESAMIENTO DE EVENTOS</h2>
+        <div class="adm-kpis" id="kpis"></div>
+        <div class="adm-fila">
+          <button class="btn btn--rojo" id="btn-reconciliar" type="button">RECONCILIAR Y REPROCESAR</button>
+          <button class="btn btn--fino" id="btn-pump" type="button">EJECUTAR PUMP AHORA</button>
+        </div>
+        <table class="adm-tabla"><thead><tr><th>DLQ (EVENTOS EN ERROR)</th><th>TIPO</th><th>INTENTOS</th><th>FECHA</th></tr></thead><tbody id="tb-dlq"></tbody></table>
+        <table class="adm-tabla" style="margin-top:14px"><thead><tr><th>AUDITORÍA RECIENTE</th><th>ACCIÓN</th><th>OBJETIVO</th><th>FECHA</th></tr></thead><tbody id="tb-auditoria"></tbody></table>
+      </section>
+
+      <!-- CATÁLOGO -->
+      <section class="adm__bloque">
+        <h2>CATÁLOGO · 12 INSIGNIAS OFICIALES</h2>
+        <div class="adm__grid" id="catalogo"></div>
+      </section>
+
+      <!-- REGLAS -->
+      <section class="adm__bloque">
+        <h2>REGLAS DE DESBLOQUEO</h2>
+        <table class="adm-tabla"><thead><tr><th>INSIGNIA</th><th>TIPO</th><th>V</th><th>CONDICIONES</th><th>EVENTO FUENTE</th><th>ESTADO</th><th></th></tr></thead><tbody id="tb-reglas"></tbody></table>
+        <div class="adm-fila" style="margin-top:16px">
+          <div><label>BADGE CODE</label><select id="regla-badge"></select></div>
+          <div><label>TIPO</label>
+            <select id="regla-tipo">
+              <option value="event">event</option><option value="threshold">threshold</option>
+              <option value="admin">admin</option><option value="subscription">subscription</option>
+              <option value="founder_list">founder_list</option><option value="dormant">dormant</option>
+            </select></div>
+          <div><label>SOURCE EVENT</label><input type="text" id="regla-fuente" placeholder="match.finished"></div>
+        </div>
+        <label style="display:block;font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--gris);margin-bottom:4px">CONDICIONES (JSON)</label>
+        <textarea id="regla-condiciones" placeholder='{"threshold":5}'>{"threshold":5}</textarea>
+        <div class="adm-fila" style="margin-top:10px">
+          <button class="btn btn--rojo" id="btn-crear-regla" type="button">CREAR REGLA (NUEVA VERSIÓN)</button>
+        </div>
+      </section>
+
+      <!-- JUGADORES -->
+      <section class="adm__bloque">
+        <h2>JUGADORES · CONCEDER / REVOCAR / CONSULTAR</h2>
+        <div class="adm-fila">
+          <div><label>USER_ID (SUB AUTH0)</label><input type="text" id="jug-sub" placeholder="auth0|… / google-oauth2|…" style="min-width:280px"></div>
+          <div><label>INSIGNIA</label><select id="jug-badge"></select></div>
+        </div>
+        <div class="adm-fila">
+          <div><label>JUSTIFICACIÓN (GRANT) / MOTIVO (REVOKE) · 8–500</label><input type="text" id="jug-justificacion" style="min-width:340px" placeholder="Evidencia y motivo de la operación"></div>
+          <button class="btn btn--rojo" id="btn-grant" type="button">CONCEDER</button>
+          <button class="btn btn--fino" id="btn-revoke" type="button">REVOCAR</button>
+          <button class="btn btn--fino" id="btn-ver" type="button">CONSULTAR JUGADOR</button>
+        </div>
+        <table class="adm-tabla"><thead><tr><th>INSIGNIA</th><th>ESTADO</th><th>OBTENIDA</th><th>EVIDENCIA</th></tr></thead><tbody id="tb-jugador"></tbody></table>
+      </section>
+
+      <!-- RECURSOS GRÁFICOS -->
+      <section class="adm__bloque">
+        <h2>RECURSOS GRÁFICOS · MANIFIESTO</h2>
+        <table class="adm-tabla"><thead><tr><th>VISTA</th><th>ARCHIVO</th><th>TAMAÑO</th><th>CHECKSUM SHA-256</th><th>ESTADO</th></tr></thead><tbody id="tb-recursos"></tbody></table>
+      </section>
+    </div>
+  </main>
+
+  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
+  <script src="/static/js/vants-auth.js"></script>
+  <script src="/static/js/admin_logros.js"></script>
+</body>
+</html>

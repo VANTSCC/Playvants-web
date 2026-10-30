@@ -1,0 +1,691 @@
+{
+  "coleccion": "VANTS ACHIEVEMENTS & BADGE ENGINE",
+  "version": "1",
+  "generado": "2026-10-30T02:12:55.728322+00:00",
+  "insignias": [
+    {
+      "code": "MEMBER",
+      "carpeta": "member",
+      "version": "1",
+      "archivos": {
+        "png": {
+          "1024": {
+            "ruta": "badges/member/1024.png",
+            "sha256": "b47e40127d7a24720d8c035471f2dd928e6dc6d68c0105bccb2a1162577e6b83",
+            "ancho": 1024,
+            "alto": 1024
+          },
+          "512": {
+            "ruta": "badges/member/512.png",
+            "sha256": "5550013959d4794cf1deeafd3fd94b62a89879fcc0a177d124ee111cedbee02b",
+            "ancho": 512,
+            "alto": 512
+          },
+          "256": {
+            "ruta": "badges/member/256.png",
+            "sha256": "5d8a0b84184858625eb3084ed62827ce9bbc3d4f8fd1ed72c3b8c6b5b1138e69",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/member/128.png",
+            "sha256": "76e82d852b0c7788bae2d183c00c417e73be1c7e123f6ac2c956ed908d3d00e2",
+            "ancho": 128,
+            "alto": 128
+          },
+          "64": {
+            "ruta": "badges/member/64.png",
+            "sha256": "fba7712298cff25bfe65c49adfb5a2aa380cd7d23332d1f9c3cf0dccff91e25e",
+            "ancho": 64,
+            "alto": 64
+          },
+          "32": {
+            "ruta": "badges/member/32.png",
+            "sha256": "aaacee77b9572802334d00ff65743ef4940aa9c78d811cef13611ab1ff065894",
+            "ancho": 32,
+            "alto": 32
+          }
+        },
+        "webp": {
+          "256": {
+            "ruta": "badges/member/256.webp",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/member/128.webp",
+            "ancho": 128,
+            "alto": 128
+          }
+        }
+      }
+    },
+    {
+      "code": "PLUS",
+      "carpeta": "plus",
+      "version": "1",
+      "archivos": {
+        "png": {
+          "1024": {
+            "ruta": "badges/plus/1024.png",
+            "sha256": "93602061e05f1a877f99285f645e37f4dc263f4cad61a3c3d0912f0432d50d70",
+            "ancho": 1024,
+            "alto": 1024
+          },
+          "512": {
+            "ruta": "badges/plus/512.png",
+            "sha256": "a6df050c007b5fbdb2998a583da0d56f128ecaea717abf77c52303957410614f",
+            "ancho": 512,
+            "alto": 512
+          },
+          "256": {
+            "ruta": "badges/plus/256.png",
+            "sha256": "1873b9fc78c5f31733dee5c27bd94138ccb9a0a0001c34f3d2f65a36883dbe7e",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/plus/128.png",
+            "sha256": "b4f771f948fc2a10b6bd68a63fe7a4e4a3a4ecb760b79cafa896b877e1c1cbe6",
+            "ancho": 128,
+            "alto": 128
+          },
+          "64": {
+            "ruta": "badges/plus/64.png",
+            "sha256": "fa8e2211b6369976d62d84f35a07d1d9385e3f674d123ad58b47d40eee6af7c1",
+            "ancho": 64,
+            "alto": 64
+          },
+          "32": {
+            "ruta": "badges/plus/32.png",
+            "sha256": "e1aaa756cc01d8fd6218ae7cb388c3ed1f319122f8927511375b9baeb731d2c8",
+            "ancho": 32,
+            "alto": 32
+          }
+        },
+        "webp": {
+          "256": {
+            "ruta": "badges/plus/256.webp",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/plus/128.webp",
+            "ancho": 128,
+            "alto": 128
+          }
+        }
+      }
+    },
+    {
+      "code": "PRO",
+      "carpeta": "pro",
+      "version": "1",
+      "archivos": {
+        "png": {
+          "1024": {
+            "ruta": "badges/pro/1024.png",
+            "sha256": "5bceb9653e5044aff185d78c871a20f9f1e9a5c4677c4f45f7ec34a94d99e7bf",
+            "ancho": 1024,
+            "alto": 1024
+          },
+          "512": {
+            "ruta": "badges/pro/512.png",
+            "sha256": "ff4026f17c45c9f082aea6b55fdb244c49d931ac9b017113043b9989dfa244db",
+            "ancho": 512,
+            "alto": 512
+          },
+          "256": {
+            "ruta": "badges/pro/256.png",
+            "sha256": "dd7217c358ad96e78c1c9cfe2db8f34cc6d7e7275f0630478fe586602cab2d74",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/pro/128.png",
+            "sha256": "138d7ebe7c1b83cb14a7516d84263809c67e2a8eae124f4dfa239427fce2de2b",
+            "ancho": 128,
+            "alto": 128
+          },
+          "64": {
+            "ruta": "badges/pro/64.png",
+            "sha256": "3a8ef5e32e0e787c46145750c3a1ec73850ec7a148c57a457e5d983468adb308",
+            "ancho": 64,
+            "alto": 64
+          },
+          "32": {
+            "ruta": "badges/pro/32.png",
+            "sha256": "c1d4243b05739f0d1b63d4aac0c4a94af6aa9f0c398f552e16b1082eca4d02ea",
+            "ancho": 32,
+            "alto": 32
+          }
+        },
+        "webp": {
+          "256": {
+            "ruta": "badges/pro/256.webp",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/pro/128.webp",
+            "ancho": 128,
+            "alto": 128
+          }
+        }
+      }
+    },
+    {
+      "code": "ELITE",
+      "carpeta": "elite",
+      "version": "1",
+      "archivos": {
+        "png": {
+          "1024": {
+            "ruta": "badges/elite/1024.png",
+            "sha256": "d2a75c097294e17ffbbd3b6f6cf979b7e1715095f82386a5c0839ffc080f2efa",
+            "ancho": 1024,
+            "alto": 1024
+          },
+          "512": {
+            "ruta": "badges/elite/512.png",
+            "sha256": "fcbe5760f1acec1e0773009cdfdb35742d90d8b26caa05aab82e869325b84e96",
+            "ancho": 512,
+            "alto": 512
+          },
+          "256": {
+            "ruta": "badges/elite/256.png",
+            "sha256": "76a82ee9ce90bf995f9c27d10428438afaa3fa7dc2494cb936ff8c1922e9f8d6",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/elite/128.png",
+            "sha256": "0b601f9d00a0ab0327d2f4f2feada8da76775742202f2de02c04ce1cde24208f",
+            "ancho": 128,
+            "alto": 128
+          },
+          "64": {
+            "ruta": "badges/elite/64.png",
+            "sha256": "ffa093fa00dc4bc48da73eb8a77fcb7a53b4271fb2044776168029fc8d632a52",
+            "ancho": 64,
+            "alto": 64
+          },
+          "32": {
+            "ruta": "badges/elite/32.png",
+            "sha256": "bcacbad4ab922b40606da137bb0b04147211e189655f7f267305a792bf2a1bab",
+            "ancho": 32,
+            "alto": 32
+          }
+        },
+        "webp": {
+          "256": {
+            "ruta": "badges/elite/256.webp",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/elite/128.webp",
+            "ancho": 128,
+            "alto": 128
+          }
+        }
+      }
+    },
+    {
+      "code": "CREATOR",
+      "carpeta": "creator",
+      "version": "1",
+      "archivos": {
+        "png": {
+          "1024": {
+            "ruta": "badges/creator/1024.png",
+            "sha256": "60463ae12170b68b835d5b706f8649f24ebacd0318f0eb8909645fa3e06dde95",
+            "ancho": 1024,
+            "alto": 1024
+          },
+          "512": {
+            "ruta": "badges/creator/512.png",
+            "sha256": "c44114777ebd681888a1d800566fe73366b1d07f27feea6f009575fad30e3624",
+            "ancho": 512,
+            "alto": 512
+          },
+          "256": {
+            "ruta": "badges/creator/256.png",
+            "sha256": "3017e206fca043a1a69ee86f01dc2c01206fe6b8e596955e2775318187d8e4ad",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/creator/128.png",
+            "sha256": "c369456c49aeef969eca7b22c1fd20f1b079d448309a12ecb24aacd56b2299ad",
+            "ancho": 128,
+            "alto": 128
+          },
+          "64": {
+            "ruta": "badges/creator/64.png",
+            "sha256": "3c8fb1b0251c1045c3fa58f24c4a4646aa222b5a301334ef89e7e18134f98bd6",
+            "ancho": 64,
+            "alto": 64
+          },
+          "32": {
+            "ruta": "badges/creator/32.png",
+            "sha256": "84f33a91524708ef00b5fd1a38966ce07b461b4f1b9baecf7a95831ef4b6ccc6",
+            "ancho": 32,
+            "alto": 32
+          }
+        },
+        "webp": {
+          "256": {
+            "ruta": "badges/creator/256.webp",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/creator/128.webp",
+            "ancho": 128,
+            "alto": 128
+          }
+        }
+      }
+    },
+    {
+      "code": "PARTNER",
+      "carpeta": "partner",
+      "version": "1",
+      "archivos": {
+        "png": {
+          "1024": {
+            "ruta": "badges/partner/1024.png",
+            "sha256": "00c129e5aa2efa34d02f78d3af7aa4ecf951f5b364a2c1cf05b0c1c366c0c1e1",
+            "ancho": 1024,
+            "alto": 1024
+          },
+          "512": {
+            "ruta": "badges/partner/512.png",
+            "sha256": "376e965e645a11239b2fcf305ee5911a0640466603026bce2c99948f4435581b",
+            "ancho": 512,
+            "alto": 512
+          },
+          "256": {
+            "ruta": "badges/partner/256.png",
+            "sha256": "ceb81539356561cff5f84a165611ace7bf0b7ba67dd6be762acb52709fa97582",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/partner/128.png",
+            "sha256": "1d064a0c44c3cc837ec1ed967f9bf5e8ac325f6673b559f0ce7ef634b9dd68a1",
+            "ancho": 128,
+            "alto": 128
+          },
+          "64": {
+            "ruta": "badges/partner/64.png",
+            "sha256": "85911eec66617fe60ee51c0b41a9322532876a1accac21f6702c7c8871bdeb9d",
+            "ancho": 64,
+            "alto": 64
+          },
+          "32": {
+            "ruta": "badges/partner/32.png",
+            "sha256": "0c82d4e47fc2ab49db2b1d0bd16b26a762db46a70f5a4d2a9f215aa654bdd5d5",
+            "ancho": 32,
+            "alto": 32
+          }
+        },
+        "webp": {
+          "256": {
+            "ruta": "badges/partner/256.webp",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/partner/128.webp",
+            "ancho": 128,
+            "alto": 128
+          }
+        }
+      }
+    },
+    {
+      "code": "CHAMPION",
+      "carpeta": "champion",
+      "version": "1",
+      "archivos": {
+        "png": {
+          "1024": {
+            "ruta": "badges/champion/1024.png",
+            "sha256": "68f4efa8e2d6af945ee41a08acb96722b3455c51c04e25e0e043c7cc7180c2e1",
+            "ancho": 1024,
+            "alto": 1024
+          },
+          "512": {
+            "ruta": "badges/champion/512.png",
+            "sha256": "b53ff899e04d294537f8f97bdd60c5f645b9502a772aacb5c51c23a14fbff21b",
+            "ancho": 512,
+            "alto": 512
+          },
+          "256": {
+            "ruta": "badges/champion/256.png",
+            "sha256": "55adf4748ded4985323a5797f09fbc3810455dd65dc83903b57b133c829f504f",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/champion/128.png",
+            "sha256": "2a75011084814fcbeba0466bc54e7cb7fc43c7d59709a7db4d818a2cbec4545c",
+            "ancho": 128,
+            "alto": 128
+          },
+          "64": {
+            "ruta": "badges/champion/64.png",
+            "sha256": "1e3667565354d1b6814fdff51afa95a729d1828b74686721e46aa5a08091122c",
+            "ancho": 64,
+            "alto": 64
+          },
+          "32": {
+            "ruta": "badges/champion/32.png",
+            "sha256": "37b6eb2d17c0f95b8822f1b4706323901b9da87bc4a86ae1fa860b7287f34a53",
+            "ancho": 32,
+            "alto": 32
+          }
+        },
+        "webp": {
+          "256": {
+            "ruta": "badges/champion/256.webp",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/champion/128.webp",
+            "ancho": 128,
+            "alto": 128
+          }
+        }
+      }
+    },
+    {
+      "code": "TOP 10",
+      "carpeta": "top-10",
+      "version": "1",
+      "archivos": {
+        "png": {
+          "1024": {
+            "ruta": "badges/top-10/1024.png",
+            "sha256": "20453ee7d76a05e1db58f29a3e3faa444f30f975d81affb9d753854c2db19937",
+            "ancho": 1024,
+            "alto": 1024
+          },
+          "512": {
+            "ruta": "badges/top-10/512.png",
+            "sha256": "8535b2bedb7bebc5056f89f947eb33269067a15e4e91cb1fb35ee19ee5306765",
+            "ancho": 512,
+            "alto": 512
+          },
+          "256": {
+            "ruta": "badges/top-10/256.png",
+            "sha256": "7797e1fa60801c66f2235ad8e96b0cc53c923a45fd7e92a875eba567e3f99bd7",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/top-10/128.png",
+            "sha256": "129a83307718c3c9d20f08e7a84855b1deba42e4ee4e1312b6e9b40ec4f795aa",
+            "ancho": 128,
+            "alto": 128
+          },
+          "64": {
+            "ruta": "badges/top-10/64.png",
+            "sha256": "9b33e3f9e430e927adcba79d543a1e34d7c0de2e1d2fc8f3ded371bbbdf2f83d",
+            "ancho": 64,
+            "alto": 64
+          },
+          "32": {
+            "ruta": "badges/top-10/32.png",
+            "sha256": "62ce36dd79e136a1c5acf8b30772e5b8dba0aa1ddb13c68b627032822bb6d76d",
+            "ancho": 32,
+            "alto": 32
+          }
+        },
+        "webp": {
+          "256": {
+            "ruta": "badges/top-10/256.webp",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/top-10/128.webp",
+            "ancho": 128,
+            "alto": 128
+          }
+        }
+      }
+    },
+    {
+      "code": "RISING STAR",
+      "carpeta": "rising-star",
+      "version": "1",
+      "archivos": {
+        "png": {
+          "1024": {
+            "ruta": "badges/rising-star/1024.png",
+            "sha256": "8d409c21e87de13f8e2a42e354944e4786afbc9cc193070eeef52f80c6a1b5dc",
+            "ancho": 1024,
+            "alto": 1024
+          },
+          "512": {
+            "ruta": "badges/rising-star/512.png",
+            "sha256": "c5a1ac52604964062d261f8de1f59de47873dc628a53714a8106e713d353809b",
+            "ancho": 512,
+            "alto": 512
+          },
+          "256": {
+            "ruta": "badges/rising-star/256.png",
+            "sha256": "83465b28b031250151ffbf016bd9e7d3fccbd6d407bb523410cb9ff3881284dc",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/rising-star/128.png",
+            "sha256": "acadae3ec0f8a66d52b5ca621601c56b47ca4a7190209cf06c59fae29a1f2a3d",
+            "ancho": 128,
+            "alto": 128
+          },
+          "64": {
+            "ruta": "badges/rising-star/64.png",
+            "sha256": "e3925fe5742d70ac902ed3260ab95355e8b8a420281c1d6a85593619941b7630",
+            "ancho": 64,
+            "alto": 64
+          },
+          "32": {
+            "ruta": "badges/rising-star/32.png",
+            "sha256": "bebee3b423e96e4243fa9f9be2bcd22466c5787a92a4fc73b50a36e53db01ed4",
+            "ancho": 32,
+            "alto": 32
+          }
+        },
+        "webp": {
+          "256": {
+            "ruta": "badges/rising-star/256.webp",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/rising-star/128.webp",
+            "ancho": 128,
+            "alto": 128
+          }
+        }
+      }
+    },
+    {
+      "code": "VETERAN",
+      "carpeta": "veteran",
+      "version": "1",
+      "archivos": {
+        "png": {
+          "1024": {
+            "ruta": "badges/veteran/1024.png",
+            "sha256": "334ac42ab1991ed21683505a1fa26b76b69b49fac5dfc237118923f5bdce3fa7",
+            "ancho": 1024,
+            "alto": 1024
+          },
+          "512": {
+            "ruta": "badges/veteran/512.png",
+            "sha256": "b6031a0f1e3fcde29dc9514d2f275ca0d72b3a6c20b8e7aa0c970c146dc88e67",
+            "ancho": 512,
+            "alto": 512
+          },
+          "256": {
+            "ruta": "badges/veteran/256.png",
+            "sha256": "29efa85c0875252f267640d51f6178056860a6618eaa5fc18e1460511b40e356",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/veteran/128.png",
+            "sha256": "915f6dda03d203ee8cf2d26c4a24728d5fb2248f3a8f58cb15cd98b25c4e41a7",
+            "ancho": 128,
+            "alto": 128
+          },
+          "64": {
+            "ruta": "badges/veteran/64.png",
+            "sha256": "fbf2e8b9f740a82ae90e1b6c577059d2db984f72f1f71aa1311d0723e0742e06",
+            "ancho": 64,
+            "alto": 64
+          },
+          "32": {
+            "ruta": "badges/veteran/32.png",
+            "sha256": "1d3a9c0d53e0d4e4283e4639c3e8861a614c202a8a3620e2d767b19ab427145e",
+            "ancho": 32,
+            "alto": 32
+          }
+        },
+        "webp": {
+          "256": {
+            "ruta": "badges/veteran/256.webp",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/veteran/128.webp",
+            "ancho": 128,
+            "alto": 128
+          }
+        }
+      }
+    },
+    {
+      "code": "FOUNDER",
+      "carpeta": "founder",
+      "version": "1",
+      "archivos": {
+        "png": {
+          "1024": {
+            "ruta": "badges/founder/1024.png",
+            "sha256": "d41fc3d64ef8831cf04eb146ba217fd80aae612f26d178bac0aca052eec88cbd",
+            "ancho": 1024,
+            "alto": 1024
+          },
+          "512": {
+            "ruta": "badges/founder/512.png",
+            "sha256": "ff688025c2367face0559a306ca539676b1f29d9222562f284074837a1ad8b86",
+            "ancho": 512,
+            "alto": 512
+          },
+          "256": {
+            "ruta": "badges/founder/256.png",
+            "sha256": "d443c8694c41b6bdee78e2369dd778e78840936eb6e922e8953a017d87a03063",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/founder/128.png",
+            "sha256": "5c3731cd05dec0496e73257fe9c495d5f1e1159d574996ec45607cd0273851be",
+            "ancho": 128,
+            "alto": 128
+          },
+          "64": {
+            "ruta": "badges/founder/64.png",
+            "sha256": "8f0b6cf7ffdd8afda676c33d8faceeac116d7aa81794001414d4bfb9c991ace0",
+            "ancho": 64,
+            "alto": 64
+          },
+          "32": {
+            "ruta": "badges/founder/32.png",
+            "sha256": "e0bbc612e0a6655a2feafa9e7b3325556f290ff4bb47c581043a14e7b1c7e7e8",
+            "ancho": 32,
+            "alto": 32
+          }
+        },
+        "webp": {
+          "256": {
+            "ruta": "badges/founder/256.webp",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/founder/128.webp",
+            "ancho": 128,
+            "alto": 128
+          }
+        }
+      }
+    },
+    {
+      "code": "VERIFIED",
+      "carpeta": "verified",
+      "version": "1",
+      "archivos": {
+        "png": {
+          "1024": {
+            "ruta": "badges/verified/1024.png",
+            "sha256": "947ec933ef7938efab5c871a16b08d70f1fd0933c961693400cbf63cd0143d2d",
+            "ancho": 1024,
+            "alto": 1024
+          },
+          "512": {
+            "ruta": "badges/verified/512.png",
+            "sha256": "0a1c623f060c4f8349d08d227b9773acfa48a9f01c725493b32eaaa296b411cf",
+            "ancho": 512,
+            "alto": 512
+          },
+          "256": {
+            "ruta": "badges/verified/256.png",
+            "sha256": "ccc284bf39bd254ebeaa0d5fbfc3fa860b9a40dea1d9b4847795a179f3af63e2",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/verified/128.png",
+            "sha256": "2b87283597727f2775f4e89a85f13a4646942585272b701b17171673665c1ff9",
+            "ancho": 128,
+            "alto": 128
+          },
+          "64": {
+            "ruta": "badges/verified/64.png",
+            "sha256": "53062c8abc983a2085b787f884567483cebcf28b5fc7978d696e5295a70e90c6",
+            "ancho": 64,
+            "alto": 64
+          },
+          "32": {
+            "ruta": "badges/verified/32.png",
+            "sha256": "955ccf784580de9425acbd476f8fd291d8660f2378c922cde4a4d06a9d5eb0fd",
+            "ancho": 32,
+            "alto": 32
+          }
+        },
+        "webp": {
+          "256": {
+            "ruta": "badges/verified/256.webp",
+            "ancho": 256,
+            "alto": 256
+          },
+          "128": {
+            "ruta": "badges/verified/128.webp",
+            "ancho": 128,
+            "alto": 128
+          }
+        }
+      }
+    }
+  ]
+}

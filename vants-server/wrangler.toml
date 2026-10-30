@@ -29,6 +29,23 @@ binding = "DB"
 database_name = "vants-db"
 database_id = "11e5d82c-307b-44ba-9682-501d8df593d3"
 
+# VANTS ACHIEVEMENTS & BADGE ENGINE — base D1 EXCLUSIVA del dominio de logros
+# (catálogo, reglas, concesiones, outbox/inbox, entitlements y auditoría).
+# vants-db (binding DB) solo se LEE como espejo de datos competitivos, NUNCA
+# se escribe desde el engine. Sin esta binding el motor responde 503
+# logros_no_config y TODO lo demás sigue funcionando igual (degradación
+# honesta, documentada en docs/achievements/DECISIONS.md).
+[[d1_databases]]
+binding = "ACH_DB"
+database_name = "vants-logros-db"
+database_id = "481584c7-bc47-434b-aa73-3aa066b440f7"
+
+# Pump del Transactional Outbox cada minuto (patrón Outbox/Inbox; Queues
+# requiere plan de pago — decisión documentada en docs/achievements/DECISIONS.md).
+# Sin ACH_DB el scheduled() es un no-op silencioso.
+[triggers]
+crons = ["* * * * *"]
+
 [vars]
 # Bot de Discord en Cloudflare (antes: ...-vantsbot...neon.tech, eliminado)
 VANTS_BOT_URL = "https://vantsbot.vants.workers.dev"
@@ -47,3 +64,11 @@ VANTS_BUS_URL = "https://vants-bus.vants.workers.dev"
 #   { pattern = "vantsgg.com", custom_domain = true },
 #   { pattern = "www.vantsgg.com", custom_domain = true },
 # ]
+
+# R2 para recursos gráficos versionados de insignias (badges/v1/<code>/*.png|webp):
+# hoy la galería sirve los PNG/WebP como archivos estáticos de public/assets/badges,
+# así que el binding queda DESCOMENTADO pendiente de necesidad real (misma decisión
+# que en preview; ver docs/achievements/ASSETS.md).
+# [[r2_buckets]]
+# binding = "BADGE_ASSETS"
+# bucket_name = "vants-badge-assets"

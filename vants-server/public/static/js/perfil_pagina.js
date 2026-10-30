@@ -809,7 +809,8 @@
     ".v44-capa{position:fixed;inset:0;z-index:9500;background:rgba(4,4,6,.84);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:18px;animation:v44in .18s ease}" +
     ".v44-caja{width:100%;max-width:432px;background:#0d0d10;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:26px 24px 20px;box-shadow:0 30px 80px rgba(0,0,0,.6);position:relative}" +
     ".v44-marca{display:flex;align-items:center;gap:10px;margin-bottom:16px}" +
-    ".v44-v{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#ff0d2e,#ff5a1f);display:grid;place-items:center;font-weight:900;font-size:17px;color:#fff;box-shadow:0 0 16px rgba(255,13,46,.45)}" +
+    ".v44-v{width:34px;height:34px;border-radius:9px;overflow:hidden;display:grid;place-items:center;box-shadow:0 0 16px rgba(255,13,46,.45)}" +
+    ".v44-v img{width:100%;height:100%;display:block}" +
     ".v44-marca b{font-size:15px;letter-spacing:.02em;color:#fff}" +
     ".v44-paso{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#ff5a6e;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin:0 0 6px}" +
     ".v44-titulo{font-size:24px;line-height:1.08;font-weight:900;text-transform:uppercase;margin:0 0 8px;color:#fff}" +
@@ -818,6 +819,7 @@
     ".v44-btn{display:flex;align-items:center;gap:12px;width:100%;padding:13px 14px;border-radius:9px;border:0;cursor:pointer;font-weight:800;text-transform:uppercase;font-size:13.5px;letter-spacing:.03em;color:#fff;margin-bottom:10px;transition:filter .15s;font-family:inherit}" +
     ".v44-btn:hover{filter:brightness(1.09)}" +
     ".v44-m{width:24px;height:24px;border-radius:6px;background:rgba(0,0,0,.28);display:grid;place-items:center;font-size:13px;font-weight:900;flex:none}" +
+    ".v44-m img{width:20px;height:20px;display:block;object-fit:contain}" +
     ".v44-btn--faceit{background:#ff5500}.v44-btn--discord{background:#5865F2}" +
     ".v44-btn--google{background:#fff;color:#141414}.v44-btn--google .v44-m{background:#e8f0fe;color:#4285F4}" +
     ".v44-btn--fino{background:transparent;border:1px solid rgba(255,255,255,.16);color:#d4d4d8;font-weight:600;font-size:11px;letter-spacing:.14em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}" +
@@ -900,13 +902,13 @@
   function mostrarGate() {
     if (gateIgnorado()) return;
     var html =
-      '<div class="v44-marca"><span class="v44-v">V</span><b>VANTS GAMES</b></div>' +
+      '<div class="v44-marca"><span class="v44-v"><img src="/static/img/vants-logo-circular.png" alt="V" width="34" height="34"></span><b>VANTS GAMES</b></div>' +
       '<p class="v44-paso">paso 1 de 2 · registro</p>' +
       '<h2 class="v44-titulo">Crea tu cuenta <em>para entrar</em></h2>' +
       '<p class="v44-sub">Para entrar a la arena te registrás con Google, Discord o tu correo con contraseña. Sirve para tu ficha, subir clips y entrar a torneos.</p>' +
-      '<button type="button" class="v44-btn v44-btn--faceit" id="v44-g-faceit"><span class="v44-m">F</span>Registrarme con FACEIT</button>' +
-      '<button type="button" class="v44-btn v44-btn--discord" id="v44-g-discord"><span class="v44-m">D</span>Registrarme con Discord</button>' +
-      '<button type="button" class="v44-btn v44-btn--google" id="v44-g-google"><span class="v44-m">G</span>Registrarme con Google</button>' +
+      '<button type="button" class="v44-btn v44-btn--faceit" id="v44-g-faceit"><span class="v44-m"><img src="/static/img/logo-faceit.png" alt="" width="16" height="16"></span>Registrarme con FACEIT</button>' +
+      '<button type="button" class="v44-btn v44-btn--discord" id="v44-g-discord"><span class="v44-m"><img src="/static/img/logo-discord.png" alt="" width="16" height="16"></span>Registrarme con Discord</button>' +
+      '<button type="button" class="v44-btn v44-btn--google" id="v44-g-google"><span class="v44-m"><img src="/static/img/logo-google.png" alt="" width="16" height="16"></span>Registrarme con Google</button>' +
       '<button type="button" class="v44-btn v44-btn--correo" id="v44-g-correo"><span class="v44-m">@</span>Registrarme con correo</button>' +
       '<div class="v44-pies"><button type="button" class="v44-link" id="v44-g-ya">¿ya tenés cuenta? entrar con correo</button><span class="v44-sep">·</span><button type="button" class="v44-link" id="v44-g-olvide">olvidé mi contraseña</button></div>' +
       '<p class="v44-pie">tus datos solo se usan para tu perfil · podés desconectar cuando quieras</p>';
@@ -937,8 +939,8 @@
       '<div class="v44-aviso"><b>El inicio con FACEIT está caído — del lado de FACEIT</b>' +
       "<p>FACEIT solo deja iniciar sesión con su cuenta a sus socios (partners). La web no puede completar ese acceso: por eso se queda trabado después del chequeo de seguridad. No es tu cuenta ni tu navegador.</p></div>" +
       '<p class="v44-sub" style="margin-bottom:12px">Mismo resultado en 10 segundos: entrá con Google o Discord y conectá tu FACEIT con tu nick — tu nivel real queda en la ficha, verificado contra FACEIT.</p>' +
-      '<button type="button" class="v44-btn v44-btn--google" id="v44-f-google"><span class="v44-m">G</span>Entrar con Google y conectar FACEIT</button>' +
-      '<button type="button" class="v44-btn v44-btn--discord" id="v44-f-discord"><span class="v44-m">D</span>Entrar con Discord y conectar FACEIT</button>' +
+      '<button type="button" class="v44-btn v44-btn--google" id="v44-f-google"><span class="v44-m"><img src="/static/img/logo-google.png" alt="" width="16" height="16"></span>Entrar con Google y conectar FACEIT</button>' +
+      '<button type="button" class="v44-btn v44-btn--discord" id="v44-f-discord"><span class="v44-m"><img src="/static/img/logo-discord.png" alt="" width="16" height="16"></span>Entrar con Discord y conectar FACEIT</button>' +
       '<button type="button" class="v44-btn v44-btn--fino" id="v44-f-volver">← volver</button>');
     var a = document.getElementById("v44-f-google");
     var b = document.getElementById("v44-f-discord");
@@ -1021,7 +1023,7 @@
       correo: "Entraste con tu correo: acá eliges TU nombre de jugador — nunca el del correo."
     };
     var html =
-      '<div class="v44-marca"><span class="v44-v">V</span><b>VANTS GAMES</b></div>' +
+      '<div class="v44-marca"><span class="v44-v"><img src="/static/img/vants-logo-circular.png" alt="V" width="34" height="34"></span><b>VANTS GAMES</b></div>' +
       '<p class="v44-paso">paso 2 de 2 · solo la primera vez</p>' +
       '<h2 class="v44-titulo">Elige tu nombre <em>de jugador</em></h2>' +
       '<p class="v44-sub">' + (notas[prov.id] || "Acá eliges TU nombre de jugador — nunca el del correo.") + "</p>" +
@@ -1256,7 +1258,7 @@
   var identidad = q(".perfil__identidad");
   var bEquipo = null, bBanner = null, bCuentas = null, bInsignias = null, bStats = null,
       bRango = null, bFaceit = null, bMembresia = null, bEstado = null, bInscrip = null,
-      bCuenta = null, bClips = null;
+      bCuenta = null, bClips = null, bColeccion = null;
   var bDatos = document.getElementById("mis-datos");
   var badges = document.getElementById("perfil-badges");
   var badgesNota = null;
@@ -1276,6 +1278,7 @@
     if (t.indexOf("INSCRIPCIONES") !== -1) { bInscrip = b; return; }
     if (t === "CUENTA") { bCuenta = b; return; }
     if (t.indexOf("CLIPS") !== -1) { bClips = b; return; }
+    if (t.indexOf("VANTS BADGE COLLECTION") === 0) { bColeccion = b; return; }
   });
   if (!bDatos || !identidad || !banner) return;
 
@@ -1406,7 +1409,7 @@
   fila2.className = "v46-fila2";
   if (bMembresia) fila2.appendChild(bMembresia);
   if (bCuenta) fila2.appendChild(bCuenta);
-  [bClips, bEquipo, bBanner, fila2, bInscrip].forEach(function (b) { if (b) colB.appendChild(b); });
+  [bClips, bEquipo, bBanner, bColeccion, fila2, bInscrip].forEach(function (b) { if (b) colB.appendChild(b); });
   grilla.appendChild(colA);
   grilla.appendChild(colB);
 
@@ -1577,6 +1580,7 @@
   var bStats = statsSec ? statsSec.querySelector(".perfil__bloque") : null;
   var bFaceit = vent.querySelector("#faceit-real") ? vent.querySelector("#faceit-real").closest(".perfil__bloque") : null;
   var bClips = document.getElementById("clips-perfil") ? document.getElementById("clips-perfil").closest(".perfil__bloque") : null;
+  var bColeccion = document.getElementById("badge-coleccion") || null; /* VANTS BADGE COLLECTION (motor de logros) */
 
   function cajaNueva(etq, gris) {
     var d = document.createElement("div");
@@ -1695,6 +1699,10 @@
     if (eK && eK.firstChild && eK.firstChild.nodeType === 3) eK.firstChild.nodeValue = "DESTACADOS · ";
     main.appendChild(bClips);
   }
+
+  /* 7 · VANTS BADGE COLLECTION — el motor de logros vive en el panel de juego.
+     El bloque se MUEVE con sus IDs intactos (perfil_logros.js lo rellena). */
+  if (bColeccion) main.appendChild(bColeccion);
 
   marco.appendChild(side);
   marco.appendChild(main);
