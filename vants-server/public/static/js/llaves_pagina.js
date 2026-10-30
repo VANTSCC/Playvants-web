@@ -130,10 +130,8 @@
     fila1.appendChild(colGF);
     root.appendChild(fila1);
 
-    /* Divisor: cuadro inferior */
-    var divi = el("div", "bracketv2__divisor");
-    divi.appendChild(el("span", null, "LLAVES INFERIORES · EL PERDEDOR CRUZA AQUÍ Y PELEA LA REVANCHA"));
-    root.appendChild(divi);
+    /* Divisor limpio sin texto (S4.13) */
+    root.appendChild(el("div", "bracketv2__divisor"));
 
     /* Fila inferior: ronda 1 -> ronda 2 -> semis inferiores -> final inferior */
     var fila2 = el("div", "bracketv2__fila");

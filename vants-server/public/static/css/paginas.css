@@ -235,7 +235,6 @@
   .bracketv2__fila:last-child .bracketv2__matches { min-height: 0; }
   .bracketv2__slot { flex: 0 0 auto; }
   .bracketv2__col:not(:last-child) .matchb::after { display: none; }
-  .bracketv2__divisor span { white-space: normal; text-align: center; }
   .bracketv2__fila:first-child .bracketv2__col:last-child .campeon-box,
   .bracketv2__fila:first-child .bracketv2__col:last-child .campeon-actual { position: static; }
   .bracketv2__fila:first-child .bracketv2__col:last-child .campeon-box { margin-top: 18px; }
