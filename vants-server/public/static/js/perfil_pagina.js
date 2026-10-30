@@ -2076,6 +2076,11 @@
   var bCuenta = bloqueDe("cuenta-lineas");
   var vacioInsc = document.querySelector(".inscripciones-vacio");
   var bInscrip = vacioInsc ? vacioInsc.closest(".perfil__bloque") : null;
+  /* VANTS BADGE COLLECTION (motor de logros): se captura ANTES del remontaje —
+     sin esto, el vaciado de main la descolgaba del DOM y la colección
+     desaparecía del perfil aunque la sesión existiera (bug detectado en
+     producción, 2026-10-30; el preview no lo sufría por su layout sin pestañas). */
+  var bColeccion = bloqueDe("badge-coleccion");
   /* el rango VANTS: S4.7 lo desmontó (nodo fuera del documento) — el stash lo devuelve */
   var esc = window.__VANTS47__ ? window.__VANTS47__.esc : null;
   var bRango = esc ? esc.querySelector(".perfil__bloque") : null;
@@ -2168,6 +2173,9 @@
   main.appendChild(pRedes);
   main.appendChild(pFicha);
   main.appendChild(pCuenta);
+  /* VANTS BADGE COLLECTION vuelve al pie del panel: visible siempre, cambie
+     la pestaña activa (misma posición final que le daba el S4.7). */
+  if (bColeccion) main.appendChild(bColeccion);
   /* la grilla vieja quedó vacía: fuera del DOM */
   var grillaVieja = vent.querySelector(".v46-grilla");
   if (grillaVieja) grillaVieja.remove();
