@@ -92,7 +92,8 @@
       porRonda[r].sort(function (a, b) { return (a.slot || 0) - (b.slot || 0); });
     });
 
-    /* n = cuántas tarjetas fija el formato (8 equipos: q4 · s2 · f1 · l1·2 · l2·2 · lf1) */
+    /* n = cuántas tarjetas fija el formato (16 equipos: o8 · q4 · s2 · f1 ·
+       l1·4 · l2·4 · l3·2 · lf1 — misma estructura del placeholder estático) */
     function colBracket(titulo, rondas) {
       var c = el("div", "bracketv2__col");
       c.appendChild(el("h4", null, titulo));
@@ -108,8 +109,9 @@
 
     var root = el("div", "bracketv2");
 
-    /* Fila superior: cuartos -> semis -> gran final (+ campeón) */
+    /* Fila superior: octavos -> cuartos -> semis -> gran final (+ campeón) */
     var fila1 = el("div", "bracketv2__fila");
+    fila1.appendChild(colBracket("OCTAVOS DE FINAL", [{ r: "o", n: 8 }]));
     fila1.appendChild(colBracket("CUARTOS DE FINAL", [{ r: "q", n: 4 }]));
     fila1.appendChild(colBracket("SEMIFINALES", [{ r: "s", n: 2 }]));
     var colGF = colBracket("GRAN FINAL", [{ r: "f", n: 1 }]);
@@ -127,10 +129,11 @@
     divi.appendChild(el("span", null, "LLAVES INFERIORES · EL PERDEDOR CRUZA AQUÍ Y PELEA LA REVANCHA"));
     root.appendChild(divi);
 
-    /* Fila inferior: ronda 1 -> ronda 2 -> final inferior */
+    /* Fila inferior: ronda 1 -> ronda 2 -> semis inferiores -> final inferior */
     var fila2 = el("div", "bracketv2__fila");
-    fila2.appendChild(colBracket("INFERIORES · RONDA 1", [{ r: "l1", n: 2 }]));
-    fila2.appendChild(colBracket("INFERIORES · RONDA 2", [{ r: "l2", n: 2 }]));
+    fila2.appendChild(colBracket("INFERIORES · RONDA 1", [{ r: "l1", n: 4 }]));
+    fila2.appendChild(colBracket("INFERIORES · RONDA 2", [{ r: "l2", n: 4 }]));
+    fila2.appendChild(colBracket("SEMIS INFERIORES", [{ r: "l3", n: 2 }]));
     fila2.appendChild(colBracket("FINAL INFERIOR", [{ r: "lf", n: 1 }]));
     root.appendChild(fila2);
 

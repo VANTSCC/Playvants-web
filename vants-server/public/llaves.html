@@ -185,6 +185,10 @@
       <div class="ficha-bloque ficha-bloque--participantes">
         <p class="ficha-bloque__tit"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>PARTICIPANTES</p>
         <div class="ficha-bloque__fila">CUPOS ABIERTOS · LA LISTA DE EQUIPOS SE PUBLICA AL CERRAR LA INSCRIPCIÓN — SORTEO EN VIVO EN DISCORD</div>
+        <div class="ficha-sin-inscritos">
+          <b>SIN INSCRITOS AÚN</b>
+          <span>Sé el primero en inscribirte a este torneo.</span>
+        </div>
         <a class="ficha-bloque__link" href="#bracket-zona">VER BRACKETS EN VIVO <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg></a>
       </div>
       <p class="ficha__nota">La inscripción se completa desde tu cuenta VANTS (Google, Discord, GitHub, Kick o correo).</p>
@@ -243,14 +247,29 @@
   <div class="bracketv2__top">
     <h3 class="seccion__titulo">BRACKET <em>PRINCIPAL</em></h3>
     <p>Doble eliminación · <b>BO3</b> · Se publica cuando cierra la inscripción</p>
+    <span class="bracketv2__preview">VISTA PREVIA · 16 CUPOS</span>
   </div>
   <p class="llaves-aviso" id="llaves-aviso" hidden></p>
 
-  <!-- S4.8.2: estructura de la referencia (árbol doble eliminación). Con datos,
-       llaves_pagina.js reconstruye ESTA MISMA estructura con las filas reales. -->
+  <!-- S4.11: bracket de 16 equipos (referencia del dueno). OCTAVOS muestra los
+       16 cupos con logo de equipo (equipos de ejemplo, VISTA PREVIA); con datos
+       reales, llaves_pagina.js reconstruye ESTA MISMA estructura. -->
   <div id="bracket-zona">
     <div class="bracketv2">
       <div class="bracketv2__fila">
+        <div class="bracketv2__col">
+          <h4>OCTAVOS DE FINAL</h4>
+          <div class="bracketv2__matches">
+            <div class="matchb"><div class="matchb__lado con-logo"><span class="eqlogo" style="--eq1:#8b5cf6;--eq2:#5b21b6">NO</span><span class="eqnom">NOVA GG</span></div><div class="matchb__lado con-logo"><span class="eqlogo" style="--eq1:#22d3ee;--eq2:#0e7490">TI</span><span class="eqnom">TITAN CITY</span><span class="bo">· BO3</span></div></div>
+            <div class="matchb"><div class="matchb__lado con-logo"><span class="eqlogo" style="--eq1:#f59e0b;--eq2:#b45309">CN</span><span class="eqnom">CÓNDOR 5</span></div><div class="matchb__lado con-logo"><span class="eqlogo" style="--eq1:#9aa7bd;--eq2:#475569">RA</span><span class="eqnom">RAVEN SIX</span><span class="bo">· BO3</span></div></div>
+            <div class="matchb"><div class="matchb__lado con-logo"><span class="eqlogo" style="--eq1:#ef4444;--eq2:#991b1b">FX</span><span class="eqnom">FÉNIX LATAM</span></div><div class="matchb__lado con-logo"><span class="eqlogo" style="--eq1:#ec4899;--eq2:#9d174d">PN</span><span class="eqnom">PANTERAS GG</span><span class="bo">· BO3</span></div></div>
+            <div class="matchb"><div class="matchb__lado con-logo"><span class="eqlogo" style="--eq1:#6366f1;--eq2:#3730a3">DR</span><span class="eqnom">DRAGÓN OSCURO</span></div><div class="matchb__lado con-logo"><span class="eqlogo" style="--eq1:#14b8a6;--eq2:#0f766e">LO</span><span class="eqnom">LOBOS DEL SUR</span><span class="bo">· BO3</span></div></div>
+            <div class="matchb"><div class="matchb__lado con-logo"><span class="eqlogo" style="--eq1:#84cc16;--eq2:#3f6212">KJ</span><span class="eqnom">KAIJU GG</span></div><div class="matchb__lado con-logo"><span class="eqlogo" style="--eq1:#38bdf8;--eq2:#0369a1">OR</span><span class="eqnom">ORIÓN</span><span class="bo">· BO3</span></div></div>
+            <div class="matchb"><div class="matchb__lado con-logo"><span class="eqlogo" style="--eq1:#10b981;--eq2:#065f46">D9</span><span class="eqnom">DELTA NUEVE</span></div><div class="matchb__lado con-logo"><span class="eqlogo" style="--eq1:#3b82f6;--eq2:#1d4ed8">MA</span><span class="eqnom">MAREA</span><span class="bo">· BO3</span></div></div>
+            <div class="matchb"><div class="matchb__lado con-logo"><span class="eqlogo" style="--eq1:#b45309;--eq2:#78350f">BU</span><span class="eqnom">BÚHOS NIGHT</span></div><div class="matchb__lado con-logo"><span class="eqlogo" style="--eq1:#d946ef;--eq2:#86198f">ZE</span><span class="eqnom">ZENIT</span><span class="bo">· BO3</span></div></div>
+            <div class="matchb"><div class="matchb__lado con-logo"><span class="eqlogo" style="--eq1:#dc2626;--eq2:#7f1d1d">CI</span><span class="eqnom">CIMARRÓN</span></div><div class="matchb__lado con-logo"><span class="eqlogo" style="--eq1:#a78bfa;--eq2:#6d28d9">AU</span><span class="eqnom">AURORA GG</span><span class="bo">· BO3</span></div></div>
+          </div>
+        </div>
         <div class="bracketv2__col">
           <h4>CUARTOS DE FINAL</h4>
           <div class="bracketv2__matches">
@@ -288,10 +307,21 @@
           <div class="bracketv2__matches">
             <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
             <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
+            <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
+            <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
           </div>
         </div>
         <div class="bracketv2__col">
           <h4>INFERIORES · RONDA 2</h4>
+          <div class="bracketv2__matches">
+            <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
+            <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
+            <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
+            <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
+          </div>
+        </div>
+        <div class="bracketv2__col">
+          <h4>SEMIS INFERIORES</h4>
           <div class="bracketv2__matches">
             <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
             <div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div>
