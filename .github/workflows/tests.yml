@@ -76,7 +76,11 @@ jobs:
 
   e2e:
     name: E2E Playwright · plataforma en producción
-    runs-on: ubuntu-latest
+    # ubuntu-24.04 FIJADO: ubuntu-latest hoy resuelve a 26.04 y Playwright 1.57
+    # aún no distribuye Chromium para ubuntu26.04-x64 ("Playwright does not
+    # support chromium on ubuntu26.04-x64"). Cuando se actualice Playwright a
+    # una versión con 26.04, se puede volver a ubuntu-latest.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
