@@ -31,6 +31,11 @@ import { VantsBus, EVENTS } from '../vants-bus/vants-bus-client.js';
 // 503 logros_no_config y TODO lo demás sigue funcionando igual.
 import LOGROS from './logros-motor.js';
 import { idEvento as idEventoLogro } from './logros-core.js';
+// VANTS · AgentID (AgentMail): inicio de sesión para agentes de IA con inbox
+// verificado. Rutas /api/agentid/* + sesión en cookie que verifySesionJwt()
+// acepta como alternativa a un JWT de Auth0. Sin AGENTID_CLIENT_ID o sin
+// VANTS_SESION_SEC el módulo entero queda apagado y nada más cambia.
+import AGENTID from './agentid-core.js';
 
 const COLORS = {
   rojo: 0xff0d2e,
@@ -638,11 +643,20 @@ function b64ToUtf8(b64) {
   return new TextDecoder().decode(bytes);
 }
 
-// ---- verificación de JWT de sesión Auth0 con JWKS (RS256) ----
-async function verifySesionJwt(request) {
+// ---- verificación de sesión: JWT de Auth0 (RS256, header Authorization) o
+// ---- sesión de agente AgentID (cookie HttpOnly firmada). Devuelve {sub,...}
+async function verifySesionJwt(request, env) {
   const authz = request.headers.get('authorization') || '';
   const token = authz.replace(/^Bearer\s+/i, '').trim();
-  if (!token) return null;
+  if (!token) {
+    /* sin Bearer: ¿sesión de agente AgentID? (accesso completo igual que una
+       cuenta con sesión; el sub viene prefijado agentid| para no chocar) */
+    try {
+      const ag = await AGENTID.sesionDeCookie(request, env);
+      if (ag) return ag;
+    } catch (e) { /* sin configuración o cookie inválida: seguir sin sesión */ }
+    return null;
+  }
   const parts = token.split('.');
   if (parts.length !== 3) return null;
   let head, payload;
@@ -1141,7 +1155,9 @@ async function fetchWorker(request, env, ctx) {
         origenOk: (o) => SITE_ORIGINS.has(o),
         sesionDe: async (req) => {
           const t = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
-          return t ? await infoDeSesion(t) : null;
+          if (t) return await infoDeSesion(t);
+          /* agentes AgentID: sesión en cookie firmada */
+          try { return await AGENTID.sesionDeCookie(req, env); } catch (e) { return null; }
         },
         esOwner: async (sub, req) => {
           try {
@@ -1153,6 +1169,15 @@ async function fetchWorker(request, env, ctx) {
         publicarBus: (type, data) => publicarBus(env, ctx, type, data),
       });
       if (rLogros) return rLogros;
+    }
+
+    // --- VANTS · AGENTID (AgentMail): entrar/salir/sesión de agentes IA ---
+    if (url.pathname.startsWith('/api/agentid/')) {
+      if (method !== 'GET') return json({ ok: false, error: 'Solo GET' }, 405, { Allow: 'GET' });
+      const rlA = rateLimit(rlAccount, ip, LIMIT_ACCOUNT);
+      if (!rlA.ok) return json({ ok: false, error: 'Demasiadas peticiones' }, 429, { 'Retry-After': String(rlA.retry) });
+      const rAg = await AGENTID.manejar(request, env, url);
+      if (rAg) return rAg;
     }
 
     if (url.pathname === '/api/vercel/webhook') {
@@ -2194,7 +2219,7 @@ async function fetchWorker(request, env, ctx) {
       if (!aPg.ok) {
         return json({ ok: false, error: 'Demasiadas peticiones' }, 429, { 'Retry-After': String(aPg.retry), 'Access-Control-Allow-Origin': originPg || '*' });
       }
-      const sesPg = await verifySesionJwt(request);
+      const sesPg = await verifySesionJwt(request, env);
       if (!sesPg || !sesPg.sub) {
         return json({ ok: false, error: 'sin_sesion' }, 401, { 'Access-Control-Allow-Origin': originPg || '*' });
       }
@@ -2297,7 +2322,7 @@ async function fetchWorker(request, env, ctx) {
       if (!aVr.ok) {
         return json({ ok: false, error: 'Demasiadas peticiones' }, 429, { 'Retry-After': String(aVr.retry), 'Access-Control-Allow-Origin': originVr || '*' });
       }
-      const sesVr = await verifySesionJwt(request);
+      const sesVr = await verifySesionJwt(request, env);
       if (!sesVr || !sesVr.sub) {
         return json({ ok: false, error: 'sin_sesion' }, 401, { 'Access-Control-Allow-Origin': originVr || '*' });
       }
@@ -2371,9 +2396,17 @@ async function fetchWorker(request, env, ctx) {
       if (!aP2.ok) {
         return json({ ok: false, error: 'Demasiadas peticiones' }, 429, { 'Retry-After': String(aP2.retry), 'Access-Control-Allow-Origin': originP2 || '*' });
       }
-      const sesP2 = await verifySesionJwt(request);
+      const sesP2 = await verifySesionJwt(request, env);
       if (!sesP2 || !sesP2.sub) {
         return json({ ok: false, error: 'sin_sesion' }, 401, { 'Access-Control-Allow-Origin': originP2 || '*' });
+      }
+      /* Agentes AgentID: su ficha vive en el navegador (no hay user de Auth0
+         que sincronizar) — responder OK honesto sin llamar a la Management API */
+      if (sesP2.agente) {
+        if (method === 'GET') {
+          return json({ ok: true, agente: true, nickname: sesP2.nick || null, redes: {} }, 200, { 'Access-Control-Allow-Origin': originP2 || '*' });
+        }
+        return json({ ok: true, agente: true, nota: 'datos_del_agente_en_su_navegador' }, 200, { 'Access-Control-Allow-Origin': originP2 || '*' });
       }
       const mId2 = (env && env.AUTH0_MGMT_CLIENT_ID) || '';
       const mSec2 = (env && env.AUTH0_MGMT_CLIENT_SECRET) || '';
@@ -2513,7 +2546,7 @@ async function fetchWorker(request, env, ctx) {
       }
       const cL = rateLimit(rlClips, ip, LIMIT_CLIPS);
       if (!cL.ok) return json({ ok: false, error: 'Demasiadas peticiones' }, 429, { 'Retry-After': String(cL.retry), 'Access-Control-Allow-Origin': origin || '*' });
-      const ses = await verifySesionJwt(request);
+      const ses = await verifySesionJwt(request, env);
       if (!ses || !ses.sub) {
         return json({ ok: false, error: 'sin_sesion' }, 401, { 'Access-Control-Allow-Origin': origin || '*' });
       }

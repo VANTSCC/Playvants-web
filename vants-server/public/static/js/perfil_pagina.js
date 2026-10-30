@@ -821,6 +821,7 @@
     ".v44-m{width:24px;height:24px;border-radius:6px;background:rgba(0,0,0,.28);display:grid;place-items:center;font-size:13px;font-weight:900;flex:none}" +
     ".v44-m img{width:20px;height:20px;display:block;object-fit:contain}" +
     ".v44-btn--faceit{background:#ff5500}.v44-btn--discord{background:#5865F2}" +
+    ".v44-btn--agent{background:#0d0d10;border:1px dashed rgba(180,76,255,.6);color:#d9c2ff}.v44-btn--agent:hover{border-color:#b44cff;background:rgba(180,76,255,.08)}.v44-btn--agent .v44-m{background:rgba(180,76,255,.16);color:#c9a8ff;font-size:10px}" +
     ".v44-btn--google{background:#fff;color:#141414}.v44-btn--google .v44-m{background:#e8f0fe;color:#4285F4}" +
     ".v44-btn--fino{background:transparent;border:1px solid rgba(255,255,255,.16);color:#d4d4d8;font-weight:600;font-size:11px;letter-spacing:.14em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}" +
     ".v44-pie{margin-top:12px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#52525b;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;text-align:center;margin-bottom:0}" +
@@ -858,6 +859,7 @@
 
   function proveedorDe(sesion) {
     var sub = sesion && sesion.sub ? String(sesion.sub) : "";
+    if (sub.indexOf("agentid|") === 0) return { id: "agent", nombre: "AGENTE IA" };
     if (sub.indexOf("google-oauth2|") === 0) return { id: "google", nombre: "GOOGLE" };
     if (sub.indexOf("discord|") === 0) return { id: "discord", nombre: "DISCORD" };
     if (sub.indexOf("facebook|") === 0) return { id: "facebook", nombre: "FACEBOOK" };
@@ -905,11 +907,12 @@
       '<div class="v44-marca"><span class="v44-v"><img src="/static/img/vants-logo-circular.png" alt="V" width="34" height="34"></span><b>VANTS GAMES</b></div>' +
       '<p class="v44-paso">paso 1 de 2 · registro</p>' +
       '<h2 class="v44-titulo">Crea tu cuenta <em>para entrar</em></h2>' +
-      '<p class="v44-sub">Para entrar a la arena te registrás con Google, Discord o tu correo con contraseña. Sirve para tu ficha, subir clips y entrar a torneos.</p>' +
+      '<p class="v44-sub">Para entrar a la arena te registrás con Google, Discord o tu correo con contraseña. Sirve para tu ficha, subir clips y entrar a torneos. ¿Sos un agente de IA? Tenés tu propio acceso abajo.</p>' +
       '<button type="button" class="v44-btn v44-btn--faceit" id="v44-g-faceit"><span class="v44-m"><img src="/static/img/logo-faceit.png" alt="" width="16" height="16"></span>Registrarme con FACEIT</button>' +
       '<button type="button" class="v44-btn v44-btn--discord" id="v44-g-discord"><span class="v44-m"><img src="/static/img/logo-discord.png" alt="" width="16" height="16"></span>Registrarme con Discord</button>' +
       '<button type="button" class="v44-btn v44-btn--google" id="v44-g-google"><span class="v44-m"><img src="/static/img/logo-google.png" alt="" width="16" height="16"></span>Registrarme con Google</button>' +
       '<button type="button" class="v44-btn v44-btn--correo" id="v44-g-correo"><span class="v44-m">@</span>Registrarme con correo</button>' +
+      '<button type="button" class="v44-btn v44-btn--agent" id="v44-g-agent"><span class="v44-m">IA</span>Soy un agente IA · entrar con AgentID</button>' +
       '<div class="v44-pies"><button type="button" class="v44-link" id="v44-g-ya">¿ya tenés cuenta? entrar con correo</button><span class="v44-sep">·</span><button type="button" class="v44-link" id="v44-g-olvide">olvidé mi contraseña</button></div>' +
       '<p class="v44-pie">tus datos solo se usan para tu perfil · podés desconectar cuando quieras</p>';
     abrirCapa(html, gateIgnoradoYa);
@@ -920,9 +923,15 @@
     if (d) d.addEventListener("click", function () { irCon("discord"); });
     if (f) f.addEventListener("click", explicarFaceit);
     var co = document.getElementById("v44-g-correo");
+    var ag = document.getElementById("v44-g-agent");
     var ya = document.getElementById("v44-g-ya");
     var ol = document.getElementById("v44-g-olvide");
     if (co) co.addEventListener("click", function () { irCorreo("registrar"); });
+    if (ag) ag.addEventListener("click", function () {
+      /* AgentID (AgentMail): OIDC en auth.agentid.com — el callback del
+         worker crea la sesión de agente y vuelve a esta misma página */
+      window.location.href = "/api/agentid/login?volver=" + encodeURIComponent(window.location.pathname + window.location.search);
+    });
     if (ya) ya.addEventListener("click", function () { irCorreo("entrar"); });
     if (ol) ol.addEventListener("click", panelOlvide);
   }
@@ -1229,6 +1238,17 @@
   } else {
     decidir(null);
   }
+
+  /* Aviso tras volver de AgentID (cancelado / entorno sin AgentID activo) */
+  (function () {
+    var av = new URLSearchParams(window.location.search).get("agentid");
+    if (!av) return;
+    try { window.history.replaceState({}, "", window.location.pathname); } catch (_e) { /* noop */ }
+    var msj = av === "cancelado"
+      ? "ENTRADA CON AGENTID CANCELADA"
+      : "AGENTID TODAVÍA NO ESTÁ ACTIVO EN ESTE ENTORNO";
+    if (api && api.toast) api.toast(msj, true);
+  })();
 })();
 
 /* ════════════════════════════════════════════════════════════════════

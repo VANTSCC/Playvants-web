@@ -19,6 +19,13 @@ not_found_handling = "404-page"
 VANTS_BOT_URL = "https://br-sweet-shape-b42xhogj-vantsbot.compute.c-6.us-east-2.aws.neon.tech"
 VANTS_BUS_URL = "https://vants-bus.vants.workers.dev"
 
+# VANTS · AgentID (AgentMail): login para agentes de IA con inbox verificado.
+# client_id público (app registrada en console.agentid.com, 2 redirect URIs:
+# staging y producción). AGENTID_CLIENT_SECRET y VANTS_SESION_SEC viven como
+# secrets (wrangler secret put). En producción poner AGENTID_SOLO_VERIFICADOS="1".
+AGENTID_CLIENT_ID = "fabe85f8-b37a-4f98-940d-582b45b1c961"
+AGENTID_SOLO_VERIFICADOS = "0"
+
 # Espejo de LECTURA igual que producción: /api/games, /api/tournaments,
 # /api/teams, /api/players, /api/articles y /api/search leen aquí primero.
 [[d1_databases]]

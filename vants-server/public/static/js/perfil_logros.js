@@ -132,9 +132,12 @@
 
   /* ------------------------ guardado destacadas ------------------------ */
   function guardarDestacadas(token) {
+    /* agentes AgentID: sin JWT de Auth0 — la sesión vive en cookie firmada */
+    var cab = { "Content-Type": "application/json" };
+    if (token) cab["Authorization"] = "Bearer " + token;
     return fetch("/api/me/badges/featured", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+      headers: cab,
       body: JSON.stringify({ featured: estadoDestacadas }),
     }).then(function (r) { return r.json().catch(function () { return {}; }); });
   }
@@ -186,8 +189,10 @@
         return;
       }
       return window.VantAuth0.getToken().then(function (token) {
-        if (!token) throw new Error("sin_token");
-        return fetch("/api/me/badges", { headers: { "Authorization": "Bearer " + token } })
+        /* Agentes AgentID: getToken() es null pero hay sesión en cookie
+           firmada — la API la acepta; solo se manda Bearer con JWT Auth0 */
+        var cab = token ? { "Authorization": "Bearer " + token } : {};
+        return fetch("/api/me/badges", { headers: cab })
           .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, cuerpo: j }; }); })
           .then(function (res) {
             if (!res.ok || !res.cuerpo || !res.cuerpo.ok) {

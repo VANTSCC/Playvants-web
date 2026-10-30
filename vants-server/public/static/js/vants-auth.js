@@ -131,6 +131,26 @@
     } else {
       usuario = null;
     }
+    /* Agentes AgentID (AgentMail): sin sesión Auth0, ¿hay cookie de agente?
+       La sesión la pone /api/agentid/callback (token firmado HttpOnly). */
+    if (!usuario) {
+      try {
+        var ra = await fetch("/api/agentid/sesion", { headers: { Accept: "application/json" } });
+        if (ra.ok) {
+          var ja = await ra.json();
+          if (ja && ja.ok) {
+            usuario = {
+              sub: ja.sub,
+              nick: ja.nick || String(ja.inbox || "").split("@")[0] || "AGENTE",
+              correo: ja.inbox || "",
+              verificado: true,
+              agente: true,
+              dueno: ja.dueno === true,
+            };
+          }
+        }
+      } catch (_e) { /* sin agente ni red: seguir sin sesión */ }
+    }
     pintarNav();
     return usuario;
   }
@@ -227,6 +247,12 @@
      cliente.logout() borra ese cache local y DESPUÉS redirige al /v2/logout
      con returnTo a la raíz (la única URL ya permitida en el dashboard). */
   function salir() {
+    /* Agentes AgentID: la sesión es cookie propia del worker — la borra
+       /api/agentid/salir (no hay SDK de Auth0 que cerrar) */
+    if (usuario && usuario.agente) {
+      try { window.location.href = "/api/agentid/salir?volver=%2F"; } catch (_e) { window.location.href = "/"; }
+      return;
+    }
     /* OJO: acá NO se borra vants_perfil_v1 — el nombre editado, el país y
        las redes son DEL JUGADOR, no de la sesión: deben seguir ahí cuando
        vuelva a iniciar sesión (bug 2026-10-30: al borrarlo, el asistente
