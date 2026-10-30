@@ -673,14 +673,11 @@
   }
 
   document.getElementById("btn-salir").addEventListener("click", function () {
-    try { localStorage.removeItem("vants_perfil_v1"); } catch (_e) { /* noop */ }
-    /* Volver a la raíz: Auth0 valida el returnTo COMPLETO (ruta incluida)
-       contra "Allowed Logout URLs" y solo la raíz está permitida; con
-       /perfil el logout caía en "Oops! something went wrong". La portada
-       arranca limpia con ENTRAR, sin restos de la sesión cerrada. */
+    /* NO se borra vants_perfil_v1: el nombre editado, país, región y redes
+       son DEL JUGADOR, no de la sesión — siguen ahí al volver a entrar y el
+       asistente "Elige tu nombre" no debe repetirse. Solo muere la sesión. */
     if (window.VantAuth0) { window.VantAuth0.salir(); return; }
-    api.toast("FICHA REINICIADA");
-    setTimeout(function () { location.reload(); }, 900);
+    setTimeout(function () { location.reload(); }, 300);
   });
 
   /* ENTRAR directo (email/lo que tenga la cuenta) y accesos sociales */
@@ -759,9 +756,14 @@
                 pintarCuentas();
                 pintarFaceitBloque();
               }
-              if (j.nickname && document.getElementById("dato-nick").value === "") {
-                document.getElementById("dato-nick").value = j.nickname;
-                if (j.nickname !== u.nick) pintarNick(j.nickname);
+              if (j.nickname) {
+                /* el nombre guardado EN LA CUENTA es autoridad cuando acá
+                   no hay nada (navegador limpio u otro dispositivo) */
+                if (!estado.nick) { estado.nick = j.nickname; api.guardar(estado); }
+                if (document.getElementById("dato-nick").value === "") {
+                  document.getElementById("dato-nick").value = j.nickname;
+                }
+                if (j.nickname !== u.nick) pintarNick(estado.nick);
               }
             })
             .catch(function () { /* silencioso: el perfil local sigue */ });
@@ -1154,13 +1156,60 @@
     }, 700);
   }
 
+  /* El asistente "Elige tu nombre" SOLO sale si el nombre no está ni en
+     este navegador ni en la cuenta (bug 2026-10-30: al borrar
+     vants_perfil_v1 al cerrar sesión, el asistente volvía a salir aunque la
+     cuenta ya tenía nombre). Consulta /api/account/perfil antes de decidir. */
+  function pedirNombreSiToca(prov) {
+    function pintarNombre(n) {
+      var el = document.getElementById("nick-jugador"); if (el) el.textContent = String(n).toUpperCase();
+      var sh = document.getElementById("sub-handle"); if (sh) sh.textContent = "@" + String(n).toLowerCase().replace(/[^a-z0-9_\-.]/g, "");
+      document.querySelectorAll(".nav-entrar, .mega__entrar").forEach(function (a) {
+        a.textContent = String(n).toUpperCase().slice(0, 14);
+        a.setAttribute("href", "/perfil");
+      });
+      var dn = document.getElementById("dato-nick"); if (dn) dn.value = n;
+    }
+    if (!window.VantAuth0 || !estado.sesion) { mostrarNombre(prov); return; }
+    window.VantAuth0.getToken().then(function (tok) {
+      if (!tok) { mostrarNombre(prov); return; }
+      fetch("/api/account/perfil", { headers: { Accept: "application/json", Authorization: "Bearer " + tok } })
+        .then(function (r) { return r.json().catch(function () { return null; }); })
+        .then(function (j) {
+          if (j && j.ok && j.nickname) {
+            /* el nombre ya vive en la cuenta: aplicarlo, sin asistente */
+            estado.nick = j.nickname;
+            api.guardar(estado);
+            pintarNombre(j.nickname);
+            api.pintarAvatar(estado);
+            pintarChips();
+          } else {
+            mostrarNombre(prov);
+          }
+        })
+        .catch(function () { mostrarNombre(prov); });
+    }).catch(function () { mostrarNombre(prov); });
+  }
+
   function decidir(u) {
     if (u) {
+      /* ¿otra CUENTA distinta en este navegador? los datos locales (nick,
+         país, redes) eran del jugador anterior: arrancar limpio. Si es la
+         MISMA cuenta, todo se conserva aunque haya cerrado sesión. */
+      var subPrevio = null;
+      try { subPrevio = localStorage.getItem("vants_sub_v1"); } catch (_e) { /* noop */ }
+      if (subPrevio && subPrevio !== u.sub) {
+        delete estado.nick;
+        delete estado.pais;
+        delete estado.region;
+        estado.cuentas = api.defecto().cuentas;
+      }
+      try { localStorage.setItem("vants_sub_v1", u.sub); } catch (_e) { /* noop */ }
       estado.sesion = { sub: u.sub, nick: u.nick, correo: u.correo, verificado: u.verificado };
       api.guardar(estado);
       pintarChips();
       vincularFaceitSiToca();
-      if (!estado.nick) mostrarNombre(proveedorDe(estado.sesion));
+      if (!estado.nick) pedirNombreSiToca(proveedorDe(estado.sesion));
     } else {
       estado.sesion = null;
       api.guardar(estado);

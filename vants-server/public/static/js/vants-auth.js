@@ -202,7 +202,12 @@
      cliente.logout() borra ese cache local y DESPUÉS redirige al /v2/logout
      con returnTo a la raíz (la única URL ya permitida en el dashboard). */
   function salir() {
-    try { localStorage.removeItem("vants_perfil_v1"); } catch (_e) { /* noop */ }
+    /* OJO: acá NO se borra vants_perfil_v1 — el nombre editado, el país y
+       las redes son DEL JUGADOR, no de la sesión: deben seguir ahí cuando
+       vuelva a iniciar sesión (bug 2026-10-30: al borrarlo, el asistente
+       "Elige tu nombre" volvía a salir y el perfil pedía configurar de
+       nuevo). La sesión la limpia cliente.logout(); los datos del jugador
+       se quedan en este navegador. */
     try {
       if (cliente && typeof cliente.logout === "function") {
         cliente.logout({ logoutParams: { returnTo: window.location.origin + "/" } });
