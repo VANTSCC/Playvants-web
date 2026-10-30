@@ -7,7 +7,8 @@
    · Pide /api/torneos/bracket?torneo=ascension-s4 (mismo origen, lectura).
    · Si hay equipos inscritos, pinta la sección EQUIPOS INSCRITOS.
    · Si hay llaves, REEMPLAZA el bracket estático por el real:
-     rondas q/s (cuadro superior), l1/l2/lf (inferiores) y f (gran final),
+     rondas o/q/s (octavos, cuartos, semis) y f (gran final) — eliminación
+     directa, SIN cuadro inferior (S4.14: no hay revancha) —,
      con marcador, ganador (clase .ganador) y chip EN VIVO cuando un
      partido está en_curso. El servidor avanza los cruces solo (trigger
      bracket_avanza), así que la página solo lee.
@@ -86,10 +87,10 @@
     return m;
   }
 
-  /* ── Bracket completo (árbol de doble eliminación, mismo layout de la
-     referencia: 4 columnas arriba + divisor + 4 columnas abajo). Cada partido
-     va en un slot uniforme (S4.12) para que las rondas queden centradas entre
-     sus alimentadoras; los huecos quedan en POR DEFINIR. ── */
+  /* ── Bracket completo (árbol de ELIMINACIÓN DIRECTA: octavos -> cuartos ->
+     semis -> gran final, sin cuadro inferior — S4.14, no hay revancha).
+     Cada partido va en un slot uniforme (S4.12) para que las rondas queden
+     centradas entre sus alimentadoras; los huecos quedan en POR DEFINIR. ── */
   function pintaBracket(filas) {
     var porRonda = {};
     (filas || []).forEach(function (f) {
@@ -99,8 +100,8 @@
       porRonda[r].sort(function (a, b) { return (a.slot || 0) - (b.slot || 0); });
     });
 
-    /* n = cuántas tarjetas fija el formato (16 equipos: o8 · q4 · s2 · f1 ·
-       l1·4 · l2·4 · l3·2 · lf1 — misma estructura del placeholder estático) */
+    /* n = cuántas tarjetas fija el formato (16 equipos, eliminación directa:
+       o8 · q4 · s2 · f1 — misma estructura del placeholder estático) */
     function colBracket(titulo, rondas) {
       var c = el("div", "bracketv2__col");
       c.appendChild(el("h4", null, titulo));
@@ -129,17 +130,6 @@
     colGF.appendChild(el("p", "campeon-actual", "CAMPEÓN ACTUAL: POR DEFINIR"));
     fila1.appendChild(colGF);
     root.appendChild(fila1);
-
-    /* Divisor limpio sin texto (S4.13) */
-    root.appendChild(el("div", "bracketv2__divisor"));
-
-    /* Fila inferior: ronda 1 -> ronda 2 -> semis inferiores -> final inferior */
-    var fila2 = el("div", "bracketv2__fila");
-    fila2.appendChild(colBracket("INFERIORES · RONDA 1", [{ r: "l1", n: 4 }]));
-    fila2.appendChild(colBracket("INFERIORES · RONDA 2", [{ r: "l2", n: 4 }]));
-    fila2.appendChild(colBracket("SEMIS INFERIORES", [{ r: "l3", n: 2 }]));
-    fila2.appendChild(colBracket("FINAL INFERIOR", [{ r: "lf", n: 1 }]));
-    root.appendChild(fila2);
 
     zona.innerHTML = "";
     zona.appendChild(root);

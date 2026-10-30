@@ -124,7 +124,7 @@
       <h1>FICHA DE <em>TORNEO</em></h1>
     </div>
   </div>
-  <p>La ficha completa del torneo: información, reglas rápidas y el bracket de doble eliminación. Los cruces se arman al cerrar las inscripciones —sorteo en vivo en Discord— y esta página se actualiza sola: datos reales del torneo, en vivo.</p>
+  <p>La ficha completa del torneo: información, reglas rápidas y el bracket de eliminación directa. Los cruces se arman al cerrar las inscripciones —sorteo en vivo en Discord— y esta página se actualiza sola: datos reales del torneo, en vivo.</p>
 </header>
 
 <!-- S4.10: barra de estado del torneo (referencia del dueño: cupos 0/16 +
@@ -144,7 +144,7 @@
       </li>
       <li>
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5v14"/><path d="M4 7h5"/><path d="M4 17h5"/><path d="M9 7v10"/><path d="M9 12h7"/><path d="M16 9v6"/></svg>
-        <span>DOBLE ELIMINACIÓN</span>
+        <span>ELIMINACIÓN DIRECTA</span>
       </li>
       <li class="ficha-info__premio">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v6a5 5 0 0 1-10 0Z"/><path d="M7 6H4a1 1 0 0 0-1 1c0 2.2 1.8 4 4 4"/><path d="M17 6h3a1 1 0 0 1 1 1c0 2.2-1.8 4-4 4"/></svg>
@@ -165,7 +165,7 @@
       <dl class="ficha-datos">
         <div><dt>Esport</dt><dd>VALORANT</dd></div>
         <div><dt>Fecha</dt><dd>POR ANUNCIAR</dd></div>
-        <div><dt>Formato</dt><dd>BO3 · DOBLE ELIMINACIÓN</dd></div>
+        <div><dt>Formato</dt><dd>BO3 · ELIMINACIÓN DIRECTA</dd></div>
         <div><dt>Ubicación</dt><dd>LATAM · ONLINE</dd></div>
         <div><dt>Bolsa de premios</dt><dd class="ficha-rojo">POR ANUNCIAR</dd></div>
         <div><dt>Fee de inscripción</dt><dd>GRATIS</dd></div>
@@ -246,14 +246,15 @@
 <section class="seccion" style="padding-top:26px">
   <div class="bracketv2__top">
     <h3 class="seccion__titulo">BRACKET <em>PRINCIPAL</em></h3>
-    <p>Doble eliminación · <b>BO3</b> · Se publica cuando cierra la inscripción</p>
+    <p>Eliminación directa · <b>BO3</b> · Se publica cuando cierra la inscripción</p>
     <span class="bracketv2__preview">VISTA PREVIA · 16 CUPOS</span>
   </div>
   <p class="llaves-aviso" id="llaves-aviso" hidden></p>
 
-  <!-- S4.11: bracket de 16 equipos (referencia del dueno). OCTAVOS muestra los
-       16 cupos con logo de equipo (equipos de ejemplo, VISTA PREVIA); con datos
-       reales, llaves_pagina.js reconstruye ESTA MISMA estructura. -->
+  <!-- S4.11/S4.14: bracket de 16 equipos, ELIMINACION DIRECTA (sin revancha:
+       fuera el cuadro inferior). OCTAVOS muestra los 16 cupos con logo de equipo
+       (equipos de ejemplo, VISTA PREVIA); con datos reales, llaves_pagina.js
+       reconstruye ESTA MISMA estructura. -->
   <div id="bracket-zona">
     <div class="bracketv2">
       <div class="bracketv2__fila">
@@ -299,42 +300,6 @@
         </div>
       </div>
 
-      <!-- S4.13: divisor limpio sin texto (S4.13) -->
-      <div class="bracketv2__divisor" role="separator" aria-label="Llaves inferiores"></div>
-
-      <div class="bracketv2__fila">
-        <div class="bracketv2__col">
-          <h4>INFERIORES · RONDA 1</h4>
-          <div class="bracketv2__matches">
-            <div class="bracketv2__slot"><div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div></div>
-            <div class="bracketv2__slot"><div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div></div>
-            <div class="bracketv2__slot"><div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div></div>
-            <div class="bracketv2__slot"><div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div></div>
-          </div>
-        </div>
-        <div class="bracketv2__col">
-          <h4>INFERIORES · RONDA 2</h4>
-          <div class="bracketv2__matches">
-            <div class="bracketv2__slot"><div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div></div>
-            <div class="bracketv2__slot"><div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div></div>
-            <div class="bracketv2__slot"><div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div></div>
-            <div class="bracketv2__slot"><div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div></div>
-          </div>
-        </div>
-        <div class="bracketv2__col">
-          <h4>SEMIS INFERIORES</h4>
-          <div class="bracketv2__matches">
-            <div class="bracketv2__slot"><div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div></div>
-            <div class="bracketv2__slot"><div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div></div>
-          </div>
-        </div>
-        <div class="bracketv2__col">
-          <h4>FINAL INFERIOR</h4>
-          <div class="bracketv2__matches">
-            <div class="bracketv2__slot"><div class="matchb"><div class="matchb__lado">POR DEFINIR</div><div class="matchb__lado">POR DEFINIR<span class="bo">· BO3</span></div></div></div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </section>

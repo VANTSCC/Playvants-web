@@ -184,10 +184,10 @@
 .llaves-chip .st--rev { color: var(--gris); border: 1px solid var(--borde); }
 @media (max-width: 900px) { .llaves-chips { gap: 8px; } }
 
-/* Bracket EN VIVO — estilo árbol de doble eliminación (S4.8.2, referencia
-   del dueño): fila superior CUARTOS->SEMIS->GRAN FINAL con conectores,
-   divisor LLAVES INFERIORES, fila inferior RONDA 1->RONDA 2->FINAL.
-   Tarjetas con nombres centrados, separador punteado y badge BO. */
+/* Bracket EN VIVO — árbol de ELIMINACIÓN DIRECTA (S4.8.2, referencia del
+   dueño; S4.14: sin cuadro inferior, no hay revancha): una sola fila
+   OCTAVOS->CUARTOS->SEMIS->GRAN FINAL con conectores. Tarjetas con nombres
+   centrados, separador punteado y badge BO. */
 .bracketv2__top { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; flex-wrap: wrap; margin-bottom: 6px; }
 .bracketv2__top p { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; color: var(--gris); }
 .bracketv2__top p b { color: var(--rojo); }
@@ -198,14 +198,11 @@
    asi los centros caen exactos en (2i+1)/(2n) de la columna y cada ronda queda
    centrada entre sus dos partidos alimentadores (antes space-around + gap
    derivaba hasta ~17px y la ronda llena quedaba apretada). min-height da aire:
-   octavos 8 slots de 104px = 832; inferiores 4 slots de 104 = 416. */
+   octavos 8 slots de 104px = 832. (S4.14: sin cuadro inferior, no hay
+   revancha — una sola fila de columnas.) */
 .bracketv2__matches { flex: 1; display: flex; flex-direction: column; }
 .bracketv2__fila:first-child .bracketv2__matches { min-height: 832px; }
-.bracketv2__fila:last-child .bracketv2__matches { min-height: 416px; }
 .bracketv2__slot { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
-.bracketv2__divisor { display: flex; align-items: center; gap: 18px; margin-top: 30px; }
-.bracketv2__divisor::before, .bracketv2__divisor::after { content: ''; flex: 1; height: 1px; background: var(--borde); }
-.bracketv2__divisor span { font-family: var(--mono); font-size: 10px; letter-spacing: .22em; color: var(--gris); white-space: nowrap; }
 .matchb { position: relative; border: 1px solid var(--borde); border-radius: 5px; background: var(--panel-2); }
 .bracketv2__col:not(:last-child) .matchb::after { content: ''; position: absolute; top: 50%; right: -24px; width: 24px; height: 1px; background: var(--borde); }
 .matchb__lado { position: relative; padding: 11px 16px; line-height: 22px; min-height: 44px; box-sizing: border-box; text-align: center; font-weight: 700; font-size: 13px; letter-spacing: .06em; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -231,8 +228,7 @@
 @media (max-width: 900px) {
   .bracketv2__fila { grid-template-columns: 1fr; gap: 20px; }
   .bracketv2__matches { justify-content: flex-start; gap: 12px; }
-  .bracketv2__fila:first-child .bracketv2__matches,
-  .bracketv2__fila:last-child .bracketv2__matches { min-height: 0; }
+  .bracketv2__fila:first-child .bracketv2__matches { min-height: 0; }
   .bracketv2__slot { flex: 0 0 auto; }
   .bracketv2__col:not(:last-child) .matchb::after { display: none; }
   .bracketv2__fila:first-child .bracketv2__col:last-child .campeon-box,
