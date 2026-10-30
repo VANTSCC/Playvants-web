@@ -187,12 +187,22 @@
     cliente.loginWithRedirect({ authorizationParams: params });
   }
 
-  function salir() {
+  function salir(volver) {
     try {
       window.location.href = "https://" + DOMINIO + "/v2/logout?client_id=" + CLIENTE +
-        "&returnTo=" + encodeURIComponent(window.location.origin + "/");
-    } catch (_e) { window.location.href = "/"; }
+        "&returnTo=" + encodeURIComponent(window.location.origin + (volver || "/"));
+    } catch (_e) { window.location.href = volver || "/"; }
   }
+
+  /* Si el navegador restaura esta página desde la caché de adelante-atrás
+     (botón volver DESPUÉS de cerrar sesión), el DOM restaurado puede traer
+     el perfil montado con datos de una sesión que ya no existe. Recargamos:
+     la carga fresca decide con la sesión real (muro ENTRAR o perfil). */
+  window.addEventListener("pageshow", function (e) {
+    if (e && e.persisted) {
+      try { window.location.reload(); } catch (_e) { /* noop */ }
+    }
+  });
 
   /* FIX S4.2: el NOMBRE DE LA CUENTA propio (perfil → Mis datos) manda sobre
      el del correo de Auth0 en toda la navegación. Vive en localStorage. */

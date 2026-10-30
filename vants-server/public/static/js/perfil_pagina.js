@@ -646,7 +646,6 @@
     var btnSalir = document.getElementById("btn-salir");
     var btnGoogle = document.getElementById("btn-entrar-google");
     var btnDiscord = document.getElementById("btn-entrar-discord");
-    var btnDirecto = document.getElementById("btn-perfil-entrar-directo");
     var badges = document.getElementById("perfil-badges");
     var s = estado.sesion;
     if (badges) {
@@ -661,7 +660,6 @@
     var sinSesion = !s;
     if (btnGoogle) btnGoogle.hidden = !sinSesion;
     if (btnDiscord) btnDiscord.hidden = !sinSesion;
-    if (btnDirecto) btnDirecto.hidden = !sinSesion;
     if (btnSalir) btnSalir.hidden = sinSesion;
     if (!lineas) return;
     if (!s) {
@@ -676,7 +674,9 @@
 
   document.getElementById("btn-salir").addEventListener("click", function () {
     try { localStorage.removeItem("vants_perfil_v1"); } catch (_e) { /* noop */ }
-    if (window.VantAuth0) { window.VantAuth0.salir(); return; }
+    /* Volver a /perfil (no a la portada): la carga fresca muestra el muro
+       ENTRAR y ningún resto del perfil de la sesión que acaba de cerrarse. */
+    if (window.VantAuth0) { window.VantAuth0.salir("/perfil"); return; }
     api.toast("FICHA REINICIADA");
     setTimeout(function () { location.reload(); }, 900);
   });
@@ -686,10 +686,6 @@
     var el = document.getElementById(id);
     if (el) el.addEventListener("click", fn);
   }
-  wire("btn-perfil-entrar-directo", function () {
-    if (window.VantAuth0) window.VantAuth0.entrar();
-    else api.toast("NO SE PUDO ABRIR EL LOGIN · RECARGA LA PÁGINA", true);
-  });
   wire("btn-entrar-google", function () {
     if (window.VantAuth0 && window.VantAuth0.entrarCon) window.VantAuth0.entrarCon("google-oauth2");
     else if (window.VantAuth0) window.VantAuth0.entrar();
