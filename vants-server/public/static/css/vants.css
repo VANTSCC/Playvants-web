@@ -502,6 +502,13 @@ input, select, textarea { font-family: inherit; }
 .pie__enlaces a { color: var(--gris); }
 .pie__enlaces a:hover { color: #fff; }
 
+/* ── Pie: fila legal reordenada + insignias de pago ─────────── */
+.pie__legal { display: grid; gap: 7px; }
+.pie__legal p { margin-bottom: 0; }
+.pie__pagos { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+.pago-chip { width: 46px; height: 30px; display: block; border-radius: 4px; transition: transform .13s ease, filter .13s ease; }
+.pago-chip:hover { transform: translateY(-1px); filter: brightness(1.12); }
+
 /* ── RESPONSIVE NÚCLEO ───────────────────────────────────────── */
 @media (max-width: 1080px) {
   .cab__nav { display: none; }
