@@ -193,32 +193,52 @@
 .bracketv2__top p b { color: var(--rojo); }
 .bracketv2__fila { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; align-items: stretch; margin-top: 22px; }
 .bracketv2__col { display: flex; flex-direction: column; min-width: 0; }
-.bracketv2__col h4 { font-family: var(--mono); font-size: 10px; letter-spacing: .24em; color: var(--gris); margin: 0 0 12px; }
-.bracketv2__matches { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 14px; }
+.bracketv2__col h4 { font-family: var(--mono); font-size: 10px; letter-spacing: .24em; color: var(--gris); margin: 0 0 12px; white-space: nowrap; }
+/* S4.12: alineacion del arbol — cada partido vive en un slot uniforme (flex:1),
+   asi los centros caen exactos en (2i+1)/(2n) de la columna y cada ronda queda
+   centrada entre sus dos partidos alimentadores (antes space-around + gap
+   derivaba hasta ~17px y la ronda llena quedaba apretada). min-height da aire:
+   octavos 8 slots de 104px = 832; inferiores 4 slots de 104 = 416. */
+.bracketv2__matches { flex: 1; display: flex; flex-direction: column; }
+.bracketv2__fila:first-child .bracketv2__matches { min-height: 832px; }
+.bracketv2__fila:last-child .bracketv2__matches { min-height: 416px; }
+.bracketv2__slot { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
 .bracketv2__divisor { display: flex; align-items: center; gap: 18px; margin-top: 30px; }
 .bracketv2__divisor::before, .bracketv2__divisor::after { content: ''; flex: 1; height: 1px; background: var(--borde); }
 .bracketv2__divisor span { font-family: var(--mono); font-size: 10px; letter-spacing: .22em; color: var(--gris); white-space: nowrap; }
 .matchb { position: relative; border: 1px solid var(--borde); border-radius: 5px; background: var(--panel-2); }
-.bracketv2__col:not(:last-child) .matchb::after { content: ''; position: absolute; top: 50%; right: -29px; width: 29px; height: 1px; background: var(--borde); }
-.matchb__lado { padding: 14px 16px; text-align: center; font-weight: 700; font-size: 13px; letter-spacing: .06em; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bracketv2__col:not(:last-child) .matchb::after { content: ''; position: absolute; top: 50%; right: -24px; width: 24px; height: 1px; background: var(--borde); }
+.matchb__lado { position: relative; padding: 11px 16px; line-height: 22px; min-height: 44px; box-sizing: border-box; text-align: center; font-weight: 700; font-size: 13px; letter-spacing: .06em; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .matchb__lado + .matchb__lado { border-top: 1px dashed var(--borde); }
 .matchb__lado.ganador { background: rgba(61,220,132,.08); }
 .matchb__lado .sc { font-family: var(--mono); font-size: 12px; color: #3ddc84; margin-left: 10px; }
-.matchb__lado .bo { font-family: var(--mono); font-size: 9.5px; font-weight: 400; letter-spacing: .16em; color: var(--gris-2); margin-left: 10px; }
+/* chip BO anclado a la derecha: el nombre queda centrado de verdad
+   (antes el chip empujaba el nombre y las dos filas no coincidian) */
+.matchb__lado .bo { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-family: var(--mono); font-size: 9.5px; font-weight: 400; letter-spacing: .16em; color: var(--gris-2); }
 .matchb.match--vivo { border-color: var(--rojo); box-shadow: 0 0 0 1px rgba(229,57,53,.28); }
 /* S4.11: bracket 16 equipos — fila de equipo con logo (VISTA PREVIA) */
 .bracketv2__preview { font-family: var(--mono); font-size: 9.5px; letter-spacing: .2em; color: var(--rojo); border: 1px solid rgba(255,13,46,.4); border-radius: 999px; padding: 6px 14px; background: rgba(255,13,46,.07); white-space: nowrap; }
-.matchb__lado.con-logo { display: flex; align-items: center; gap: 9px; padding: 11px 12px; text-align: left; }
+.matchb__lado.con-logo { display: flex; align-items: center; gap: 9px; padding: 11px 12px; min-height: 44px; box-sizing: border-box; text-align: left; }
 .eqlogo { width: 22px; height: 22px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; flex: none; background: linear-gradient(135deg, var(--eq1, #555), var(--eq2, #222)); color: #fff; font-size: 9px; font-weight: 900; letter-spacing: .02em; box-shadow: inset 0 0 0 1px rgba(255,255,255,.16); }
 .matchb__lado .eqnom { overflow: hidden; text-overflow: ellipsis; }
-.matchb__lado.con-logo .bo { margin-left: auto; }
 .matchb > .match__cinta { padding: 7px 14px 0; }
 .campeon-actual { color: var(--gris-2); font-size: 12px; margin-top: 14px; font-family: var(--mono); letter-spacing: .08em; }
+/* S4.12: la caja CAMPEON sale del flujo para que el partido de la GRAN FINAL
+   quede centrado de verdad en la columna (antes la caja lo subia ~60px) */
+.bracketv2__fila:first-child .bracketv2__col:last-child { position: relative; }
+.bracketv2__fila:first-child .bracketv2__col:last-child .campeon-box { position: absolute; left: 0; right: 0; bottom: 34px; }
+.bracketv2__fila:first-child .bracketv2__col:last-child .campeon-actual { position: absolute; left: 0; right: 0; bottom: 4px; margin-top: 0; }
 @media (max-width: 900px) {
   .bracketv2__fila { grid-template-columns: 1fr; gap: 20px; }
   .bracketv2__matches { justify-content: flex-start; gap: 12px; }
+  .bracketv2__fila:first-child .bracketv2__matches,
+  .bracketv2__fila:last-child .bracketv2__matches { min-height: 0; }
+  .bracketv2__slot { flex: 0 0 auto; }
   .bracketv2__col:not(:last-child) .matchb::after { display: none; }
   .bracketv2__divisor span { white-space: normal; text-align: center; }
+  .bracketv2__fila:first-child .bracketv2__col:last-child .campeon-box,
+  .bracketv2__fila:first-child .bracketv2__col:last-child .campeon-actual { position: static; }
+  .bracketv2__fila:first-child .bracketv2__col:last-child .campeon-box { margin-top: 18px; }
 }
 
 /* ═══ CLIPS ═══════════════════════════════════════════════════ */

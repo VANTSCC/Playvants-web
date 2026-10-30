@@ -47,8 +47,15 @@
   }
 
   /* ── Un partido (estilo referencia: filas centradas, separador punteado,
-     badge BO en la fila baja) ── */
+     badge BO anclado a la derecha) dentro de un slot uniforme — S4.12:
+     el slot flex:1 es lo que mantiene el árbol alineado columna a columna ── */
   function boDe(ronda) { return ronda === "f" ? "BO5" : "BO3"; }
+
+  function slot(m) {
+    var s = el("div", "bracketv2__slot");
+    s.appendChild(m);
+    return s;
+  }
 
   function pintaPartido(f) {
     var m = el("div", "matchb");
@@ -80,9 +87,9 @@
   }
 
   /* ── Bracket completo (árbol de doble eliminación, mismo layout de la
-     referencia: 3 columnas arriba + divisor + 3 columnas abajo). Los
-     partidos se reparten con space-around para que las columnas formen
-     el árbol; los huecos quedan en POR DEFINIR. ── */
+     referencia: 4 columnas arriba + divisor + 4 columnas abajo). Cada partido
+     va en un slot uniforme (S4.12) para que las rondas queden centradas entre
+     sus alimentadoras; los huecos quedan en POR DEFINIR. ── */
   function pintaBracket(filas) {
     var porRonda = {};
     (filas || []).forEach(function (f) {
@@ -100,8 +107,8 @@
       var wrap = el("div", "bracketv2__matches");
       rondas.forEach(function (rd) {
         var lista = porRonda[rd.r] || [];
-        lista.slice(0, rd.n).forEach(function (f) { wrap.appendChild(pintaPartido(f)); });
-        for (var i = lista.length; i < rd.n; i++) wrap.appendChild(vacio());
+        lista.slice(0, rd.n).forEach(function (f) { wrap.appendChild(slot(pintaPartido(f))); });
+        for (var i = lista.length; i < rd.n; i++) wrap.appendChild(slot(vacio()));
       });
       c.appendChild(wrap);
       return c;
@@ -116,7 +123,6 @@
     fila1.appendChild(colBracket("SEMIFINALES", [{ r: "s", n: 2 }]));
     var colGF = colBracket("GRAN FINAL", [{ r: "f", n: 1 }]);
     var campeon = el("div", "campeon-box");
-    campeon.style.marginTop = "18px";
     campeon.appendChild(el("b", null, "🏆 CAMPEÓN S4"));
     campeon.appendChild(el("small", null, "ENTRA AL SALÓN DE LA FAMA"));
     colGF.appendChild(campeon);
