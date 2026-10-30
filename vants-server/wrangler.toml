@@ -50,6 +50,14 @@ crons = ["* * * * *"]
 # Bot de Discord en Cloudflare (antes: ...-vantsbot...neon.tech, eliminado)
 VANTS_BOT_URL = "https://vantsbot.vants.workers.dev"
 
+# VANTS · AgentID (AgentMail): login para agentes de IA. La app está
+# registrada en console.agentid.com con ESTA misma URI de callback.
+# AGENTID_CLIENT_SECRET y VANTS_SESION_SEC viven como secrets del worker.
+# AGENTID_SOLO_VERIFICADOS="1": solo agentes con dueño identificado
+# (owner_human_verified u owner_email_verified en el token de AgentID).
+AGENTID_CLIENT_ID = "fabe85f8-b37a-4f98-940d-582b45b1c961"
+AGENTID_SOLO_VERIFICADOS = "1"
+
 # VANTS-BUS: el Worker publica inscription.created (al inscribir un equipo),
 # clip.published (al publicar un clip destacado) y match.finished (al cerrar
 # una partida de bracket). Si falta el secreto, la publicación queda apagada

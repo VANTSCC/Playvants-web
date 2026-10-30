@@ -274,7 +274,11 @@ export default {
           if (ju && ju.sub) info = Object.assign({}, carga, ju);
         }
       }
-      const dueno = info.owner_human_verified === true;
+      /* Filtro de confianza: el dueño del inbox debe estar identificado.
+         owner_human_verified = World ID (el más fuerte); owner_email_verified
+         = email del dueño confirmado en la consola de AgentMail. Con uno de
+         los dos alcanza: bloquea inboxes anónimos/sin dueño identificado. */
+      const dueno = info.owner_human_verified === true || info.owner_email_verified === true;
       if (estricto && !dueno) {
         return paginaError('Agente sin dueño verificado',
           'VANTS solo acepta agentes con dueño humano verificado en AgentID. Verificá tu identidad en la consola de AgentMail (owner_verified) y volvé a entrar.');
