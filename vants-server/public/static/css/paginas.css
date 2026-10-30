@@ -764,6 +764,17 @@
   box-shadow: inset 0 -40px 70px -40px rgba(4,4,6,.95);
 }
 .ficha-seccion { padding-top: 26px; }
+/* S4.10: barra de estado del torneo (referencia del dueno: 0/16 + progreso + meta) */
+.ficha-info-seccion { padding-top: 22px; padding-bottom: 0; }
+.ficha-info { border: 1px solid var(--borde-2); background: linear-gradient(180deg, #15161b, #101218); border-radius: 10px; padding: 16px 20px 15px; box-shadow: 0 10px 30px -22px rgba(0,0,0,.95); }
+.ficha-info__cupos { display: flex; align-items: baseline; gap: 5px; margin: 0 0 10px; color: #fff; font-size: 13px; font-weight: 800; letter-spacing: .02em; }
+.ficha-info__cupos b { font-size: 24px; font-weight: 900; letter-spacing: 0; line-height: 1; }
+.ficha-info__barra { height: 5px; border-radius: 999px; background: #2b2e36; overflow: hidden; }
+.ficha-info__barra i { display: block; height: 100%; width: 0%; border-radius: inherit; background: linear-gradient(90deg, var(--rojo), #ff5d72); transition: width .4s ease; }
+.ficha-info__meta { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 28px; margin: 0; padding: 13px 0 1px; margin-top: 13px; border-top: 1px solid var(--borde); }
+.ficha-info__meta li { display: inline-flex; align-items: center; gap: 8px; color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .04em; }
+.ficha-info__meta svg { color: var(--gris); flex: none; }
+.ficha-info__premio, .ficha-info__premio svg { color: #e9a13b; }
 .ficha-grid { display: grid; grid-template-columns: 300px 1fr 300px; gap: 22px; align-items: start; }
 .ficha-col { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
 .ficha-card { border: 1px solid var(--borde); background: var(--panel); border-radius: 10px; padding: 20px 22px; }
