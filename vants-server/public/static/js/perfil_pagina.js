@@ -1164,6 +1164,12 @@
       api.guardar(estado);
       pintarChips();
       mostrarGate();
+      /* PUERTA DE ENTRADA: sin sesión el perfil NO se ve — ni el nick del
+         correo (vive en localStorage), ni los chips, ni la colección de
+         insignias. Solo queda la puerta ENTRAR (splash + registro); el
+         perfil completo vuelve al iniciar sesión, con la carga fresca. */
+      var ventSinSesion = document.getElementById("ventana-perfil");
+      if (ventSinSesion) ventSinSesion.style.display = "none";
     }
   }
 
