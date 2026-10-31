@@ -4,8 +4,8 @@
   "client_uri": "https://vants.vants.workers.dev",
   "token_endpoint_auth_method": "none",
   "redirect_uris": ["https://vants.vants.workers.dev/agente"],
-  "grant_types": ["client_credentials"],
-  "response_types": [],
+  "grant_types": ["authorization_code", "refresh_token", "client_credentials"],
+  "response_types": ["code"],
   "scope": "mcp",
   "dpop_bound_access_tokens": true
 }
