@@ -71,7 +71,7 @@ YOUTUBE_CHANNEL_ID = "UCOJzTjwvfQLlNP_OWSPcySQ"
 # CREADORES VANTS muestran únicamente cuentas registradas en VANTS: esta var
 # (creador oficial) + players.twitch_channel de D1, que escribe el perfil al
 # conectar la Twitch (REDES Y CUENTAS).
-VANTS_TWITCH_CREADORES = "feispla"
+VANTS_TWITCH_CREADORES = "feisreal"
 
 # VANTS-BUS: el Worker publica inscription.created (al inscribir un equipo),
 # clip.published (al publicar un clip destacado) y match.finished (al cerrar

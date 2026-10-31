@@ -42,7 +42,7 @@ YOUTUBE_CHANNEL_ID = "UCOJzTjwvfQLlNP_OWSPcySQ"
 # CREADORES VANTS muestran únicamente cuentas registradas en VANTS: esta var
 # (creador oficial) + players.twitch_channel de D1, que escribe el perfil al
 # conectar la Twitch (REDES Y CUENTAS).
-VANTS_TWITCH_CREADORES = "feispla"
+VANTS_TWITCH_CREADORES = "feisreal"
 
 # D1 PROPIA del preview (antes apuntaba a vants-db de producción, pero el
 # worker SÍ escribe: INSERT en tournament_teams y tournament_matches al
