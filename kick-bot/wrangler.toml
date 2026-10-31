@@ -1,0 +1,31 @@
+name = "vants-kick"
+main = "worker.js"
+compatibility_date = "2026-09-22"
+
+# Bot de Kick para los directos de VANTS GAMES.
+# OAuth 2.1 + PKCE (id.kick.com), webhooks de chat (chat.message.sent v1),
+# comandos ! en el chat y respuestas vía POST /public/v1/chat.
+
+[observability]
+enabled = true
+
+[vars]
+KICK_CLIENT_ID = "01M4W9NBXSXR43BP4T2KD8KCX1"
+KICK_ID = "https://id.kick.com"
+KICK_API = "https://api.kick.com/public/v1"
+SCOPES = "user:read channel:read chat:write events:subscribe"
+# Canal cuyo chat escucha el bot (id de Feispla). Si algún día autorizas una
+# cuenta dedicada para el bot, seguirá escuchando este canal y responderá como el bot.
+CANAL_OBJETIVO = "4972430"
+# Secreto compartido con el agente local VANTS Clipper (GET /clipper/queue?secret=).
+# NO va aquí (este repo es público): vive como SECRETO del Worker. Se instala con
+# CI (secret CLIPPER_SECRET del repo) o a mano:
+#   printf 'EL_SECRETO' | npx wrangler secret put CLIPPER_SECRET
+
+[[kv_namespaces]]
+binding = "KICK"
+id = "5c6e7db513974039aec00aeebeec1805"
+
+# Cerebro IA para !ia (respuestas inteligentes en el chat) — Workers AI
+[ai]
+binding = "AI"

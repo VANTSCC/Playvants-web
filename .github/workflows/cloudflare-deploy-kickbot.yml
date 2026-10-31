@@ -1,0 +1,64 @@
+name: "Cloudflare · deploy del bot de Kick (vants-kick)"
+
+# Despliega el bot de chat de Kick (worker vants-kick) desde GitHub Actions,
+# igual que el resto de Workers: usa el secret CLOUDFLARE_API_TOKEN del repo.
+# Los secretos del bot (KICK_CLIENT_SECRET, tokens de Feispla, CLIPPER_SECRET)
+# se instalan con wrangler secret put y el deploy los conserva.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "kick-bot/**"
+      - ".github/workflows/cloudflare-deploy-kickbot.yml"
+  workflow_dispatch:
+
+# Un deploy a la vez: misma cola que el resto de Workers (deploy-prod)
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+# Mínimo privilegio: el deploy no toca el repo
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+
+      - name: Deploy del Worker a Cloudflare
+        working-directory: kick-bot
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || '8f2424e95fec4860e19257226f209fbc' }}
+        run: npx wrangler deploy
+
+      # Secreto compartido con el agente local VANTS Clipper (cola de momentos
+      # destacados marcados con !clip o por hype del chat). Vive cifrado en los
+      # secrets del repo, nunca en el código; si falta, el Worker conserva el que ya tenga.
+      - name: Secret CLIPPER_SECRET (cola del VANTS Clipper)
+        working-directory: kick-bot
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || '8f2424e95fec4860e19257226f209fbc' }}
+          CLIPPER_SECRET: ${{ secrets.CLIPPER_SECRET }}
+        run: |
+          if [ -n "$CLIPPER_SECRET" ]; then
+            printf '%s' "$CLIPPER_SECRET" | npx wrangler secret put CLIPPER_SECRET
+          else
+            echo "CLIPPER_SECRET sin definir en el repo: se conserva el que ya tenga el Worker"
+          fi
+
+      - name: Verificación (salud del bot)
+        run: |
+          sleep 5
+          curl -s --max-time 20 https://vants-kick.vants.workers.dev/ | head -c 300; echo
