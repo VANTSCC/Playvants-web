@@ -149,6 +149,20 @@
   </div>
 </section>
 
+<!-- ÚLTIMOS DEL CANAL DE YOUTUBE (se llena desde /api/youtube/ultimos;
+     si el worker no tiene canal configurado, la sección queda oculta) -->
+<section class="seccion" id="seccion-youtube" hidden>
+  <div class="seccion__top">
+    <h2 class="seccion__titulo">ÚLTIMOS DEL <em>CANAL</em></h2>
+    <span class="pill" id="yt-contador">·</span>
+  </div>
+  <div class="vitrina" id="yt-grid"></div>
+  <p class="gestionar__nota" style="margin-top:14px">
+    Reproducción con el reproductor oficial de YouTube ·
+    <a id="yt-canal-link" href="https://www.youtube.com/" target="_blank" rel="noopener">VER EL CANAL EN YOUTUBE ↗</a>
+  </p>
+</section>
+
   </main>
 
   <!-- REPRODUCTOR DE CLIP -->

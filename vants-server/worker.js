@@ -123,6 +123,81 @@ const MAX_MANIFEST_ENTRIES = 60;
 const FEAT_TTL_MS = 60_000;
 let featCache = { at: 0, body: null };
 
+// ─── YOUTUBE · ÚLTIMOS DEL CANAL (sección de /clips) ───
+// GET /api/youtube/ultimos: últimos vídeos del canal de YouTube de VANTS.
+//   · Con YOUTUBE_API_KEY (secret): Data API v3 — channels.list → uploads →
+//     playlistItems.list → videos.list (vistas + duración). Lecturas públicas,
+//     sin OAuth (la web nunca toca datos privados del dueño).
+//   · Sin clave: RSS oficial del canal (últimos 15, sin vistas/duración).
+//   · Sin YOUTUBE_CHANNEL_ID: responde ok:false razon sin_canal y la web
+//     deja la sección oculta (degradación honesta, como el motor de logros).
+// Caché 5 min (≪ 30 días máx. que permite la política de datos de YouTube);
+// reproducción SIEMPRE vía reproductor oficial embebido + enlace al canal.
+const YT_TTL_MS = 5 * 60_000;
+let ytCache = { at: 0, body: null };
+
+function ytDurSegundos(iso) {
+  const m = /^P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(String(iso || ''));
+  if (!m) return 0;
+  return (+(m[1] || 0)) * 86400 + (+(m[2] || 0)) * 3600 + (+(m[3] || 0)) * 60 + (+(m[4] || 0));
+}
+function ytXmlDecode(s) {
+  return String(s || '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+}
+// RSS oficial del canal (sin clave): https://www.youtube.com/feeds/videos.xml?channel_id=UC…
+async function ytUltimosRss(canalId) {
+  const r = await fetch('https://www.youtube.com/feeds/videos.xml?channel_id=' + encodeURIComponent(canalId), {
+    headers: { 'User-Agent': 'VANTS-GAMES/1.0 (+https://vants.vants.workers.dev)' },
+  });
+  if (!r.ok) throw new Error('rss_' + r.status);
+  const xml = await r.text();
+  const tituloCanal = ytXmlDecode((xml.match(/<title>([^<]{1,160})<\/title>/) || [])[1] || '');
+  const videos = [];
+  for (const e of xml.split('<entry>').slice(1)) {
+    const id = (e.match(/<yt:videoId>([^<]{1,32})<\/yt:videoId>/) || [])[1] || '';
+    if (!id) continue;
+    const titulo = ytXmlDecode((e.match(/<title>([^<]{1,200})<\/title>/) || [])[1] || '');
+    const fecha = (e.match(/<published>([^<]{1,40})<\/published>/) || [])[1] || '';
+    videos.push({ id, titulo, fecha, mini: 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg', dur: 0, vistas: 0 });
+    if (videos.length >= 12) break;
+  }
+  return { ok: true, fuente: 'rss', canal: { id: canalId, titulo: tituloCanal }, videos };
+}
+// Data API v3 (con clave): canales → uploads → playlistItems → videos (vistas/duración).
+async function ytUltimosApi(canalId, apiKey) {
+  const cab = { headers: { Accept: 'application/json' } };
+  const uC = 'https://www.googleapis.com/youtube/v3/channels?part=contentDetails,snippet&id=' + encodeURIComponent(canalId) + '&key=' + encodeURIComponent(apiKey);
+  const rC = await fetch(uC, cab);
+  if (!rC.ok) throw new Error('canal_' + rC.status);
+  const canal = ((await rC.json()).items || [])[0] || {};
+  const uploads = canal.contentDetails && canal.contentDetails.relatedPlaylists && canal.contentDetails.relatedPlaylists.uploads;
+  if (!uploads) throw new Error('sin_uploads');
+  const uP = 'https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&maxResults=12&playlistId=' + encodeURIComponent(uploads) + '&key=' + encodeURIComponent(apiKey);
+  const rP = await fetch(uP, cab);
+  if (!rP.ok) throw new Error('playlist_' + rP.status);
+  const ids = (((await rP.json()).items || [])
+    .map((it) => it.contentDetails && it.contentDetails.videoId)
+    .filter(Boolean)).slice(0, 12);
+  const titulo = (canal.snippet && canal.snippet.title) || '';
+  if (!ids.length) return { ok: true, fuente: 'api', canal: { id: canalId, titulo }, videos: [] };
+  const uV = 'https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=' + ids.join(',') + '&key=' + encodeURIComponent(apiKey);
+  const rV = await fetch(uV, cab);
+  if (!rV.ok) throw new Error('videos_' + rV.status);
+  const porId = new Map((((await rV.json()).items) || []).map((v) => [v.id, v]));
+  const videos = ids.map((id) => {
+    const v = porId.get(id) || {};
+    return {
+      id,
+      titulo: (v.snippet && v.snippet.title) || '',
+      fecha: (v.snippet && v.snippet.publishedAt) || '',
+      mini: (((v.snippet || {}).thumbnails || {}).high || {}).url || ('https://i.ytimg.com/vi/' + id + '/hqdefault.jpg'),
+      dur: ytDurSegundos(v.contentDetails && v.contentDetails.duration),
+      vistas: parseInt((v.statistics || {}).viewCount, 10) || 0,
+    };
+  });
+  return { ok: true, fuente: 'api', canal: { id: canalId, titulo }, videos };
+}
+
 // Caché de claves públicas JWKS de Auth0 (1 h) para verificar JWT sin /userinfo
 // (los tokens del SPA van con audience api.vants.app; JWKS es infalible).
 const JWKS_TTL_MS = 60 * 60_000;
@@ -1128,7 +1203,7 @@ async function fetchWorker(request, env, ctx) {
     // --- 2) Pre-flight CORS solo para la API propia
     if (method === 'OPTIONS') {
       const origin = request.headers.get('origin') || '';
-      const isGetApi = url.pathname === '/api/valorant/esports' || url.pathname === '/api/valorant/rango' || url.pathname === '/api/teams' || url.pathname === '/api/teams-live' || url.pathname === '/api/gpr' || url.pathname === '/api/clips/featured' || url.pathname === '/api/torneos/bracket' || url.pathname === '/api/en-vivo' || url.pathname === '/api/faceit/usuario' || url.pathname === '/api/faceit/historia' || url.pathname === '/api/account/perfil' || url.pathname === '/api/account/progreso' || url.pathname === '/api/games' || url.pathname === '/api/tournaments' || url.pathname === '/api/matches' || url.pathname === '/api/players' || url.pathname === '/api/articles' || url.pathname === '/api/search' || /^\/api\/tournaments\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/articles\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/teams\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/players\/[a-z0-9-]+$/.test(url.pathname);
+      const isGetApi = url.pathname === '/api/valorant/esports' || url.pathname === '/api/valorant/rango' || url.pathname === '/api/teams' || url.pathname === '/api/teams-live' || url.pathname === '/api/gpr' || url.pathname === '/api/clips/featured' || url.pathname === '/api/youtube/ultimos' || url.pathname === '/api/torneos/bracket' || url.pathname === '/api/en-vivo' || url.pathname === '/api/faceit/usuario' || url.pathname === '/api/faceit/historia' || url.pathname === '/api/account/perfil' || url.pathname === '/api/account/progreso' || url.pathname === '/api/games' || url.pathname === '/api/tournaments' || url.pathname === '/api/matches' || url.pathname === '/api/players' || url.pathname === '/api/articles' || url.pathname === '/api/search' || /^\/api\/tournaments\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/articles\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/teams\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/players\/[a-z0-9-]+$/.test(url.pathname);
       const isPostApi = url.pathname === '/api/discord/notify' || url.pathname === '/api/account/email-verify' || url.pathname === '/api/account/password-reset' || url.pathname === '/api/account/perfil' || url.pathname === '/api/clips/featured' || url.pathname === '/api/torneos/inscribir' || url.pathname === '/api/torneos/gestionar' || url.pathname === '/api/telemetria';
       if ((isPostApi || isGetApi) && SITE_ORIGINS.has(origin)) {
         return harden(new Response(null, { status: 204 }), {
@@ -2509,6 +2584,33 @@ async function fetchWorker(request, env, ctx) {
       }
     }
 
+    // --- 7b4) YOUTUBE · ÚLTIMOS DEL CANAL (GET /api/youtube/ultimos)
+    // Mismo patrón que la vitrina: origen propio, rate limit, caché en memoria
+    // y Cache-Control público. La clave (si existe) NUNCA sale del Worker.
+    if (url.pathname === '/api/youtube/ultimos' && method === 'GET') {
+      const originY = request.headers.get('origin') || '';
+      if (originY && !SITE_ORIGINS.has(originY)) {
+        return json({ ok: false, error: 'Origen no permitido' }, 403, { 'Access-Control-Allow-Origin': originY || '*' });
+      }
+      const cY = rateLimit(rlClips, ip, 30);
+      if (!cY.ok) return json({ ok: false, error: 'Demasiadas peticiones' }, 429, { 'Retry-After': String(cY.retry), 'Access-Control-Allow-Origin': originY || '*' });
+      const nowY = Date.now();
+      const cabY = { 'Access-Control-Allow-Origin': originY || '*', 'Cache-Control': 'public, max-age=300' };
+      if (ytCache.body && nowY - ytCache.at < YT_TTL_MS) return json(ytCache.body, 200, cabY);
+      const canalId = String((env && env.YOUTUBE_CHANNEL_ID) || '').trim();
+      if (!/^UC[A-Za-z0-9_-]{22}$/.test(canalId)) return json({ ok: false, razon: 'sin_canal' }, 200, cabY);
+      const apiKey = String((env && env.YOUTUBE_API_KEY) || '').trim();
+      try {
+        const payloadY = apiKey ? await ytUltimosApi(canalId, apiKey) : await ytUltimosRss(canalId);
+        ytCache = { at: nowY, body: payloadY };
+        return json(payloadY, 200, cabY);
+      } catch (eY) {
+        // si la fuente falla (clave vencida, cuota, red) se sirve el caché
+        // viejo antes que dejar la sección ciega
+        if (ytCache.body) return json(ytCache.body, 200, cabY);
+        return json({ ok: false, razon: 'youtube_no_disponible' }, 502, cabY);
+      }
+    }
     // --- 7b3) CLIPS DESTACADOS: vitrina pública de los clips de los jugadores.
     // GET (público): manifest con los clips publicados. POST (con sesión JWT):
     // multipart {video, thumb, titulo, juego, nick, username, dur, ext} → crea

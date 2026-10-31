@@ -125,9 +125,18 @@
     });
   }
   function cerrarModal() {
-    var v = document.getElementById("modal-video");
-    v.pause(); v.src = "";
+    restaurarModalVideo();
     modal.setAttribute("hidden", "");
+  }
+  /* restaura el <video> nativo por si la última apertura fue un vídeo de
+     YouTube (el modal se reutiliza con un iframe embebido) */
+  function restaurarModalVideo() {
+    var v = document.getElementById("modal-video");
+    if (v) { v.pause(); v.src = ""; return; }
+    var caja = modal.querySelector(".modal-clip__video");
+    if (caja && !caja.querySelector("#modal-video")) {
+      caja.innerHTML = '<video id="modal-video" controls playsinline></video>';
+    }
   }
   modal.addEventListener("click", function (e) {
     if (e.target.hasAttribute("data-cerrar")) cerrarModal();
@@ -336,10 +345,72 @@
       .catch(function () { btn.disabled = false; btn.style.opacity = ""; toast("SIN CONEXIÓN PARA QUITAR EL CLIP", true); });
   }
 
+  /* ── ÚLTIMOS DEL CANAL DE YOUTUBE ──
+     GET /api/youtube/ultimos: Data API v3 (con YOUTUBE_API_KEY) o RSS del
+     canal. Reproducción SIEMPRE con el reproductor oficial embebido
+     (youtube-nocookie) y enlace de vuelta a YouTube (políticas de YouTube). */
+  var ytSec = document.getElementById("seccion-youtube");
+  var ytGrid = document.getElementById("yt-grid");
+  var ytContador = document.getElementById("yt-contador");
+  var ytLink = document.getElementById("yt-canal-link");
+
+  function ytFmtVistas(n) {
+    n = parseInt(n, 10) || 0;
+    if (n >= 1e6) return (n / 1e6).toFixed(1).replace(".0", "") + " M";
+    if (n >= 1e3) return (n / 1e3).toFixed(1).replace(".0", "") + " K";
+    return n ? String(n) : "";
+  }
+  function abrirClipYt(v) {
+    document.getElementById("modal-titulo").textContent = (v.titulo || "VÍDEO").toUpperCase();
+    document.getElementById("modal-meta").innerHTML =
+      "YOUTUBE · " + esc(fmtFecha(v.fecha)) + (v.vistas ? " · " + ytFmtVistas(v.vistas) + " VISTAS" : "");
+    var caja = modal.querySelector(".modal-clip__video");
+    if (caja) caja.innerHTML =
+      '<iframe id="modal-yt" src="https://www.youtube-nocookie.com/embed/' + esc(v.id) + '?autoplay=1&rel=0" ' +
+      'title="Reproductor de YouTube" frameborder="0" ' +
+      'style="width:100%;aspect-ratio:16/9;border:0;background:#000" ' +
+      'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+    modal.removeAttribute("hidden");
+  }
+  function ytTarjeta(v) {
+    var art = document.createElement("article");
+    art.className = "panel clipc";
+    art.innerHTML =
+      '<div class="clipc__mini">' +
+      (v.mini ? '<img src="' + esc(v.mini) + '" alt="" loading="lazy">' : "") +
+      (v.dur ? '<span class="clipc__dur">' + esc(fmtDur(v.dur)) + "</span>" : "") +
+      '<span class="clipc__play" aria-hidden="true">▶</span>' +
+      "</div>" +
+      '<div class="clipc__cuerpo">' +
+      '<div class="clipc__titulo">' + esc(v.titulo || "Vídeo del canal") + "</div>" +
+      '<div class="clipc__meta"><b>YOUTUBE</b>' +
+      "<span>" + esc(fmtFecha(v.fecha)) + "</span>" +
+      (v.vistas ? "<span>" + ytFmtVistas(v.vistas) + " VISTAS</span>" : "") +
+      "</div></div>";
+    art.addEventListener("click", function () { abrirClipYt(v); });
+    return art;
+  }
+  function cargarYouTube() {
+    if (!ytSec || !ytGrid) return;
+    fetch("/api/youtube/ultimos", { headers: { Accept: "application/json" } })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        /* sin canal configurado o sin vídeos → la sección permanece oculta */
+        if (!j || !j.ok || !Array.isArray(j.videos) || !j.videos.length) return;
+        ytGrid.innerHTML = "";
+        j.videos.forEach(function (v) { ytGrid.appendChild(ytTarjeta(v)); });
+        ytContador.textContent = j.videos.length + (j.videos.length === 1 ? " VÍDEO" : " VÍDEOS") + (j.fuente === "rss" ? " · FEED" : "");
+        if (ytLink && j.canal && j.canal.id) ytLink.href = "https://www.youtube.com/channel/" + encodeURIComponent(j.canal.id);
+        ytSec.removeAttribute("hidden");
+      })
+      .catch(function () { /* silencio: la página funciona igual sin YouTube */ });
+  }
+
   /* ── arranque: sesión primero, luego vitrina ── */
   function cargarTodo() {
     clipsDestacados().then(renderVitrina);
     pintarMias();
+    cargarYouTube();
   }
 
   if (window.VantAuth0) {
