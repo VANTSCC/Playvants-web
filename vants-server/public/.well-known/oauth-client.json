@@ -3,6 +3,7 @@
   "client_name": "VANTS · Agente (AgentID)",
   "client_uri": "https://vants.vants.workers.dev",
   "token_endpoint_auth_method": "none",
+  "redirect_uris": ["https://vants.vants.workers.dev/agente"],
   "grant_types": ["client_credentials"],
   "response_types": [],
   "scope": "mcp",
