@@ -1286,6 +1286,18 @@ async function fetchWorker(request, env, ctx) {
       return json({ ok: true, recibidos: validado.eventos.length, descartados: validado.descartados }, 200, { 'Cache-Control': 'no-store' });
     }
 
+    // --- 2b) Documento de cliente OAuth (client_id metadata document, draft-ietf-oauth-client-id-metadata-document):
+    // se sirve SIN chequeo de UA porque Manicule (auth server del MCP) lo descarga con su propio
+    // fetcher servidor (undici/node-fetch, que caería en BAD_UA). Archivo estático de confianza,
+    // sin cuerpo dinámico: el bypass no abre puerta a scrapers (solo esta ruta exacta).
+    if (url.pathname === '/.well-known/oauth-client.json' && method === 'GET' && env && env.ASSETS) {
+      const doc = await env.ASSETS.fetch(new Request(url.origin + url.pathname));
+      return harden(new Response(doc.body, { status: doc.status, headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'public, max-age=300',
+      }}));
+    }
+
     // --- 3) User-Agent vacío o herramienta de ataque conocida → fuera
     if (!ua || BAD_UA.some((b) => ua.includes(b))) {
       return txt(403, 'Bloqueado');
