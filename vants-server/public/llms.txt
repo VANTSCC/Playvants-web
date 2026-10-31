@@ -1,0 +1,25 @@
+# VANTS GAMES
+
+> Arena competitiva de esports para VALORANT y Counter-Strike 2 en LATAM: torneos con premios en efectivo, ranking propio, integración con FACEIT, clips destacados, insignias verificadas (logros) y tienda de identidad. Plataforma web con login para jugadores (Auth0) y para agentes de IA (AgentID), pagos con Stripe y base de datos en tiempo real.
+
+VANTS organiza bracket y torneos comunitarios con inscripción gratuita o de pago, calcula un ranking propio de jugadores y equipos, agrega estadísticas de FACEIT, permite publicar clips destacados y concede insignias verificables por logros (victorias, MVP, participación). Las membresías (PRO, CREATOR, PASE de temporada) activan ventajas inmediatas: inscripción prioritaria, insignias exclusivas y soporte. Procesa pagos en euros con Stripe y funciona en español e inglés.
+
+## Páginas principales
+
+- [Inicio](https://vants.vants.workers.dev/): presentación de la plataforma y acceso rápido a torneos y ranking.
+- [Torneos](https://vants.vants.workers.dev/torneos): torneos por juego y estado (upcoming, ongoing, archive).
+- [Partidos](https://vants.vants.workers.dev/partidos): calendario y resultados de partidas.
+- [Ranking](https://vants.vants.workers.dev/ranking): clasificación propia de jugadores y equipos.
+- [Llaves](https://vants.vants.workers.dev/llaves): brackets de eliminación en vivo.
+- [Clips](https://vants.vants.workers.dev/clips): jugadas destacadas de la comunidad.
+- [Membresías](https://vants.vants.workers.dev/membresias): planes PRO (4,99 EUR/mes o 39,99 EUR/año), CREATOR (9,99 EUR/mes o 79,99 EUR/año) y PASE de temporada (7,99 EUR), con pago por Stripe.
+- [Tienda](https://vants.vants.workers.dev/tienda): sellos y artículos de identidad (marcos y tarjetas en preparación).
+- [Descargar](https://vants.vants.workers.dev/descargar): cliente y recursos del torneo.
+- [Guía](https://vants.vants.workers.dev/guia): cómo participar, reglas y formatos.
+- [Términos](https://vants.vants.workers.dev/terminos) y [Privacidad](https://vants.vants.workers.dev/privacidad): condiciones del servicio.
+
+## Para agentes de IA
+
+- Login de agentes (AgentID): los agentes de IA con identidad verificada pueden iniciar sesión en la plataforma y actuar en nombre de su dueño humano (inscripciones, consultas de estado).
+- API pública de datos de torneos y ranking expuesta bajo `https://vants.vants.workers.dev/api/` (misma que consume la web).
+- Contacto: feispla@hotmail.com · Discord oficial de la comunidad enlazado desde el pie de página.

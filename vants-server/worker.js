@@ -1286,14 +1286,16 @@ async function fetchWorker(request, env, ctx) {
       return json({ ok: true, recibidos: validado.eventos.length, descartados: validado.descartados }, 200, { 'Cache-Control': 'no-store' });
     }
 
-    // --- 2b) Documento de cliente OAuth (client_id metadata document, draft-ietf-oauth-client-id-metadata-document):
-    // se sirve SIN chequeo de UA porque Manicule (auth server del MCP) lo descarga con su propio
-    // fetcher servidor (undici/node-fetch, que caería en BAD_UA). Archivo estático de confianza,
-    // sin cuerpo dinámico: el bypass no abre puerta a scrapers (solo esta ruta exacta).
-    if (url.pathname === '/.well-known/oauth-client.json' && method === 'GET' && env && env.ASSETS) {
+    // --- 2b) Documento de cliente OAuth (client_id metadata document, draft-ietf-oauth-client-id-metadata-document)
+    //         y verificación HTTP de dominio de Manicule: se sirven SIN chequeo de UA porque
+    //         Manicule los descarga con su propio fetcher servidor (undici/node-fetch, que caería
+    //         en BAD_UA). Solo rutas estáticas exactas de confianza, sin cuerpo dinámico.
+    const esVerifManicule = /^\/manicule-verification-[a-f0-9-]+\.txt$/.test(url.pathname);
+    const esWellKnown = url.pathname.startsWith('/.well-known/');
+    if ((esWellKnown || esVerifManicule) && method === 'GET' && env && env.ASSETS) {
       const doc = await env.ASSETS.fetch(new Request(url.origin + url.pathname));
       return harden(new Response(doc.body, { status: doc.status, headers: {
-        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Type': doc.headers.get('Content-Type') || (esVerifManicule ? 'text/plain; charset=utf-8' : 'application/json; charset=utf-8'),
         'Cache-Control': 'public, max-age=300',
       }}));
     }

@@ -1,4 +1,41 @@
+# VANTS GAMES — rastreo y agentes bienvenidos
+# Contenido abierto para buscadores y para los rastreadores de IA
+# (Manicule monitoriza cómo GPT/Claude/Gemini describen VANTS).
+
 User-agent: *
 Allow: /
 
+# --- Crawlers de IA permitidos explícitamente (GEO) ---
+User-agent: GPTBot
+Allow: /
+User-agent: OAI-SearchBot
+Allow: /
+User-agent: ChatGPT-User
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: Claude-User
+Allow: /
+User-agent: Claude-SearchBot
+Allow: /
+User-agent: anthropic-ai
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: Perplexity-User
+Allow: /
+User-agent: Google-Extended
+Allow: /
+User-agent: Applebot-Extended
+Allow: /
+User-agent: CCBot
+Allow: /
+User-agent: Amazonbot
+Allow: /
+User-agent: meta-externalagent
+Allow: /
+User-agent: YouBot
+Allow: /
+
 Sitemap: https://vants.vants.workers.dev/sitemap.xml
+# Resumen para LLMs: https://vants.vants.workers.dev/llms.txt
