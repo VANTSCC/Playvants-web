@@ -1,0 +1,43 @@
+name: "Cloudflare · deploy PREVIEW (vantsnet-preview)"
+
+# Réplica de la web para PRUEBAS: https://vantsnet-preview.vants.workers.dev
+# Mismo código que producción pero con D1 PROPIA (vants-preview-db): se puede
+# probar TODO (inscripciones, escrituras) sin tocar datos reales.
+# Se lanza A MANO (Actions → Cloudflare · deploy PREVIEW → Run workflow) y se
+# puede elegir la RAMA: así se prueba una mejora en preview antes de fusionarla
+# a main y publicarla en producción (vants.vants.workers.dev).
+on:
+  workflow_dispatch:
+
+# Un deploy de preview a la vez; independiente de la cola de producción.
+concurrency:
+  group: deploy-preview
+  cancel-in-progress: false
+
+# Mínimo privilegio: el deploy no toca el repo
+permissions:
+  contents: read
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout (rama elegida al lanzar)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+
+      - name: Instalar dependencias (npm ci)
+        working-directory: vants-server
+        run: npm ci
+
+      - name: Deploy del Worker PREVIEW a Cloudflare
+        working-directory: vants-server
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || '8f2424e95fec4860e19257226f209fbc' }}
+        run: npx wrangler deploy -c wrangler.preview.toml

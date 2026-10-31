@@ -21,6 +21,7 @@ vive el ecosistema en vivo: el **bot del chat de Kick** (canal feispla) y el age
 | `vants` | `vants-server/` | https://vants.vants.workers.dev | Web estática (arena, torneos, membresías, tienda, legales) + API + login AgentID + motor de logros (ACH_DB) + outbox cada minuto | `cloudflare-deploy.yml` |
 | `vants-functions` | `vants-functions/` | https://vants-functions.vants.workers.dev | Las funciones `/fn/*`: stripe-checkout (live) y webhook, vantsdata, vantsbot, mm, linker, discord-notify, supervisor | `cloudflare-deploy-functions.yml` |
 | `vants-kick` | `kick-bot/` | https://vants-kick.vants.workers.dev | Bot del chat de Kick: IA con memoria, comandos `!`, `!clip` y cola del VANTS Clipper | `cloudflare-deploy-kickbot.yml` |
+| `vantsnet-preview` | `vants-server/` (misma carpeta) | https://vantsnet-preview.vants.workers.dev | Gemelo de PRUEBAS de la web: mismo código y secretos, pero D1 propia (`vants-preview-db`, espejo de prod) — se puede probar todo sin tocar producción. Deploy manual por rama | `cloudflare-deploy-preview.yml` |
 
 ## Arquitectura en producción
 

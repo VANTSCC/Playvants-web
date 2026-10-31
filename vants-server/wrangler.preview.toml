@@ -1,7 +1,8 @@
 # Réplica del worker de producción `vants` para el PREVIEW de la web GAMES.
 # URL: https://vantsnet-preview.vants.workers.dev — NO toca producción `vants`.
-# Misma web, mismas reglas de seguridad y mismo espejo D1 de LECTURA
-# (el worker solo hace SELECT; la escritura del circuito vive en el bot).
+# MISMO código, reglas y secretos, pero con D1 PROPIA (vants-preview-db): aquí
+# se puede probar TODO (incluidas inscripciones y escrituras) sin ensuciar la
+# base de producción. Sinopsis de datos: export de vants-db importado aquí.
 name = "vantsnet-preview"
 main = "worker.js"
 compatibility_date = "2026-09-22"
@@ -16,7 +17,8 @@ run_worker_first = true
 not_found_handling = "404-page"
 
 [vars]
-VANTS_BOT_URL = "https://br-sweet-shape-b42xhogj-vantsbot.compute.c-6.us-east-2.aws.neon.tech"
+# Bot de Discord en Cloudflare (antes: ...neon.tech, eliminado)
+VANTS_BOT_URL = "https://vantsbot.vants.workers.dev"
 VANTS_BUS_URL = "https://vants-bus.vants.workers.dev"
 
 # VANTS · AgentID (AgentMail): login para agentes de IA con inbox verificado.
@@ -27,17 +29,19 @@ VANTS_BUS_URL = "https://vants-bus.vants.workers.dev"
 AGENTID_CLIENT_ID = "fabe85f8-b37a-4f98-940d-582b45b1c961"
 AGENTID_SOLO_VERIFICADOS = "1"
 
-# Espejo de LECTURA igual que producción: /api/games, /api/tournaments,
-# /api/teams, /api/players, /api/articles y /api/search leen aquí primero.
+# D1 PROPIA del preview (antes apuntaba a vants-db de producción, pero el
+# worker SÍ escribe: INSERT en tournament_teams y tournament_matches al
+# inscribir equipos — las pruebas no deben tocar esos datos reales).
+# Espejo de datos: wrangler d1 export vants-db --remote + import aquí.
 [[d1_databases]]
 binding = "DB"
-database_name = "vants-db"
-database_id = "11e5d82c-307b-44ba-9682-501d8df593d3"
+database_name = "vants-preview-db"
+database_id = "df295262-1da7-4483-addb-132310013ffc"
 
 # ============================================================================
 # VANTS ACHIEVEMENTS & BADGE ENGINE — SOLO PREVIEW (producción no se toca)
 # Base D1 exclusiva del dominio de logros: catálogo, reglas, concesiones,
-# outbox/inbox, entitlements y auditoría. vants-db (espejo) solo se LEE.
+# outbox/inbox, entitlements y auditoría. Migración: db/logros/0001_logros_inicial.sql.
 [[d1_databases]]
 binding = "ACH_DB"
 database_name = "vants-preview-db"
