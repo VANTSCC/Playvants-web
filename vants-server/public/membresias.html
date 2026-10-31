@@ -36,13 +36,19 @@
 <body data-pagina="membresias">
 
   <!-- SPLASH DE ENTRADA -->
-  <div id="splash" class="splash" aria-hidden="true">
+    <div id="splash" class="splash" aria-hidden="true">
+    <canvas class="splash__estrellas"></canvas>
+    <button class="splash__saltar" type="button">SALTAR INTRO →</button>
     <div class="splash__inner">
       <img class="splash__logo" src="/static/img/vants-mark-512.png" alt="VANTS">
-      <div class="splash__word"><span>V</span><span>A</span><span>N</span><span>T</span><span>S</span><em>GAMES</em></div>
+      <div class="splash__marca">VANT<span>S</span></div>
       <p class="splash__lema">DONDE NACE LA VENTAJA</p>
-      <span class="splash__cta">CLIC PARA ENTRAR</span>
+      <div class="splash__acciones">
+        <button class="splash__btn splash__btn--rojo" type="button" data-splash-entrar><svg viewBox="0 0 12 12" width="9" height="9" aria-hidden="true"><path d="M2.5 1.4v9.2l8-4.6z" fill="currentColor"/></svg>ENTRAR A LA ARENA</button>
+        <a class="splash__btn" href="/historia"><svg viewBox="0 0 12 12" width="9" height="9" aria-hidden="true"><path d="M2 1h8v10L6 8.4 2 11z" fill="currentColor"/></svg>NUESTRA HISTORIA</a>
+      </div>
     </div>
+    <span class="splash__pie">VANTS GAMES — BRAND FILM 2026</span>
   </div>
 
   <!-- TICKER -->
