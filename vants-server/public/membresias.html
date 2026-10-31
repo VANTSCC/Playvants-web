@@ -121,43 +121,57 @@
 </header>
 
 <section class="seccion" style="padding-top:34px">
-  <div class="planes">
+  <div class="planes" style="grid-template-columns:repeat(2,1fr)">
     
     <article class="panel plan plan--destacado">
       <span class="badge plan__chip badge--pro">PRO</span>
       <h3>VANTS PRO</h3>
       <p>Todo lo competitivo desbloqueado para subir de rango.</p>
-      <div class="plan__precio">POR ANUNCIAR</div>
+      <div class="plan__precio">4,99 € /MES · 39,99 € /AÑO · IMPUESTOS INCL.</div>
       <ul>
         <li>Insignia PRO en tu ficha</li><li>Marcos y tarjetas premium de la tienda</li><li>Sello PRO junto a tu nick</li><li>Cola prioritaria en VANTS RANKED</li><li>Inscripciones sin fee en torneos abiertos</li>
       </ul>
-      <a class="btn btn--rojo" href="/perfil">EMPEZAR CON MI PERFIL</a>
+      <button class="btn btn--rojo" type="button" data-checkout-plan="pro" data-periodo="mo">SUSCRIBIRME · 4,99 €/MES</button>
+      <button class="btn" type="button" data-checkout-plan="pro" data-periodo="yr" style="margin-top:10px">ANUAL · 39,99 € (AHORRÁS 20 €)</button>
     </article>
     
     <article class="panel plan ">
       <span class="badge plan__chip badge--creator">CREATOR</span>
       <h3>VANTS CREATOR</h3>
       <p>Para los que muestran la arena: clips, streams y comunidad.</p>
-      <div class="plan__precio">POR ANUNCIAR</div>
+      <div class="plan__precio">9,99 € /MES · 79,99 € /AÑO · IMPUESTOS INCL.</div>
       <ul>
         <li>Insignia y sello CREATOR</li><li>Canal de clips verificado</li><li>Destacado en la sala de jugadores</li><li>Soporte directo con el equipo</li><li>Kit de overlays de marca</li>
       </ul>
-      <a class="btn " href="/perfil">EMPEZAR CON MI PERFIL</a>
+      <button class="btn " type="button" data-checkout-plan="creator" data-periodo="mo">SUSCRIBIRME · 9,99 €/MES</button>
+      <button class="btn" type="button" data-checkout-plan="creator" data-periodo="yr" style="margin-top:10px">ANUAL · 79,99 € (AHORRÁS 40 €)</button>
+    </article>
+    
+    <article class="panel plan ">
+      <span class="badge plan__chip badge--pro">PASE S4</span>
+      <h3>PASE TEMPORADA S4</h3>
+      <p>Un solo pago, toda la temporada: lo esencial de PRO para la S4.</p>
+      <div class="plan__precio">7,99 € · PAGO ÚNICO · TEMPORADA S4</div>
+      <ul>
+        <li>Insignia PLUS en tu ficha</li><li>Vigencia por la temporada S4 (180 días)</li><li>Sello PRO junto a tu nick</li><li>Inscripciones sin fee en torneos abiertos</li>
+      </ul>
+      <button class="btn " type="button" data-checkout-plan="pase">COMPRAR PASE · 7,99 €</button>
     </article>
     
     <article class="panel plan ">
       <span class="badge plan__chip badge--socio">SOCIO</span>
       <h3>SOCIO VANTS</h3>
       <p>El programa de socios: la marca y vos, juntos.</p>
-      <div class="plan__precio">POR ANUNCIAR</div>
+      <div class="plan__precio">POR INVITACIÓN</div>
       <ul>
         <li>Insignia SOCIO VANTS</li><li>Marco de socio en la tienda</li><li>Voto en decisiones del circuito</li><li>Descuentos en la tienda oficial</li><li>Acceso al Discord privado</li>
       </ul>
-      <a class="btn " href="/perfil">EMPEZAR CON MI PERFIL</a>
+      <button class="btn" type="button" disabled style="opacity:.55;cursor:not-allowed">SOLO POR INVITACIÓN</button>
     </article>
     
   </div>
-  <p class="hero__nota" style="margin-top:26px">Precios y cobros por anunciar. Pagos seguros procesados por Stripe · Tarjeta, Klarna, Link y más. El contenido premium se activa al momento en tu ficha.</p>
+  <!-- SOCIO es programa por invitación: sin checkout, botón deshabilitado. -->
+  <p class="hero__nota" style="margin-top:26px">Pagos reales procesados por Stripe (tarjeta, Link y más) · impuestos incluidos · el plan se activa al momento en tu ficha y la insignia llega sola. Entrá con tu cuenta de jugador para pagar: necesitás sesión activa.</p>
 </section>
 
   </main>
@@ -224,6 +238,7 @@
   <script src="/static/js/app.js"></script>
   <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
   <script src="/static/js/vants-auth.js"></script>
+  <script src="/static/js/vants-checkout.js"></script>
   
   <!-- Vercel Web Analytics (activo en producción de Vercel) -->
   
