@@ -18,7 +18,7 @@ Faltan **capturas de pantalla** (minimo 2, del movil) - haz capturas de la app i
 1. **Eliminacion de cuenta (obligatorio si la app permite crear cuenta).** Play pide (a) una opcion
    dentro de la app/web para eliminar la cuenta y los datos y (b) una URL publica con las instrucciones,
    que se declara en *Seguridad de los datos*. Hoy `privacidad.html` solo indica escribir a
-   feispla@hotmail.com. Recomendado: crear `eliminar-cuenta.html` y un boton en "Mi cuenta".
+   vants@agentmail.to. Recomendado: crear `eliminar-cuenta.html` y un boton en "Mi cuenta".
 2. **Pagos (Stripe).** Los planes BASIC/PRO/ELITE dan acceso a una "Zona VIP" digital. Play exige
    **Google Play Billing** para bienes digitales vendidos dentro de la app (con excepciones por pais/programa).
    Cobrarlos con Stripe dentro de la app puede causar el rechazo. Opciones: Play Billing (Digital Goods API en TWA),
