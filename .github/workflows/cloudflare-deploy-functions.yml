@@ -35,9 +35,14 @@ jobs:
         with:
           node-version: 22
 
-      - name: Instalar dependencias (npm ci)
+      - name: Instalar dependencias (npm ci, solo si hay lockfile)
         working-directory: vants-functions
-        run: npm ci
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            echo "sin package-lock.json: el worker es autocontenido (sin deps npm), se salta npm ci"
+          fi
 
       - name: Deploy del Worker a Cloudflare
         working-directory: vants-functions
