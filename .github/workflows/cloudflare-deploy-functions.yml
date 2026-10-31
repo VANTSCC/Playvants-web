@@ -51,6 +51,22 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || '8f2424e95fec4860e19257226f209fbc' }}
         run: npx wrangler deploy
 
+      # Stripe: la clave LIVE vive cifrada como secret del repo y se instala en
+      # el Worker en cada despliegue (idempotente). Si falta, el Worker conserva
+      # la que ya tenga; el checkout de la tienda la necesita para funcionar.
+      - name: Secret STRIPE_SECRET_KEY (pagos de la tienda)
+        working-directory: vants-functions
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || '8f2424e95fec4860e19257226f209fbc' }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: |
+          if [ -n "$STRIPE_SECRET_KEY" ]; then
+            printf '%s' "$STRIPE_SECRET_KEY" | npx wrangler secret put STRIPE_SECRET_KEY
+          else
+            echo "STRIPE_SECRET_KEY sin definir en el repo: se conserva la que ya tenga el Worker"
+          fi
+
       # Los secretos del Worker se gestionan una vez con wrangler secret put
       # (ver vants-functions/README.md). Aquí solo se despliega el código;
       # si un secreto falta, la función que lo usa lo avisará en su respuesta.
