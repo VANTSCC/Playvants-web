@@ -29,11 +29,11 @@ VANTS_BUS_URL = "https://vants-bus.vants.workers.dev"
 AGENTID_CLIENT_ID = "fabe85f8-b37a-4f98-940d-582b45b1c961"
 AGENTID_SOLO_VERIFICADOS = "1"
 
-# YOUTUBE · ÚLTIMOS DEL CANAL (/clips): ID del canal (UC…, formato exacto) y,
-# opcionalmente, YOUTUBE_API_KEY como SECRET (wrangler secret put) para la
-# Data API v3 (vistas/duración). Vacío = sección oculta en la web (sin canal
-# configurado el endpoint responde ok:false razon sin_canal).
-YOUTUBE_CHANNEL_ID = ""
+# YOUTUBE · ÚLTIMOS DEL CANAL (/clips): canal oficial del dueño @feispla
+# (confirmado por el dueño el 31-oct-2026). Opcionalmente, YOUTUBE_API_KEY como
+# SECRET (wrangler secret put) para la Data API v3 (vistas/duración). Sin clave
+# usa el RSS oficial del canal (suficiente: título, fecha y miniatura).
+YOUTUBE_CHANNEL_ID = "UCOJzTjwvfQLlNP_OWSPcySQ"
 
 # D1 PROPIA del preview (antes apuntaba a vants-db de producción, pero el
 # worker SÍ escribe: INSERT en tournament_teams y tournament_matches al
