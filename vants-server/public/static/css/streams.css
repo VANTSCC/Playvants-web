@@ -1,0 +1,153 @@
+/* ═══ VANTS TWITCH DISCOVERY · /streams ═══
+   Identidad VANTS: negro grafito, rojo, blanco, acero. Sin morado.
+   Reutiliza tokens de vants.css (variables y tipografías). */
+
+.tw-busca {
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+  margin: 18px 0 22px;
+}
+.tw-busca input[type="search"] {
+  flex: 1 1 260px; min-width: 0;
+  background: rgba(10, 12, 16, .85);
+  border: 1px solid #2a313c; border-radius: 10px;
+  color: #f7f8ff; font: 500 14px/1.2 'Archivo', system-ui, sans-serif;
+  padding: 13px 16px; outline: none; letter-spacing: .02em;
+}
+.tw-busca input[type="search"]::placeholder { color: #6b7480; }
+.tw-busca input[type="search"]:focus { border-color: #e11d2e; box-shadow: 0 0 0 3px rgba(225, 29, 46, .18); }
+.tw-busca button {
+  cursor: pointer; border: 1px solid #e11d2e; background: #e11d2e; color: #fff;
+  font: 800 12px/1 'Archivo', system-ui, sans-serif; letter-spacing: .14em;
+  border-radius: 10px; padding: 13px 18px;
+}
+.tw-busca button:hover { filter: brightness(1.12); }
+.tw-busca button#tw-limpia {
+  background: transparent; border-color: #2a313c; color: #aab3bf;
+}
+.tw-busca button#tw-limpia:hover { border-color: #aab3bf; filter: none; }
+
+/* ── Rejillas ── */
+.tw-grid {
+  display: grid; gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+.tw-grid--juegos { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.tw-grid--directos { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.tw-grid--creadores { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+
+.tw-cargando {
+  grid-column: 1 / -1; color: #6b7480;
+  font: 700 12px/1.4 'JetBrains Mono', monospace; letter-spacing: .18em;
+  padding: 26px 0; text-align: center;
+}
+
+/* ── Tarjeta de juego/categoría ── */
+.tw-juego {
+  position: relative; cursor: pointer; border: 1px solid #1c212a;
+  border-radius: 12px; overflow: hidden; background: #0b0d12;
+  transition: transform .18s ease, border-color .18s ease;
+}
+.tw-juego:hover { transform: translateY(-3px); border-color: #e11d2e; }
+.tw-juego img {
+  display: block; width: 100%; aspect-ratio: 3 / 4; object-fit: cover;
+  background: #12151b; border-bottom: 1px solid #1c212a;
+}
+.tw-juego__pie {
+  padding: 9px 10px 11px; display: flex; flex-direction: column; gap: 3px;
+}
+.tw-juego__nombre {
+  color: #f7f8ff; font: 800 12.5px/1.25 'Archivo', system-ui, sans-serif;
+  letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tw-juego__top {
+  color: #aab3bf; font: 700 10px/1 'JetBrains Mono', monospace; letter-spacing: .16em;
+}
+.tw-juego__top b { color: #e11d2e; }
+
+/* ── Tarjeta de directo ── */
+.tw-directo {
+  position: relative; cursor: pointer; border: 1px solid #1c212a;
+  border-radius: 12px; overflow: hidden; background: #0b0d12;
+  transition: transform .18s ease, border-color .18s ease;
+}
+.tw-directo:hover { transform: translateY(-3px); border-color: #e11d2e; }
+.tw-directo__mini { position: relative; display: block; }
+.tw-directo__mini img {
+  display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #12151b;
+}
+.tw-directo__live {
+  position: absolute; left: 10px; top: 10px;
+  background: #e11d2e; color: #fff;
+  font: 800 10px/1 'Archivo', system-ui, sans-serif; letter-spacing: .14em;
+  padding: 5px 8px; border-radius: 6px;
+}
+.tw-directo__vistas {
+  position: absolute; right: 10px; bottom: 10px;
+  background: rgba(8, 9, 12, .88); color: #f7f8ff;
+  font: 700 11px/1 'JetBrains Mono', monospace;
+  padding: 5px 8px; border-radius: 6px; border: 1px solid #2a313c;
+}
+.tw-directo__cuerpo { padding: 12px 13px 14px; display: flex; gap: 10px; align-items: flex-start; }
+.tw-directo__avatar {
+  width: 36px; height: 36px; border-radius: 50%; flex: 0 0 auto;
+  border: 2px solid #2a313c; object-fit: cover; background: #12151b;
+}
+.tw-directo__txt { min-width: 0; flex: 1; }
+.tw-directo__canal {
+  color: #f7f8ff; font: 800 13.5px/1.2 'Archivo', system-ui, sans-serif;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tw-directo__titulo {
+  color: #aab3bf; font: 500 12.5px/1.45 'Archivo', system-ui, sans-serif;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  margin-top: 3px;
+}
+.tw-directo__juego {
+  color: #e11d2e; font: 700 10.5px/1 'JetBrains Mono', monospace;
+  letter-spacing: .12em; text-transform: uppercase; margin-top: 7px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── Tarjeta de creador ── */
+.tw-creador {
+  border: 1px solid #1c212a; border-radius: 12px; background: #0b0d12;
+  padding: 14px; display: flex; gap: 12px; align-items: center;
+  transition: border-color .18s ease;
+}
+.tw-creador--vivo { border-color: rgba(225, 29, 46, .55); }
+.tw-creador__avatar {
+  width: 52px; height: 52px; border-radius: 50%; flex: 0 0 auto; object-fit: cover;
+  border: 2px solid #2a313c; background: #12151b;
+}
+.tw-creador--vivo .tw-creador__avatar { border-color: #e11d2e; }
+.tw-creador__txt { min-width: 0; flex: 1; }
+.tw-creador__nombre {
+  color: #f7f8ff; font: 800 14px/1.2 'Archivo', system-ui, sans-serif;
+  display: flex; align-items: center; gap: 8px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tw-creador__estado { font: 700 10px/1 'JetBrains Mono', monospace; letter-spacing: .16em; }
+.tw-creador--vivo .tw-creador__estado { color: #e11d2e; }
+.tw-creador:not(.tw-creador--vivo) .tw-creador__estado { color: #6b7480; }
+.tw-creador__titulo {
+  color: #aab3bf; font: 500 12px/1.4 'Archivo', system-ui, sans-serif;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  margin-top: 4px;
+}
+.tw-creador__link {
+  flex: 0 0 auto; color: #aab3bf; text-decoration: none;
+  font: 800 10.5px/1 'Archivo', system-ui, sans-serif; letter-spacing: .12em;
+  border: 1px solid #2a313c; border-radius: 8px; padding: 8px 10px;
+}
+.tw-creador__link:hover { color: #fff; border-color: #e11d2e; }
+
+/* ── Modal de directo (reutiliza .modal-clip) ── */
+.modal-clip__video--tw { position: relative; padding-top: 56.25%; background: #08090c; }
+.modal-clip__video--tw iframe {
+  position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block;
+}
+
+@media (max-width: 640px) {
+  .tw-grid--directos { grid-template-columns: 1fr; }
+  .tw-grid--juegos { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+}

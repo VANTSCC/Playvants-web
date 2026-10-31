@@ -64,6 +64,12 @@ AGENTID_SOLO_VERIFICADOS = "1"
 # usa el RSS oficial del canal (suficiente: título, fecha y miniatura).
 YOUTUBE_CHANNEL_ID = "UCOJzTjwvfQLlNP_OWSPcySQ"
 
+# TWITCH · DISCOVERY (/streams): TWITCH_CLIENT_ID/TWITCH_CLIENT_SECRET viven como
+# SECRETS del worker (wrangler secret put — nunca en el repo). Esta var lista los
+# creadores oficiales de VANTS que se muestran en «CREADORES VANTS» (se fusiona
+# con players.twitch_channel de D1 cuando haya vinculaciones).
+VANTS_TWITCH_CREADORES = "feispla"
+
 # VANTS-BUS: el Worker publica inscription.created (al inscribir un equipo),
 # clip.published (al publicar un clip destacado) y match.finished (al cerrar
 # una partida de bracket). Si falta el secreto, la publicación queda apagada

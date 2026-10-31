@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Streams · Twitch en vivo — VANTS GAMES</title>
+  <meta name="description" content="VANTS TWITCH DISCOVERY: explorá las categorías más vistas de Twitch, descubrí quién está en directo ahora mismo y seguí a los creadores de VANTS.">
+  <link rel="icon" type="image/svg+xml" href="/static/img/vants-mark.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,800;1,900&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/vants.css">
+  <link rel="stylesheet" href="/static/css/paginas.css">
+  <link rel="stylesheet" href="/static/css/streams.css">
+</head>
+<body data-pagina="streams">
+
+  <!-- SPLASH DE ENTRADA -->
+    <div id="splash" class="splash" aria-hidden="true">
+    <canvas class="splash__estrellas"></canvas>
+    <button class="splash__saltar" type="button">SALTAR INTRO →</button>
+    <div class="splash__inner">
+      <img class="splash__logo" src="/static/img/vants-mark-512.png" alt="VANTS">
+      <div class="splash__marca">VANT<span>S</span></div>
+      <p class="splash__lema">DONDE NACE LA VENTAJA</p>
+      <div class="splash__acciones">
+        <button class="splash__btn splash__btn--rojo" type="button" data-splash-entrar><svg viewBox="0 0 12 12" width="9" height="9" aria-hidden="true"><path d="M2.5 1.4v9.2l8-4.6z" fill="currentColor"/></svg>ENTRAR A LA ARENA</button>
+        <a class="splash__btn" href="/historia"><svg viewBox="0 0 12 12" width="9" height="9" aria-hidden="true"><path d="M2 1h8v10L6 8.4 2 11z" fill="currentColor"/></svg>NUESTRA HISTORIA</a>
+      </div>
+    </div>
+    <span class="splash__pie">VANTS GAMES — BRAND FILM 2026</span>
+  </div>
+
+  <!-- TICKER -->
+  <div class="ticker" role="marquee">
+    <div class="ticker__track">
+      <span class="ticker__item">INSCRIPCIONES ABIERTAS: ASCENSIÓN SERIES S4</span><span class="ticker__sep">◆</span><span class="ticker__item">PREMIOS Y FECHAS POR ANUNCIAR EN DISCORD</span><span class="ticker__sep">◆</span><span class="ticker__item">SEGUÍ EL CIRCUITO PRO REAL EN LA AGENDA · VLR.GG</span><span class="ticker__sep">◆</span><span class="ticker__item">NUEVO: TWITCH EN VIVO — DESCUBRÍ JUEGOS, DIRECTOS Y CREADORES VANTS</span><span class="ticker__sep">◆</span><span class="ticker__item">NUEVO: TIENDA DE IDENTIDAD — MARCOS, TARJETAS Y SELLOS PARA TU PERFIL</span><span class="ticker__sep">◆</span><span class="ticker__item">GANÁ SERIES Y SUBÍ TU RANGO VANTS RANKED</span><span class="ticker__sep">◆</span><span class="ticker__item">INSCRIPCIONES ABIERTAS: ASCENSIÓN SERIES S4</span><span class="ticker__sep">◆</span><span class="ticker__item">PREMIOS Y FECHAS POR ANUNCIAR EN DISCORD</span><span class="ticker__sep">◆</span><span class="ticker__item">SEGUÍ EL CIRCUITO PRO REAL EN LA AGENDA · VLR.GG</span><span class="ticker__sep">◆</span><span class="ticker__item">NUEVO: TWITCH EN VIVO — DESCUBRÍ JUEGOS, DIRECTOS Y CREADORES VANTS</span><span class="ticker__sep">◆</span><span class="ticker__item">NUEVO: TIENDA DE IDENTIDAD — MARCOS, TARJETAS Y SELLOS PARA TU PERFIL</span><span class="ticker__sep">◆</span><span class="ticker__item">GANÁ SERIES Y SUBÍ TU RANGO VANTS RANKED</span><span class="ticker__sep">◆</span>
+    </div>
+  </div>
+
+  <!-- CABECERA -->
+  <header class="cab" id="cabecera">
+    <a class="cab__logo" href="/" aria-label="VANTS GAMES">
+      <img src="/static/img/vants-mark.svg" alt="">
+      <span class="cab__word">VANTS<em>GAMES</em></span>
+    </a>
+
+    <nav class="cab__nav" id="nav-principal" aria-label="Principal">
+      <div class="nav-grupo">
+        <button class="nav-link nav-link--btn" type="button" aria-expanded="false">SALA <b class="caret">▾</b></button>
+        <div class="submenu">
+          <a href="/sala"><b>SALA DE JUGADORES</b><small>Identidades del circuito</small></a>
+          <a href="/sala#equipos"><b>EQUIPOS DEL CIRCUITO</b><small>Equipos registrados</small></a>
+          <a href="/sala#vants-de-5"><b>EQUIPO VANTS</b><small>VANTS DE 5, el equipo oficial</small></a>
+          <a href="/ranking"><b>RANKING GLOBAL</b><small>Líderes del circuito</small></a>
+          <a href="/ranking#rangos"><b>VANTS RANKED</b><small>Cómo funciona el rating</small></a>
+        </div>
+      </div>
+      <div class="nav-grupo">
+        <button class="nav-link nav-link--btn" type="button" aria-expanded="false">TORNEOS <b class="caret">▾</b></button>
+        <div class="submenu">
+          <a href="/torneos"><b>COMPETIR</b><small>Torneos abiertos y en curso</small></a>
+          <a href="/partidos"><b>AGENDA EN VIVO</b><small>En vivo y próximos</small></a>
+          <a href="/partidos#resultados"><b>ÚLTIMOS RESULTADOS</b><small>Lo último del PRO</small></a>
+          <a href="/partidos#calendario"><b>TU CALENDARIO</b><small>Tu semana de juego</small></a>
+          <a href="/llaves"><b>BRACKET PRINCIPAL</b><small>Las llaves del torneo</small></a>
+        </div>
+      </div>
+      <div class="nav-grupo">
+        <button class="nav-link nav-link--btn" type="button" aria-expanded="false">CLIPS <b class="caret">▾</b></button>
+        <div class="submenu">
+          <a href="/clips"><b>MOMENTOS</b><small>Lo mejor de la arena <em class="chip-nuevo">NUEVO</em></small></a>
+          <a href="/streams"><b>TWITCH EN VIVO</b><small>Descubrí juegos y directos <em class="chip-nuevo">NUEVO</em></small></a>
+          <a href="/historia"><b>HISTORIA</b><small>De la marca</small></a>
+          <a href="/guia"><b>GUÍA</b><small>Cómo funciona VANTS</small></a>
+        </div>
+      </div>
+      <a class="nav-link" href="/tienda">TIENDA</a>
+      <a class="nav-link" href="/descargar">DESCARGAR</a>
+      <a class="nav-link nav-link--pro" href="/membresias">MEMBRESÍAS <em class="chip-pro">PRO</em></a>
+      <a class="nav-entrar" href="/perfil">ENTRAR</a>
+    </nav>
+
+    <button class="cab__burger" id="burger" type="button" aria-label="Abrir menú" aria-expanded="false">
+      <span></span><span></span><span></span>
+      <em>MENÚ</em>
+    </button>
+  </header>
+
+  <!-- MENÚ MÓVIL -->
+  <div class="mega" id="mega" hidden>
+    <a class="mega__perfil" href="/perfil">
+      <b>PERFIL DE JUGADOR</b>
+      <small>Tu ficha, tu rango y tu cuenta</small>
+    </a>
+    <details>
+      <summary>COMPETIR</summary>
+      <a href="/partidos">PARTIDOS<small>Agenda en vivo</small></a>
+      <a href="/ranking">RANKING<small>Líderes del circuito</small></a>
+      <a href="/llaves">LLAVES<small>Bracket principal</small></a>
+      <a href="/torneos">TORNEOS<small>Calendario abierto</small></a>
+      <a href="/ranking#rangos">RANGOS<small>VANTS RANKED</small></a>
+    </details>
+    <details>
+      <summary>COMUNIDAD</summary>
+      <a href="/sala">SALA<small>Identidades del circuito</small></a>
+      <a href="/sala#vants-de-5">EQUIPO<small>VANTS DE 5</small></a>
+      <a href="/clips">CLIPS<small>Momentos destacados <em class="chip-nuevo">NUEVO</em></small></a>
+      <a href="/streams">STREAMS<small>Twitch en directo <em class="chip-nuevo">NUEVO</em></small></a>
+      <a href="/historia">HISTORIA<small>De la marca</small></a>
+      <a href="/guia">GUÍA<small>Cómo funciona VANTS</small></a>
+    </details>
+    <details>
+      <summary>VANTS</summary>
+      <a href="/membresias">MEMBRESÍAS<small>Planes, insignias y pase</small></a>
+      <a href="/tienda">TIENDA<small>Identidad y oficial</small></a>
+      <a href="/descargar">DESCARGAR<small>App para Windows <em class="chip-nuevo">NUEVO</em></small></a>
+      <a href="/guia#faq">PREGUNTAS FRECUENTES<small>Respuestas rápidas</small></a>
+      <a href="/guia#terminos">TÉRMINOS Y PRIVACIDAD<small>Las reglas claras</small></a>
+    </details>
+    <a class="mega__entrar" href="/perfil">ENTRAR A MI CUENTA</a>
+  </div>
+
+  <main class="sitio">
+
+<header class="cabecera-pagina">
+  <span class="etiqueta etiqueta--roja">STREAMING <em class="chip-nuevo">NUEVO</em></span>
+  <h1>VANTS <em>TWITCH DISCOVERY</em></h1>
+  <p>Explorá las categorías más vistas de Twitch, descubrí quién está en directo ahora
+     mismo y seguí a los creadores de VANTS. Ver streams no altera tu ranking: esto es
+     descubrimiento, no competición.</p>
+</header>
+
+<!-- EXPLORAR JUEGOS -->
+<section class="seccion" id="explorar">
+  <div class="seccion__top">
+    <h2 class="seccion__titulo">EXPLORAR <em>JUEGOS</em></h2>
+    <span class="pill" id="juegos-contador">·</span>
+  </div>
+  <form class="tw-busca" id="tw-busca" role="search">
+    <input type="search" id="tw-q" placeholder="Buscar cualquier categoría de Twitch: VALORANT, Just Chatting…" maxlength="60" autocomplete="off">
+    <button type="submit">BUSCAR</button>
+    <button type="button" id="tw-limpia" hidden>CANCELAR ✕</button>
+  </form>
+  <div class="tw-grid tw-grid--juegos" id="tw-juegos">
+    <div class="tw-cargando">CARGANDO LAS CATEGORÍAS DE TWITCH…</div>
+  </div>
+</section>
+
+<!-- EN DIRECTO -->
+<section class="seccion" id="directos">
+  <div class="seccion__top">
+    <h2 class="seccion__titulo">EN <em>DIRECTO</em></h2>
+    <span class="pill" id="directos-chip">TODOS LOS JUEGOS</span>
+  </div>
+  <div class="tw-grid tw-grid--directos" id="tw-directos">
+    <div class="tw-cargando">CARGANDO LOS DIRECTOS…</div>
+  </div>
+</section>
+
+<!-- CREADORES VANTS -->
+<section class="seccion" id="creadores">
+  <div class="seccion__top">
+    <h2 class="seccion__titulo">CREADORES <em>VANTS</em></h2>
+    <span class="pill" id="creadores-contador">·</span>
+  </div>
+  <div class="tw-grid tw-grid--creadores" id="tw-creadores">
+    <div class="tw-cargando">CARGANDO LOS CREADORES…</div>
+  </div>
+  <p class="gestionar__nota" style="margin-top:14px">
+    ¿Tenés canal de Twitch? Vinculalo desde tu perfil para aparecer acá cuando estés en directo ·
+    Los datos vienen de la API oficial de Twitch (Helix) vía el servidor de VANTS — las credenciales nunca salen del Worker.
+  </p>
+</section>
+
+  </main>
+
+  <!-- REPRODUCTOR DE DIRECTO -->
+  <div class="modal-clip" id="modal-tw" hidden>
+    <div class="modal-clip__fondo" data-cerrar></div>
+    <div class="modal-clip__card" role="dialog" aria-modal="true" aria-label="Reproductor de Twitch">
+      <div class="modal-clip__cabeza">
+        <b id="modal-tw-titulo">DIRECTO</b>
+        <button class="modal-clip__x" type="button" data-cerrar aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-clip__video modal-clip__video--tw"><iframe id="modal-tw-iframe" title="Reproductor de Twitch" allowfullscreen></iframe></div>
+      <p class="modal-clip__meta" id="modal-tw-meta"></p>
+    </div>
+  </div>
+
+  <!-- PIE -->
+  <footer class="pie">
+    <div class="pie__cols">
+      <div>
+        <h5>COMPETIR</h5>
+        <a href="/torneos">Torneos abiertos</a>
+        <a href="/llaves">Brackets</a>
+        <a href="/ranking">Ranking global</a>
+        <a href="/ranking#rangos">VANTS RANKED</a>
+        <a href="/clips">Clips · Momentos destacados</a>
+        <a href="/streams">Streams · Twitch en vivo</a>
+        <a href="/guia">Guía de la arena</a>
+      </div>
+      <div>
+        <h5>IDENTIDAD</h5>
+        <a href="/sala">Sala de jugadores</a>
+        <a href="/sala#vants-de-5">Equipo VANTS DE 5</a>
+        <a href="/tienda">Tienda de identidad</a>
+        <a href="/historia">Historia de la marca</a>
+        <a href="/membresias">Programa de socios</a>
+      </div>
+      <div>
+        <h5>MEMBRESÍA</h5>
+        <a href="/membresias">VANTS PRO</a>
+        <a href="/membresias">VANTS CREATOR</a>
+        <a href="/tienda-oficial">Tienda oficial × VegaStore</a>
+        <a href="https://vants-ai.vercel.app" target="_blank" rel="noopener">Agentes IA · VANTS-AI ↗</a>
+      </div>
+    </div>
+    <div class="pie__legal">
+      <p class="pie__enlaces"><a href="/guia#terminos">Términos</a> · <a href="/guia#terminos">Privacidad</a> · <a href="/guia#reembolsos">Reembolsos</a></p>
+      <p>© <span id="anio">2026</span> VANTS GAMES — Donde nace la ventaja. No afiliado a Riot Games, Valve ni Twitch.</p>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="/static/js/app.js"></script>
+  <script src="/static/js/streams.js"></script>
+
+</body>
+</html>

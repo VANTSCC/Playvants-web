@@ -198,6 +198,61 @@ async function ytUltimosApi(canalId, apiKey) {
   return { ok: true, fuente: 'api', canal: { id: canalId, titulo }, videos };
 }
 
+// ─── TWITCH · DISCOVERY (sección /streams) ───
+// GET /api/twitch/juegos      → Helix games/top (portadas; el orden ES la popularidad real de Twitch)
+// GET /api/twitch/buscar?q=   → Helix search/categories
+// GET /api/twitch/directos?juego=&limite= → Helix streams (título, canal, espectadores, miniatura)
+// GET /api/twitch/creadores   → creadores de VANTS en directo (var VANTS_TWITCH_CREADORES
+//   + players.twitch_channel de D1 cuando existan vinculaciones)
+// App Access Token (client_credentials) con TWITCH_CLIENT_ID/TWITCH_CLIENT_SECRET como
+// SECRETS del Worker (nunca en el repo ni en el navegador). Token cacheado en memoria,
+// refrescado 10 min antes de expirar o si Helix devuelve 401. Cachés: juegos/búsqueda
+// 10 min, directos 90 s, creadores 2 min. Solo lectura pública: ver directos NO toca
+// el ranking ni las estadísticas competitivas de VANTS RANKED.
+const TW_JUEGOS_TTL_MS = 10 * 60_000;
+const TW_DIRECTOS_TTL_MS = 90_000;
+const TW_CREADORES_TTL_MS = 2 * 60_000;
+let twTok = { v: '', at: 0, exp: 0 };
+let twJuegosCache = { at: 0, body: null };
+const twBusqCache = new Map();   // q → {at, body} (máx 40)
+const twJuegoId = new Map();     // nombre→id de categoría (1 h): /streams filtra por game_id
+const twDirCache = new Map();    // juego|limite → {at, body} (máx 20)
+let twCreadoresCache = { at: 0, body: null };
+
+async function twAppToken(env) {
+  const now = Date.now();
+  if (twTok.v && now - twTok.at < twTok.exp - 10 * 60_000) return twTok.v;
+  const id = String((env && env.TWITCH_CLIENT_ID) || '').trim();
+  const sec = String((env && env.TWITCH_CLIENT_SECRET) || '').trim();
+  if (!id || !sec) throw new Error('sin_credenciales');
+  const r = await fetch('https://id.twitch.tv/oauth2/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'client_id=' + encodeURIComponent(id) + '&client_secret=' + encodeURIComponent(sec) + '&grant_type=client_credentials',
+  });
+  if (!r.ok) throw new Error('token_' + r.status);
+  const j = await r.json();
+  if (!j.access_token) throw new Error('token_sin_acceso');
+  twTok = { v: String(j.access_token), at: now, exp: (parseInt(j.expires_in, 10) || 3600) * 1000 };
+  return twTok.v;
+}
+
+async function twHelix(env, ruta, params) {
+  const cid = String((env && env.TWITCH_CLIENT_ID) || '').trim();
+  const u = 'https://api.twitch.tv/helix/' + ruta + (String(params) ? '?' + params : '');
+  let r = await fetch(u, { headers: { 'Client-Id': cid, Authorization: 'Bearer ' + await twAppToken(env) } });
+  if (r.status === 401) { // token revocado/vencido → 1 reintento con token fresco
+    twTok = { v: '', at: 0, exp: 0 };
+    r = await fetch(u, { headers: { 'Client-Id': cid, Authorization: 'Bearer ' + await twAppToken(env) } });
+  }
+  if (!r.ok) throw new Error('helix_' + r.status);
+  return r.json();
+}
+
+function twPortada(u, w, h) {
+  return String(u || '').replace('{width}', String(w || 285)).replace('{height}', String(h || 380));
+}
+
 // Caché de claves públicas JWKS de Auth0 (1 h) para verificar JWT sin /userinfo
 // (los tokens del SPA van con audience api.vants.app; JWKS es infalible).
 const JWKS_TTL_MS = 60 * 60_000;
@@ -1203,7 +1258,7 @@ async function fetchWorker(request, env, ctx) {
     // --- 2) Pre-flight CORS solo para la API propia
     if (method === 'OPTIONS') {
       const origin = request.headers.get('origin') || '';
-      const isGetApi = url.pathname === '/api/valorant/esports' || url.pathname === '/api/valorant/rango' || url.pathname === '/api/teams' || url.pathname === '/api/teams-live' || url.pathname === '/api/gpr' || url.pathname === '/api/clips/featured' || url.pathname === '/api/youtube/ultimos' || url.pathname === '/api/torneos/bracket' || url.pathname === '/api/en-vivo' || url.pathname === '/api/faceit/usuario' || url.pathname === '/api/faceit/historia' || url.pathname === '/api/account/perfil' || url.pathname === '/api/account/progreso' || url.pathname === '/api/games' || url.pathname === '/api/tournaments' || url.pathname === '/api/matches' || url.pathname === '/api/players' || url.pathname === '/api/articles' || url.pathname === '/api/search' || /^\/api\/tournaments\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/articles\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/teams\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/players\/[a-z0-9-]+$/.test(url.pathname);
+      const isGetApi = url.pathname === '/api/valorant/esports' || url.pathname === '/api/valorant/rango' || url.pathname === '/api/teams' || url.pathname === '/api/teams-live' || url.pathname === '/api/gpr' || url.pathname === '/api/clips/featured' || url.pathname === '/api/youtube/ultimos' || url.pathname === '/api/twitch/juegos' || url.pathname === '/api/twitch/buscar' || url.pathname === '/api/twitch/directos' || url.pathname === '/api/twitch/creadores' || url.pathname === '/api/torneos/bracket' || url.pathname === '/api/en-vivo' || url.pathname === '/api/faceit/usuario' || url.pathname === '/api/faceit/historia' || url.pathname === '/api/account/perfil' || url.pathname === '/api/account/progreso' || url.pathname === '/api/games' || url.pathname === '/api/tournaments' || url.pathname === '/api/matches' || url.pathname === '/api/players' || url.pathname === '/api/articles' || url.pathname === '/api/search' || /^\/api\/tournaments\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/articles\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/teams\/[a-z0-9-]+$/.test(url.pathname) || /^\/api\/players\/[a-z0-9-]+$/.test(url.pathname);
       const isPostApi = url.pathname === '/api/discord/notify' || url.pathname === '/api/account/email-verify' || url.pathname === '/api/account/password-reset' || url.pathname === '/api/account/perfil' || url.pathname === '/api/clips/featured' || url.pathname === '/api/torneos/inscribir' || url.pathname === '/api/torneos/gestionar' || url.pathname === '/api/telemetria';
       if ((isPostApi || isGetApi) && SITE_ORIGINS.has(origin)) {
         return harden(new Response(null, { status: 204 }), {
@@ -2609,6 +2664,131 @@ async function fetchWorker(request, env, ctx) {
         // viejo antes que dejar la sección ciega
         if (ytCache.body) return json(ytCache.body, 200, cabY);
         return json({ ok: false, razon: 'youtube_no_disponible' }, 502, cabY);
+      }
+    }
+    // --- 7b5) TWITCH · DISCOVERY (GET /api/twitch/*) — mismo patrón que la vitrina:
+    // origen propio, rate limit, caché en memoria + Cache-Control público. Las
+    // credenciales y el token de Twitch NUNCA salen del Worker.
+    const twRutas = { '/api/twitch/juegos': 1, '/api/twitch/buscar': 1, '/api/twitch/directos': 1, '/api/twitch/creadores': 1 };
+    if (twRutas[url.pathname] && method === 'GET') {
+      const originT = request.headers.get('origin') || '';
+      if (originT && !SITE_ORIGINS.has(originT)) return json({ ok: false, error: 'Origen no permitido' }, 403, { 'Access-Control-Allow-Origin': originT || '*' });
+      const cT = rateLimit(rlClips, ip, 30);
+      if (!cT.ok) return json({ ok: false, error: 'Demasiadas peticiones' }, 429, { 'Retry-After': String(cT.retry), 'Access-Control-Allow-Origin': originT || '*' });
+      const cabT = { 'Access-Control-Allow-Origin': originT || '*', 'Cache-Control': 'public, max-age=120' };
+      const qT = url.searchParams;
+      try {
+        if (url.pathname === '/api/twitch/juegos') {
+          const nowT = Date.now();
+          if (twJuegosCache.body && nowT - twJuegosCache.at < TW_JUEGOS_TTL_MS) return json(twJuegosCache.body, 200, cabT);
+          const jT = await twHelix(env, 'games/top', 'first=20');
+          const bodyT = { ok: true, juegos: (jT.data || []).map((g, i) => ({ id: g.id, nombre: g.name, top: i + 1, portada: twPortada(g.box_art_url, 285, 380) })) };
+          twJuegosCache = { at: nowT, body: bodyT };
+          return json(bodyT, 200, cabT);
+        }
+        if (url.pathname === '/api/twitch/buscar') {
+          const qB = String(qT.get('q') || '').trim().slice(0, 60);
+          if (!qB) return json({ ok: true, categorias: [] }, 200, cabT);
+          const cB = twBusqCache.get(qB);
+          const nowB = Date.now();
+          if (cB && nowB - cB.at < TW_JUEGOS_TTL_MS) return json(cB.body, 200, cabT);
+          const jB = await twHelix(env, 'search/categories', 'query=' + encodeURIComponent(qB) + '&first=16');
+          // Twitch ordena el search de forma alfabética-fuzzy: las coincidencias
+          // exactas o por prefijo (lo que el usuario escribió) van primero.
+          const qL = qB.toLowerCase();
+          const catsB = (jB.data || []).slice().sort((a, b) => {
+            const ax = String(a.name || '').toLowerCase().startsWith(qL) ? 0 : 1;
+            const bx = String(b.name || '').toLowerCase().startsWith(qL) ? 0 : 1;
+            return ax - bx;
+          });
+          const bodyB = { ok: true, categorias: catsB.map((g) => ({ id: g.id, nombre: g.name, portada: twPortada(g.box_art_url, 285, 380) })) };
+          if (twBusqCache.size > 40) twBusqCache.clear();
+          twBusqCache.set(qB, { at: nowB, body: bodyB });
+          return json(bodyB, 200, cabT);
+        }
+        if (url.pathname === '/api/twitch/directos') {
+          const juegoD = String(qT.get('juego') || '').trim().slice(0, 40);
+          const limD = Math.min(Math.max(parseInt(qT.get('limite'), 10) || 18, 1), 30);
+          const claveD = (juegoD || '_top') + '|' + limD;
+          const cD = twDirCache.get(claveD);
+          const nowD = Date.now();
+          if (cD && nowD - cD.at < TW_DIRECTOS_TTL_MS) return json(cD.body, 200, cabT);
+          // Helix /streams SOLO filtra por game_id (el parámetro game por nombre se
+          // ignora): resolvemos nombre → id con search/categories (cacheado 1 h).
+          let juegoIdD = '';
+          if (juegoD) {
+            const claveJ = juegoD.toLowerCase();
+            const cJ = twJuegoId.get(claveJ);
+            if (cJ && nowD - cJ.at < 60 * 60_000) juegoIdD = cJ.id;
+            if (!juegoIdD) {
+              const jJ = await twHelix(env, 'search/categories', 'query=' + encodeURIComponent(juegoD) + '&first=8');
+              const exacto = (jJ.data || []).find((g) => String(g.name || '').toLowerCase() === claveJ);
+              if (!exacto) {
+                const bodyJ = { ok: true, juego: juegoD, juegoDesconocido: true, streams: [] };
+                twDirCache.set(claveD, { at: nowD, body: bodyJ });
+                return json(bodyJ, 200, cabT);
+              }
+              juegoIdD = exacto.id;
+              twJuegoId.set(claveJ, { id: juegoIdD, at: nowD });
+            }
+          }
+          const pD = new URLSearchParams({ first: String(limD) });
+          if (juegoIdD) pD.set('game_id', juegoIdD);
+          const jD = await twHelix(env, 'streams', pD.toString());
+          const bodyD = { ok: true, juego: juegoD, streams: (jD.data || []).map((s) => ({
+            canal: s.user_login || '', canalNombre: s.user_name || '', perfil: s.profile_image_url || '',
+            titulo: s.title || '', juego: s.game_name || '', vistas: s.viewer_count || 0,
+            inicio: s.started_at || '', idioma: s.language || '',
+            mini: twPortada(s.thumbnail_url, 1280, 720),
+          })) };
+          if (twDirCache.size > 20) twDirCache.clear();
+          twDirCache.set(claveD, { at: nowD, body: bodyD });
+          return json(bodyD, 200, cabT);
+        }
+        // /api/twitch/creadores — lista de creadores de VANTS y quiénes están EN VIVO
+        const nowC = Date.now();
+        if (twCreadoresCache.body && nowC - twCreadoresCache.at < TW_CREADORES_TTL_MS) return json(twCreadoresCache.body, 200, cabT);
+        const listaC = new Map(); // login → {canal, deD1}
+        for (const x of String((env && env.VANTS_TWITCH_CREADORES) || '').split(',')) {
+          const cC = x.trim().replace(/^@/, '').toLowerCase(); if (cC) listaC.set(cC, { deD1: false });
+        }
+        try {
+          const { results } = await env.DB.prepare("SELECT twitch_channel FROM players WHERE twitch_channel IS NOT NULL AND TRIM(twitch_channel) != '' LIMIT 25").all();
+          for (const rC of (results || [])) {
+            const cC = String(rC.twitch_channel || '').trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?twitch\.tv\//i, '').toLowerCase();
+            if (cC && !listaC.has(cC)) listaC.set(cC, { deD1: true });
+          }
+        } catch (eDbC) { /* D1 sin vinculaciones todavía: seguimos con la var */ }
+        const loginsC = Array.from(listaC.keys()).slice(0, 25);
+        let creadoresC = [];
+        if (loginsC.length) {
+          // 1) validar logins con /users: los canales inexistentes se descartan
+          //    (nada de enlaces muertos en la web)
+          const pU = new URLSearchParams(); for (const c of loginsC) pU.append('login', c);
+          const perfilesC = new Map();
+          try {
+            const jU = await twHelix(env, 'users', pU.toString());
+            for (const uU of (jU.data || [])) perfilesC.set(String(uU.login || '').toLowerCase(), uU.profile_image_url || '');
+          } catch (eUC) { /* si /users falla no validamos, pero tampoco rompemos */ }
+          const validosC = loginsC.filter((c) => perfilesC.has(c));
+          // 2) quiénes están EN VIVO ahora mismo
+          const enVivoC = new Map();
+          if (validosC.length) {
+            const pC = new URLSearchParams(); for (const c of validosC) pC.append('user_login', c);
+            const jC = await twHelix(env, 'streams', pC.toString());
+            for (const sC of (jC.data || [])) enVivoC.set(String(sC.user_login || '').toLowerCase(), sC);
+          }
+          creadoresC = validosC.map((c) => {
+            const sC = enVivoC.get(c);
+            if (sC) return { canal: c, enVivo: true, deD1: listaC.get(c).deD1, canalNombre: sC.user_name || '', titulo: sC.title || '', juego: sC.game_name || '', vistas: sC.viewer_count || 0, mini: twPortada(sC.thumbnail_url, 1280, 720), perfil: sC.profile_image_url || '' };
+            return { canal: c, enVivo: false, deD1: listaC.get(c).deD1, perfil: perfilesC.get(c) || '' };
+          });
+        }
+        const bodyC = { ok: true, creadores: creadoresC };
+        twCreadoresCache = { at: nowC, body: bodyC };
+        return json(bodyC, 200, cabT);
+      } catch (eT) {
+        return json({ ok: false, razon: 'twitch_no_disponible' }, 502, cabT);
       }
     }
     // --- 7b3) CLIPS DESTACADOS: vitrina pública de los clips de los jugadores.
