@@ -14,6 +14,12 @@ binding = "DB"
 database_name = "vants-db"
 database_id = "11e5d82c-307b-44ba-9682-501d8df593d3"
 
+# URL del sitio real al que vuelve el checkout (?paid=…). Antes esta variable
+# vivia apuntando a feispla.github.io/Vants (deploy viejo); fijarla aca garantiza
+# que el retorno de Stripe vuelva a la web de produccion.
+[vars]
+VANTS_SITE_URL = "https://vants.vants.workers.dev"
+
 # Observabilidad: logs de peticiones y errores visibles en el dashboard
 # (Workers & Pages -> vants-functions -> Logs)
 [observability]
