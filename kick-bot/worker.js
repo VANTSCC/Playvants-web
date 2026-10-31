@@ -479,10 +479,17 @@ async function colaClipper(req, env, url) {
     const cr = await kick(env, '/channels?broadcaster_user_id=' + objetivo);
     if (cr.ok) {
       const ch = ((await cr.json()).data || [])[0] || {};
-      chatroom_id = ch.chatroom?.id || null;
+      chatroom_id = ch.chatroom?.id || ch.chatroom_id || null;
       canal = ch.slug || ch.username || null;
     }
   } catch (e) {}
+  // respaldo: la API OAuth de Kick a veces no incluye el chatroom → API pública por slug
+  if (!chatroom_id) {
+    try {
+      const pub = await fetch('https://kick.com/api/v2/channels/' + encodeURIComponent(canal || 'feispla'), { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; VANTS-Clipper)' } });
+      if (pub.ok) chatroom_id = ((await pub.json()) || {}).chatroom?.id || null;
+    } catch (e) {}
+  }
   return j({ ok: true, chatroom_id, canal, requests: pedidos, ahora: Date.now() });
 }
 
