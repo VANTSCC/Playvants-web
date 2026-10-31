@@ -2,30 +2,6 @@
    Identidad VANTS: negro grafito, rojo, blanco, acero. Sin morado.
    Reutiliza tokens de vants.css (variables y tipografías). */
 
-.tw-busca {
-  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
-  margin: 18px 0 22px;
-}
-.tw-busca input[type="search"] {
-  flex: 1 1 260px; min-width: 0;
-  background: rgba(10, 12, 16, .85);
-  border: 1px solid #2a313c; border-radius: 10px;
-  color: #f7f8ff; font: 500 14px/1.2 'Archivo', system-ui, sans-serif;
-  padding: 13px 16px; outline: none; letter-spacing: .02em;
-}
-.tw-busca input[type="search"]::placeholder { color: #6b7480; }
-.tw-busca input[type="search"]:focus { border-color: #e11d2e; box-shadow: 0 0 0 3px rgba(225, 29, 46, .18); }
-.tw-busca button {
-  cursor: pointer; border: 1px solid #e11d2e; background: #e11d2e; color: #fff;
-  font: 800 12px/1 'Archivo', system-ui, sans-serif; letter-spacing: .14em;
-  border-radius: 10px; padding: 13px 18px;
-}
-.tw-busca button:hover { filter: brightness(1.12); }
-.tw-busca button#tw-limpia {
-  background: transparent; border-color: #2a313c; color: #aab3bf;
-}
-.tw-busca button#tw-limpia:hover { border-color: #aab3bf; filter: none; }
-
 /* ── Rejillas ── */
 .tw-grid {
   display: grid; gap: 14px;

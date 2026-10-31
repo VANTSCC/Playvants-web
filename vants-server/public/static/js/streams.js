@@ -1,7 +1,8 @@
 /* ═══ VANTS TWITCH DISCOVERY · lógica de /streams ═══
    Habla solo con la API propia del Worker (/api/twitch/*): las credenciales de
-   Twitch viven en el servidor y aquí nunca aparecen. Ver directos NO toca el
-   ranking — descubrimiento puro. */
+   Twitch viven en el servidor y aquí nunca aparecen. Solo se muestran los 5
+   juegos de la comunidad VANTS y directos de cuentas registradas en VANTS.
+   Ver directos NO toca el ranking — descubrimiento puro. */
 (function () {
   'use strict';
   var $ = function (s) { return document.querySelector(s); };
@@ -50,7 +51,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrarDirecto(); });
   }
 
-  /* ── EXPLORAR JUEGOS: top de Twitch y buscador ── */
+  /* ── EXPLORAR JUEGOS: los 5 juegos de la comunidad VANTS ── */
   function tarjetaJuego(g) {
     var el = document.createElement('article');
     el.className = 'tw-juego';
@@ -58,7 +59,7 @@
       '<img loading="lazy" src="' + esc(g.portada) + '" alt="Portada de ' + esc(g.nombre) + '">' +
       '<div class="tw-juego__pie">' +
         '<span class="tw-juego__nombre">' + esc(g.nombre) + '</span>' +
-        '<span class="tw-juego__top"><b>TOP #' + Number(g.top || 0) + '</b> EN TWITCH</span>' +
+        '<span class="tw-juego__top"><b>VANTS</b> · VER DIRECTOS ↓</span>' +
       '</div>';
     el.addEventListener('click', function () { elegirJuego(g.nombre); });
     return el;
@@ -67,12 +68,12 @@
   function cargarJuegos() {
     var caja = $('#tw-juegos');
     if (!caja) return;
-    caja.innerHTML = '<div class="tw-cargando">CARGANDO LAS CATEGORÍAS DE TWITCH…</div>';
+    caja.innerHTML = '<div class="tw-cargando">CARGANDO LOS JUEGOS DE LA COMUNIDAD…</div>';
     fetch('/api/twitch/juegos', { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.json(); })
       .then(function (j) {
         if (!j.ok || !(j.juegos || []).length) throw new Error('vacio');
-        $('#juegos-contador').textContent = 'TOP ' + j.juegos.length + ' · ACTUALIZADO AHORA';
+        $('#juegos-contador').textContent = j.juegos.length + ' JUEGOS · SECCIÓN VANTS';
         caja.innerHTML = '';
         j.juegos.forEach(function (g) { caja.appendChild(tarjetaJuego(g)); });
       })
@@ -81,41 +82,7 @@
       });
   }
 
-  var formBusca = $('#tw-busca');
-  if (formBusca) {
-    formBusca.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var q = ($('#tw-q').value || '').trim();
-      if (!q) return;
-      var caja = $('#tw-juegos');
-      caja.innerHTML = '<div class="tw-cargando">BUSCANDO «' + esc(q.toUpperCase()) + '»…</div>';
-      $('#tw-limpia').hidden = false;
-      fetch('/api/twitch/buscar?q=' + encodeURIComponent(q), { headers: { Accept: 'application/json' } })
-        .then(function (r) { return r.json(); })
-        .then(function (j) {
-          var cats = (j && j.categorias) || [];
-          if (!j.ok || !cats.length) {
-            caja.innerHTML = '<div class="tw-cargando">SIN RESULTADOS PARA «' + esc(q.toUpperCase()) + '»</div>';
-            return;
-          }
-          caja.innerHTML = '';
-          cats.forEach(function (g, i) {
-            g.top = i + 1; // en resultados el número es orden, no top global
-            caja.appendChild(tarjetaJuego(g));
-          });
-        })
-        .catch(function () {
-          caja.innerHTML = '<div class="tw-cargando">LA BÚSQUEDA FALLÓ · PROBÁ DE NUEVO</div>';
-        });
-    });
-    $('#tw-limpia').addEventListener('click', function () {
-      $('#tw-q').value = '';
-      this.hidden = true;
-      cargarJuegos();
-    });
-  }
-
-  /* ── EN DIRECTO ── */
+  /* ── EN DIRECTO: solo cuentas registradas en VANTS ── */
   function tarjetaDirecto(s) {
     var el = document.createElement('article');
     el.className = 'tw-directo';
@@ -134,7 +101,7 @@
         '</div>' +
       '</div>';
     el.addEventListener('click', function () {
-      abrirDirecto(s.canal, s.canalNombre || s.canal, (s.juego || '') + (s.vistas ? ' · ' + num(s.vistas) + ' viendo' : '') + ' · Verlo acá no altera tu ranking');
+      abrirDirecto(s.canal, s.canalNombre || s.canal, (s.juego || '') + (s.vistas ? ' · ' + num(s.vistas) + ' viendo' : '') + ' · CREADOR VANTS · Verlo acá no altera tu ranking');
     });
     return el;
   }
@@ -143,8 +110,8 @@
     var caja = $('#tw-directos');
     if (!caja) return;
     juegoActivo = juego || '';
-    $('#directos-chip').textContent = juegoActivo ? 'FILTRO: ' + juegoActivo.toUpperCase() : 'TODOS LOS JUEGOS';
-    caja.innerHTML = '<div class="tw-cargando">CARGANDO LOS DIRECTOS…</div>';
+    $('#directos-chip').textContent = juegoActivo ? 'FILTRO: ' + juegoActivo.toUpperCase() : 'TODOS LOS JUEGOS VANTS';
+    caja.innerHTML = '<div class="tw-cargando">CARGANDO LOS DIRECTOS VANTS…</div>';
     if (ctrl) ctrl.abort();
     ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
     var opts = { headers: { Accept: 'application/json' } };
@@ -156,7 +123,10 @@
         if (!j.ok) throw new Error('no_ok');
         caja.innerHTML = '';
         if (!streams.length) {
-          caja.innerHTML = '<div class="tw-cargando">NO HAY DIRECTOS AHORA MISMO' + (juegoActivo ? ' DE ' + esc(juegoActivo.toUpperCase()) : '') + '</div>';
+          caja.innerHTML = '<div class="tw-cargando">' +
+            'NINGÚN CREADOR REGISTRADO EN VANTS ESTÁ EN DIRECTO' +
+            (juegoActivo ? ' DE ' + esc(juegoActivo.toUpperCase()) : '') +
+            ' AHORA MISMO · CONECTÁ TU TWITCH EN TU PERFIL PARA APARECER ACÁ</div>';
           return;
         }
         streams.forEach(function (s) { caja.appendChild(tarjetaDirecto(s)); });
@@ -173,7 +143,7 @@
     cargarDirectos(nombre);
   }
 
-  /* ── CREADORES VANTS ── */
+  /* ── CREADORES VANTS (cuentas registradas) ── */
   function tarjetaCreador(c) {
     var el = document.createElement('article');
     el.className = 'tw-creador' + (c.enVivo ? ' tw-creador--vivo' : '');
@@ -184,14 +154,14 @@
           '<span class="tw-creador__estado">' + (c.enVivo ? '● EN VIVO' : 'OFFLINE') + '</span>' +
         '</span>' +
         (c.enVivo
-          ? '<span class="tw-creador__titulo">' + esc(c.titulo || '') + ' — ' + esc(c.juego || '') + ' · ' + esc(num(c.vistas)) + ' viendo</span>'
+          ? '<span class="tw-creador__titulo">' + esc(c.titulo || '') + (c.juego ? ' — ' + esc(c.juego) : '') + ' · ' + esc(num(c.vistas)) + ' viendo</span>'
           : '<span class="tw-creador__titulo">' + (c.deD1 ? 'Jugador de VANTS · canal vinculado' : 'Creador oficial de VANTS') + ' · seguilo en Twitch</span>') +
       '</div>' +
       '<a class="tw-creador__link" href="https://www.twitch.tv/' + encodeURIComponent(c.canal) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">CANAL ↗</a>';
     if (c.enVivo) {
       el.style.cursor = 'pointer';
       el.addEventListener('click', function () {
-        abrirDirecto(c.canal, c.canalNombre || c.canal, (c.juego || '') + ' · CREADOR VANTS');
+        abrirDirecto(c.canal, c.canalNombre || c.canal, (c.juego || 'EN DIRECTO') + ' · CREADOR VANTS');
       });
     }
     return el;
@@ -207,11 +177,11 @@
         if (!j.ok) throw new Error('no_ok');
         if (!lista.length) {
           $('#creadores-contador').textContent = '0 EN VIVO';
-          caja.innerHTML = '<div class="tw-cargando">TODAVÍA NO HAY CREADORES VINCULADOS · VINCULÁ TU CANAL DE TWITCH DESDE TU PERFIL Y APARECÉ ACÁ CUANDO ESTÉS EN DIRECTO</div>';
+          caja.innerHTML = '<div class="tw-cargando">TODAVÍA NO HAY CUENTAS DE TWITCH REGISTRADAS EN VANTS · CONECTÁ LA TUYA DESDE TU PERFIL (REDES Y CUENTAS) Y APARECÉ ACÁ CUANDO ESTÉS EN DIRECTO</div>';
           return;
         }
         var vivos = lista.filter(function (c) { return c.enVivo; }).length;
-        $('#creadores-contador').textContent = lista.length + ' CREADOR' + (lista.length === 1 ? '' : 'ES') + ' · ' + vivos + ' EN VIVO';
+        $('#creadores-contador').textContent = lista.length + ' REGISTRAD' + (lista.length === 1 ? 'O' : 'OS') + ' · ' + vivos + ' EN VIVO';
         caja.innerHTML = '';
         lista.sort(function (a, b) { return (b.enVivo ? 1 : 0) - (a.enVivo ? 1 : 0); });
         lista.forEach(function (c) { caja.appendChild(tarjetaCreador(c)); });

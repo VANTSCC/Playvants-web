@@ -65,9 +65,12 @@ AGENTID_SOLO_VERIFICADOS = "1"
 YOUTUBE_CHANNEL_ID = "UCOJzTjwvfQLlNP_OWSPcySQ"
 
 # TWITCH · DISCOVERY (/streams): TWITCH_CLIENT_ID/TWITCH_CLIENT_SECRET viven como
-# SECRETS del worker (wrangler secret put — nunca en el repo). Esta var lista los
-# creadores oficiales de VANTS que se muestran en «CREADORES VANTS» (se fusiona
-# con players.twitch_channel de D1 cuando haya vinculaciones).
+# SECRETS del worker (wrangler secret put — nunca en el repo). EXPLORAR JUEGOS
+# muestra SOLO la lista fija de la comunidad (Counter-Strike, League of Legends,
+# VALORANT, EA Sports FC 27 y Fortnite — sin Just Chatting). EN DIRECTO y
+# CREADORES VANTS muestran únicamente cuentas registradas en VANTS: esta var
+# (creador oficial) + players.twitch_channel de D1, que escribe el perfil al
+# conectar la Twitch (REDES Y CUENTAS).
 VANTS_TWITCH_CREADORES = "feispla"
 
 # VANTS-BUS: el Worker publica inscription.created (al inscribir un equipo),

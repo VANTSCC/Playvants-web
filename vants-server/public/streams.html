@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Streams · Twitch en vivo — VANTS GAMES</title>
-  <meta name="description" content="VANTS TWITCH DISCOVERY: explorá las categorías más vistas de Twitch, descubrí quién está en directo ahora mismo y seguí a los creadores de VANTS.">
+  <meta name="description" content="VANTS TWITCH DISCOVERY: los juegos de la comunidad (Counter-Strike, League of Legends, VALORANT, EA Sports FC 27 y Fortnite), directos de creadores registrados en VANTS y sus canales de Twitch.">
   <link rel="icon" type="image/svg+xml" href="/static/img/vants-mark.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -126,9 +126,9 @@
 <header class="cabecera-pagina">
   <span class="etiqueta etiqueta--roja">STREAMING <em class="chip-nuevo">NUEVO</em></span>
   <h1>VANTS <em>TWITCH DISCOVERY</em></h1>
-  <p>Explorá las categorías más vistas de Twitch, descubrí quién está en directo ahora
-     mismo y seguí a los creadores de VANTS. Ver streams no altera tu ranking: esto es
-     descubrimiento, no competición.</p>
+  <p>Los juegos de la comunidad VANTS, los directos de las cuentas registradas con su
+     Twitch vinculada y sus canales para seguirlos. Ver streams no altera tu ranking:
+     esto es descubrimiento, no competición.</p>
 </header>
 
 <!-- EXPLORAR JUEGOS -->
@@ -137,13 +137,8 @@
     <h2 class="seccion__titulo">EXPLORAR <em>JUEGOS</em></h2>
     <span class="pill" id="juegos-contador">·</span>
   </div>
-  <form class="tw-busca" id="tw-busca" role="search">
-    <input type="search" id="tw-q" placeholder="Buscar cualquier categoría de Twitch: VALORANT, Just Chatting…" maxlength="60" autocomplete="off">
-    <button type="submit">BUSCAR</button>
-    <button type="button" id="tw-limpia" hidden>CANCELAR ✕</button>
-  </form>
   <div class="tw-grid tw-grid--juegos" id="tw-juegos">
-    <div class="tw-cargando">CARGANDO LAS CATEGORÍAS DE TWITCH…</div>
+    <div class="tw-cargando">CARGANDO LOS JUEGOS DE LA COMUNIDAD…</div>
   </div>
 </section>
 
@@ -151,10 +146,11 @@
 <section class="seccion" id="directos">
   <div class="seccion__top">
     <h2 class="seccion__titulo">EN <em>DIRECTO</em></h2>
-    <span class="pill" id="directos-chip">TODOS LOS JUEGOS</span>
+    <span class="pill" id="directos-chip">TODOS LOS JUEGOS VANTS</span>
   </div>
+  <p class="gestionar__nota" style="margin:-6px 0 14px">Solo aparecen directos de cuentas registradas en VANTS con su Twitch vinculada · Counter-Strike, League of Legends, VALORANT, EA Sports FC 27 y Fortnite.</p>
   <div class="tw-grid tw-grid--directos" id="tw-directos">
-    <div class="tw-cargando">CARGANDO LOS DIRECTOS…</div>
+    <div class="tw-cargando">CARGANDO LOS DIRECTOS VANTS…</div>
   </div>
 </section>
 
@@ -168,7 +164,7 @@
     <div class="tw-cargando">CARGANDO LOS CREADORES…</div>
   </div>
   <p class="gestionar__nota" style="margin-top:14px">
-    ¿Tenés canal de Twitch? Vinculalo desde tu perfil para aparecer acá cuando estés en directo ·
+    ¿Tenés canal de Twitch? Conectalo en tu perfil (REDES Y CUENTAS) y aparecé acá cuando estés en directo ·
     Los datos vienen de la API oficial de Twitch (Helix) vía el servidor de VANTS — las credenciales nunca salen del Worker.
   </p>
 </section>
