@@ -1,0 +1,48 @@
+name: "Mermaid · Diagram Sync Assistant (MDSA)"
+
+# MDSA mantiene los diagramas Mermaid de los README sincronizados con los
+# wrangler.toml reales. Motor: tools/sync-diagrams.mjs (sin dependencias).
+# Guía completa: sección «Mermaid Diagram Sync Assistant (MDSA)» del README raíz.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "tools/**"
+      - "README.md"
+      - "kick-bot/README.md"
+      - "**/wrangler.toml"
+      - ".github/workflows/diagram-sync.yml"
+  workflow_dispatch:
+
+# El commit automático lleva [skip ci] y usa el GITHUB_TOKEN (que por sí solo
+# ya no dispara otros workflows): doble seguro para no provocar deploys.
+permissions:
+  contents: write
+
+concurrency:
+  group: mdsa
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Sincronizar diagramas (MDSA)
+        run: node tools/sync-diagrams.mjs
+
+      - name: Commit si cambió algo
+        run: |
+          if [[ -n "$(git status --porcelain -- README.md kick-bot/README.md)" ]]; then
+            git config user.name  "vants-mdsa[bot]"
+            git config user.email "vants-mdsa[bot]@users.noreply.github.com"
+            git add README.md kick-bot/README.md
+            git commit -m "docs(mdsa): diagramas Mermaid resincronizados con los wrangler.toml [skip ci]"
+            git push
+          else
+            echo "MDSA: los diagramas ya estaban sincronizados"
+          fi
